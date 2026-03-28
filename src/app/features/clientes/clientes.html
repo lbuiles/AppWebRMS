@@ -1,9 +1,9 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+<div class="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in font-sans">
 
   <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-200 pb-5">
     <div>
-      <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Directorio de Clientes</h1>
-      <p class="text-gray-500 mt-1">Gestiona las empresas contratantes, sus sedes y representantes.</p>
+      <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio de Clientes</h1>
+      <p class="text-gray-500 mt-1 text-sm font-medium">Gestiona las empresas contratantes, sus sedes y representantes.</p>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
@@ -13,8 +13,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
-        <input (input)="buscar($event)" type="text" placeholder="Buscar por empresa, NIT o ciudad..."
-               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all">
+        <input (input)="buscar($event)" type="text" placeholder="Buscar por empresa o NIT..."
+               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all text-sm font-medium">
       </div>
 
       <button (click)="abrirModalParaCrear()"
@@ -30,13 +30,13 @@
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-left text-sm text-gray-600">
-        <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-100 uppercase text-xs tracking-wider">
+        <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-100 uppercase text-[11px] tracking-[0.12em]">
           <tr>
             <th class="px-6 py-4">Razón Social / NIT</th>
             <th class="px-6 py-4">Contacto Principal</th>
-            <th class="px-6 py-4">Sedes</th>
+            <th class="px-6 py-4 text-center">Sedes</th>
             <th class="px-6 py-4">Ubicación Base</th>
-            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4 text-center">Estado</th>
             <th class="px-6 py-4 text-right">Acciones</th>
           </tr>
         </thead>
@@ -44,56 +44,59 @@
           @if (loadingService.isLoading() && clientes().length === 0) {
             <tr>
               <td colspan="6" class="px-6 py-20 text-center">
-                <div class="flex flex-col items-center gap-2">
+                <div class="flex flex-col items-center gap-2 font-semibold text-gray-400">
                   <div class="w-10 h-10 border-4 border-[#ffb31c] border-t-transparent rounded-full animate-spin"></div>
+                  <span>Cargando datos...</span>
                 </div>
               </td>
             </tr>
           } @else {
             @for (cliente of clientesFiltrados(); track cliente.id) {
-              <tr class="hover:bg-blue-50/50 transition-colors">
+              <tr (click)="verDetalle(cliente)" class="hover:bg-blue-50/50 transition-colors cursor-pointer group">
                 <td class="px-6 py-4">
-                  <div class="font-bold text-gray-900 text-sm uppercase tracking-tight">{{ cliente.razonSocial }}</div>
-                  <div class="text-[10px] text-gray-500 font-mono">NIT: {{ cliente.nit }}</div>
+                  <div class="font-bold text-gray-900 text-[13px] uppercase tracking-wide">{{ cliente.razonSocial }}</div>
+                  <div class="text-[10px] text-gray-400 font-bold tracking-widest mt-0.5">NIT: {{ cliente.nit }}</div>
                 </td>
-                <td class="px-6 py-4 font-bold text-gray-700 text-xs uppercase tracking-wide">
+                <td class="px-6 py-4 font-bold text-gray-700 text-[11px] uppercase tracking-wider">
                   {{ cliente.contactoPrincipal }}
                 </td>
-                <td class="px-6 py-4">
-                  <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-[10px] font-black border border-blue-100">
-                    {{ cliente.sucursales?.length || 0 }} SEDES
-                  </span>
+                <td class="px-6 py-4 text-center">
+                  @if (cliente.sucursales && cliente.sucursales.length > 0) {
+                    <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-[10px] font-extrabold border border-blue-100 tracking-tight">
+                      {{ cliente.sucursales.length }} {{ cliente.sucursales.length === 1 ? 'SEDE' : 'SEDES' }}
+                    </span>
+                  }
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex flex-col gap-0.5">
                     <span class="font-bold text-gray-900 text-sm tracking-tight">{{ cliente.telefono }}</span>
-                    <span class="font-black text-gray-700 text-[10px] uppercase tracking-wider">
+                    <span class="font-bold text-gray-700 text-[10px] uppercase tracking-wider">
                       {{ cliente.ciudad }}, {{ cliente.departamento }}
-                    </span>
-                    <span class="text-xs text-gray-500 font-medium leading-tight truncate max-w-[150px]">
-                      {{ cliente.direccion }}
                     </span>
                   </div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-6 py-4 text-center">
                   <span [ngClass]="{
                     'bg-emerald-100 text-emerald-700 border-emerald-200': cliente.estado === 'ACTIVO',
                     'bg-red-50 text-red-600 border-red-100': cliente.estado === 'INACTIVO'
-                  }" class="px-3 py-1 rounded-full text-xs font-bold border">
+                  }" class="px-3 py-1 rounded-full text-[10px] font-bold border tracking-widest uppercase">
                     {{ cliente.estado }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-right">
+                <td class="px-6 py-4 text-right" (click)="$event.stopPropagation()">
                   <div class="flex justify-end gap-2">
-                    <button (click)="abrirModalParaEditar(cliente)"
-                            class="text-blue-500 hover:text-blue-700 p-2 transition-all bg-blue-50 hover:bg-blue-100 rounded-xl group">
-                      <svg class="w-5 h-5 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button (click)="cliente.estado === 'ACTIVO' ? abrirModalParaEditar(cliente) : null"
+                            [disabled]="cliente.estado === 'INACTIVO'"
+                            [ngClass]="cliente.estado === 'ACTIVO' ? 'text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100' : 'text-gray-300 bg-gray-50 cursor-not-allowed'"
+                            class="p-2 transition-all rounded-xl"
+                            [title]="cliente.estado === 'ACTIVO' ? 'Editar cliente' : 'No editable (Inactivo)'">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                       </svg>
                     </button>
                     <button (click)="toggleEstadoCliente(cliente)"
                             [ngClass]="cliente.estado === 'ACTIVO' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'"
-                            class="p-2 transition-all rounded-xl group">
+                            class="p-2 transition-all rounded-xl">
                       @if (cliente.estado === 'ACTIVO') {
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                       } @else {
@@ -105,7 +108,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="6" class="px-6 py-16 text-center text-gray-400 italic">No hay clientes registrados.</td>
+                <td colspan="6" class="px-6 py-16 text-center text-gray-400 font-medium italic">No hay clientes registrados.</td>
               </tr>
             }
           }
@@ -114,277 +117,384 @@
     </div>
   </div>
 
+  @if (clienteSeleccionado(); as clienteSel) {
+    <div class="fixed inset-0 z-[110] flex justify-end">
+      <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-fade-in" (click)="cerrarDetalle()"></div>
+      <div class="relative w-full max-w-lg bg-white shadow-2xl h-full overflow-y-auto border-l border-gray-100 flex flex-col">
+        <div class="p-8 space-y-8 flex-1">
+
+          <div class="flex justify-between items-start border-b border-gray-100 pb-6">
+            <div>
+              <span class="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em]">Ficha del Cliente</span>
+              <h2 class="text-2xl font-bold text-gray-900 tracking-tight mt-1 uppercase">{{ clienteSel.razonSocial }}</h2>
+              <div class="flex items-center gap-3 mt-2">
+                <p class="text-[11px] text-gray-500 font-bold tracking-widest">NIT: {{ clienteSel.nit }}</p>
+                <span [ngClass]="clienteSel.estado === 'ACTIVO' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-50 text-red-600'"
+                      class="px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">
+                  {{ clienteSel.estado }}
+                </span>
+              </div>
+            </div>
+            <button (click)="cerrarDetalle()" class="text-gray-300 hover:text-gray-900 transition-colors p-2 bg-gray-50 rounded-full">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+            <div class="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-black">
+              {{ clienteSel.contactoPrincipal.charAt(0) }}
+            </div>
+            <div>
+              <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Contacto Principal</p>
+              <p class="text-sm font-bold text-gray-900 uppercase">{{ clienteSel.contactoPrincipal }}</p>
+              <p class="text-[11px] font-semibold text-gray-500">{{ clienteSel.email }} | {{ clienteSel.telefono }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Moneda / Pago</p>
+              <p class="text-xs font-bold text-gray-800 mt-1 uppercase tracking-wide">
+                {{ getNombreMoneda(clienteSel.condiciones?.monedaId) }} - {{ getNombrePago(clienteSel.condiciones?.condicionPagoId) }}
+              </p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">SLA de Respuesta</p>
+              <p class="text-xs font-bold text-gray-800 mt-1 uppercase tracking-wide text-orange-600">
+                <i class="far fa-clock mr-1"></i>{{ clienteSel.operacion?.slaDias || 0 }} DÍAS
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Alcance Operativo</h4>
+            <div class="space-y-4">
+              <div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Servicios Contratados:</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (serv of clienteSel.clienteServicios; track serv.tipoServicioId) {
+                    <span class="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-100 uppercase tracking-tight">
+                      {{ getNombreServicio(serv.tipoServicioId) }}
+                    </span>
+                  } @empty {
+                    <span class="text-xs text-gray-400 italic font-medium">No hay servicios registrados</span>
+                  }
+                </div>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Regiones de Cobertura:</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (reg of clienteSel.clienteRegiones; track reg.regionId) {
+                    <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-md border border-slate-200 uppercase tracking-tight">
+                      {{ getNombreRegion(reg.regionId) }}
+                    </span>
+                  } @empty {
+                    <span class="text-xs text-gray-400 italic font-medium">No hay regiones registradas</span>
+                  }
+                </div>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Pólizas Exigidas:</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (poliza of clienteSel.clientePolizas; track poliza.tipoPolizaId) {
+                    <span class="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-md border border-purple-100 uppercase tracking-tight">
+                      {{ getNombrePoliza(poliza.tipoPolizaId) }}
+                    </span>
+                  } @empty {
+                    <span class="text-xs text-gray-400 italic font-medium">No exige pólizas adicionales</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1 flex justify-between">
+              <span>Sedes / Sucursales</span>
+              <span class="text-blue-600">{{ clienteSel.sucursales?.length || 0 }} Registradas</span>
+            </h4>
+
+            <div class="space-y-3">
+              @for (sede of clienteSel.sucursales; track sede.nombre) {
+                <div class="p-4 border border-gray-100 rounded-xl bg-white shadow-sm flex flex-col gap-2">
+                  <div>
+                    <div class="font-bold text-xs text-gray-900 uppercase tracking-wide">{{ sede.nombre }}</div>
+                    <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{{ sede.ciudad }}, {{ sede.departamento }}</div>
+                    <div class="text-[11px] text-gray-400 font-medium truncate">{{ sede.direccion }}</div>
+                  </div>
+
+                  @if (sede.contactos && sede.contactos.length > 0) {
+                    <div class="mt-2 pt-3 border-t border-gray-50">
+                      <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Representantes de sede:</p>
+                      <div class="flex flex-col gap-2">
+                        @for (contacto of sede.contactos; track contacto.nombre) {
+                          <div class="flex items-center gap-2.5 bg-gray-50/50 px-3 py-2 rounded-lg border border-gray-100">
+                            <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-black shrink-0">
+                              {{ contacto.nombre.charAt(0) }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                              <p class="text-[10px] font-bold text-gray-700 uppercase truncate">
+                                {{ contacto.nombre }}
+                                @if (contacto.cargo) { <span class="text-gray-400 font-medium ml-1 capitalize">- {{ contacto.cargo }}</span> }
+                              </p>
+                              <p class="text-[9px] font-semibold text-gray-500 truncate flex gap-1">
+                                <span class="text-blue-600 font-bold">{{ contacto.telefono || 'Sin tel.' }}</span>
+                                <span class="text-gray-300">|</span>
+                                <span class="lowercase">{{ contacto.email || 'Sin email' }}</span>
+                              </p>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @empty {
+                <div class="p-4 border-2 border-dashed border-gray-100 rounded-xl text-center">
+                  <span class="text-xs text-gray-400 italic font-medium">Este cliente opera únicamente desde su sede principal.</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-100 bg-gray-50 mt-auto">
+          <button (click)="clienteSel.estado === 'ACTIVO' ? abrirModalParaEditar(clienteSel) : null"
+                  [disabled]="clienteSel.estado === 'INACTIVO'"
+                  [ngClass]="clienteSel.estado === 'ACTIVO' ? 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md' : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+                  class="w-full py-3.5 rounded-xl font-bold transition-all uppercase text-[11px] tracking-widest flex items-center justify-center gap-2">
+
+            @if (clienteSel.estado === 'ACTIVO') {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              <span>Editar Ficha Completa</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              <span>Ficha Bloqueada (Inactivo)</span>
+            }
+          </button>
+        </div>
+              </div>
+            </div>
+          }
+
   @if (modalAbierto()) {
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="!loadingService.isLoading() && cerrarModal()"></div>
 
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-fade-in-up max-h-[90vh] flex flex-col">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
         <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <div>
-            <h3 class="text-xl font-extrabold text-[#1e3a8a]">
+            <h3 class="text-xl font-bold text-[#1e3a8a] tracking-tight">
               {{ clienteIdEnEdicion() ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}
             </h3>
-            <p class="text-xs text-gray-500">Completa la información básica y las sedes operativas.</p>
+            <p class="text-xs text-gray-500 font-medium mt-0.5 tracking-wide">Gestión integral de datos maestros y operativos.</p>
           </div>
           <button (click)="cerrarModal()" [disabled]="loadingService.isLoading()" class="text-gray-400 hover:text-red-500 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
           </button>
         </div>
 
-        <div class="overflow-y-auto p-6 bg-white">
+        <div class="overflow-y-auto p-6 bg-white space-y-8">
           <form [formGroup]="clienteForm" (ngSubmit)="guardarCliente()" class="space-y-6">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <h4 class="col-span-2 text-sm font-black text-gray-400 uppercase tracking-widest border-b pb-1">Datos de la Empresa</h4>
-
+              <h4 class="col-span-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] border-b pb-1">Datos de la Empresa</h4>
               <div class="col-span-2">
-                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">RAZÓN SOCIAL *</label>
-                <input formControlName="razonSocial" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('razonSocial')?.invalid && clienteForm.get('razonSocial')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none uppercase text-sm transition-all">
+                <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Razón Social *</label>
+                <input formControlName="razonSocial" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none uppercase text-sm font-semibold tracking-wide transition-all">
               </div>
-
               <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">NIT *</label>
-                <input formControlName="nit" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('nit')?.invalid && clienteForm.get('nit')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm transition-all">
+                <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">NIT *</label>
+                <input formControlName="nit" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm font-semibold tracking-wide transition-all">
               </div>
-
               <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">TIPO DE CLIENTE</label>
-                <select formControlName="tipoClienteId" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm outline-none bg-white">
+                <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Tipo Cliente</label>
+                <select formControlName="tipoClienteId" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold outline-none bg-white">
                   <option [ngValue]="null">Seleccione...</option>
                   @for (tipo of catTiposCliente(); track tipo.id) { <option [value]="tipo.id">{{ tipo.nombre }}</option> }
                 </select>
               </div>
-
               <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">TELÉFONO *</label>
-                <input formControlName="telefono" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('telefono')?.invalid && clienteForm.get('telefono')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm transition-all">
+                <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Teléfono Principal *</label>
+                <input formControlName="telefono" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm font-semibold transition-all">
               </div>
-
               <div class="col-span-2">
-                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Emails (Separe con coma) *</label>
-                <input formControlName="email" type="text" placeholder="admin@empresa.com, pagos@empresa.com" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('email')?.invalid && clienteForm.get('email')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none lowercase text-sm transition-all">
+                <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Emails Corporativos *</label>
+                <input formControlName="email" type="text" placeholder="separados por coma" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm font-semibold transition-all lowercase">
               </div>
-
-              <div class="col-span-2 grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div class="md:col-span-1">
-                  <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Departamento *</label>
-                  <select formControlName="departamento" (change)="onDepartamentoChange($event)" [ngClass]="{'border-red-500 ring-1 ring-red-500': clienteForm.get('departamento')?.invalid && clienteForm.get('departamento')?.touched}" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm outline-none transition-all">
+              <div class="col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Departamento *</label>
+                  <select formControlName="departamento" (change)="onDepartamentoChange($event)" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold outline-none">
                     <option value="">Seleccione...</option>
                     @for (dpto of ubicacionService.departamentos(); track dpto) { <option [value]="dpto">{{ dpto }}</option> }
                   </select>
                 </div>
-                <div class="md:col-span-1">
-                  <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Ciudad *</label>
-                  <select formControlName="ciudad" [ngClass]="{'border-red-500 ring-1 ring-red-500': clienteForm.get('ciudad')?.invalid && clienteForm.get('ciudad')?.touched}" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm outline-none transition-all">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Ciudad *</label>
+                  <select formControlName="ciudad" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold outline-none">
                     <option value="">Seleccione...</option>
                     @for (ciudad of ciudadesDisponibles(); track ciudad) { <option [value]="ciudad">{{ ciudad }}</option> }
                   </select>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Dirección Fiscal *</label>
-                  <input formControlName="direccion" type="text" placeholder="Calle, Avenida, Edificio..." [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('direccion')?.invalid && clienteForm.get('direccion')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm uppercase outline-none transition-all">
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Dirección Fiscal *</label>
+                  <input formControlName="direccion" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold uppercase outline-none transition-all">
                 </div>
               </div>
-
               <div class="col-span-2">
-                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Representante / Contacto Principal *</label>
-                <input formControlName="contactoPrincipal" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('contactoPrincipal')?.invalid && clienteForm.get('contactoPrincipal')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm uppercase outline-none transition-all">
+                <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Representante / Contacto Principal *</label>
+                <input formControlName="contactoPrincipal" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold uppercase outline-none transition-all">
               </div>
             </div>
 
-            <div class="p-5 bg-blue-50/40 rounded-2xl border border-blue-100 grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-              <h4 class="col-span-4 text-xs font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
-                Condiciones Comerciales y Facturación
+            <div class="p-5 bg-blue-50/40 rounded-2xl border border-blue-100 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <h4 class="col-span-4 text-[11px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2.5"/></svg>
+                Condiciones Comerciales
               </h4>
-
               <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Tipo Contrato</label>
-                <select formControlName="tipoContratoId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tipo Contrato</label>
+                <select formControlName="tipoContratoId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold outline-none">
                   <option [ngValue]="null">Ninguno</option>
                   @for (cat of catTiposContrato(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Condición de Pago</label>
-                <select formControlName="condicionPagoId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
-                  <option [ngValue]="null">Seleccione...</option>
-                  @for (cat of catCondicionesPago(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Moneda</label>
-                <select formControlName="monedaId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-bold bg-white">
-                  <option [ngValue]="null">Seleccione...</option>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Moneda</label>
+                <select formControlName="monedaId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none">
                   @for (cat of catMonedas(); track cat.id) { <option [value]="cat.id">{{ cat.codigo }} - {{ cat.nombre }}</option> }
                 </select>
               </div>
-
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Condición Pago</label>
+                <select formControlName="condicionPagoId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold outline-none">
+                  @for (cat of catCondicionesPago(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
+                </select>
+              </div>
               <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Email Facturación</label>
-                <input formControlName="emailFacturacion" type="email" placeholder="facturacion@empresa.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs lowercase bg-white">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Email Facturación</label>
+                <input formControlName="emailFacturacion" type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold outline-none lowercase">
               </div>
               <div class="md:col-span-1">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Tipo Facturación</label>
-                <select formControlName="tipoFacturacionId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
-                  <option [ngValue]="null">Seleccione...</option>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tipo Facturación</label>
+                <select formControlName="tipoFacturacionId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold outline-none">
                   @for (cat of catTiposFacturacion(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
                 </select>
               </div>
-              <div class="md:col-span-1 flex flex-col justify-end pb-1">
-                 <div class="flex items-center gap-4">
-                    <label class="flex items-center gap-1 cursor-pointer">
-                      <input type="checkbox" formControlName="requiereOC" class="w-3.5 h-3.5 text-blue-600 rounded">
-                      <span class="text-[10px] font-bold text-gray-600">REQ. OC</span>
-                    </label>
-                    <label class="flex items-center gap-1 cursor-pointer">
-                      <input type="checkbox" formControlName="requierePolizas" class="w-3.5 h-3.5 text-blue-600 rounded">
-                      <span class="text-[10px] font-bold text-gray-600">PÓLIZAS</span>
-                    </label>
-                 </div>
+              <div class="md:col-span-1 flex items-end pb-1.5 gap-4">
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" formControlName="requiereOC" class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">REQ. OC</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" formControlName="requierePolizas" class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">PÓLIZAS</span></label>
               </div>
-
               @if (clienteForm.get('requierePolizas')?.value) {
-                <div class="md:col-span-4 animate-fade-in">
-                  <label class="block text-[10px] font-bold text-blue-600 uppercase italic mb-1">Seleccione las Pólizas Exigidas (Use Ctrl/Cmd para seleccionar varias)</label>
-                  <select multiple formControlName="polizasIds" class="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white h-24 focus:ring-2 focus:ring-blue-400">
-                    @for (cat of catTiposPoliza(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-blue-50">{{ cat.nombre }}</option> }
+                <div class="md:col-span-4 animate-fade-in pt-2">
+                  <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5 italic">Seleccione Pólizas Exigidas</label>
+                  <select multiple formControlName="polizasIds" class="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs font-semibold bg-white h-24 outline-none">
+                    @for (cat of catTiposPoliza(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-blue-50 cursor-pointer">{{ cat.nombre }}</option> }
                   </select>
                 </div>
               }
             </div>
 
-            <div class="p-5 bg-orange-50/30 rounded-2xl border border-orange-100 grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-              <h4 class="col-span-4 text-xs font-black text-orange-700 uppercase tracking-widest mb-2 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"/></svg>
-                Información Operativa
+            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <h4 class="col-span-4 text-[11px] font-bold text-slate-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2.5"/></svg>
+                Configuración Operativa
               </h4>
-
               <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Regiones de Cobertura</label>
-                <select multiple formControlName="regionesIds" class="w-full px-3 py-2 border border-orange-200 rounded-lg text-xs bg-white h-24 focus:ring-2 focus:ring-orange-400">
-                  @for (cat of catRegiones(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-orange-50">{{ cat.nombre }}</option> }
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Regiones Cobertura</label>
+                <select multiple formControlName="regionesIds" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold h-28 outline-none focus:ring-1 focus:ring-slate-400">
+                  @for (cat of catRegiones(); track cat.id) { <option [value]="cat.id" class="p-1.5 rounded hover:bg-slate-100 cursor-pointer">{{ cat.nombre }}</option> }
                 </select>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipos de Servicio</label>
-                <select multiple formControlName="serviciosIds" class="w-full px-3 py-2 border border-orange-200 rounded-lg text-xs bg-white h-24 focus:ring-2 focus:ring-orange-400">
-                  @for (cat of catTiposServicio(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-orange-50">{{ cat.nombre }}</option> }
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Servicios Contratados</label>
+                <select multiple formControlName="serviciosIds" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold h-28 outline-none focus:ring-1 focus:ring-slate-400">
+                  @for (cat of catTiposServicio(); track cat.id) { <option [value]="cat.id" class="p-1.5 rounded hover:bg-slate-100 cursor-pointer">{{ cat.nombre }}</option> }
                 </select>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Prioridad de Atención</label>
-                <select formControlName="prioridadId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Prioridad Atención</label>
+                <select formControlName="prioridadId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none focus:border-slate-400">
                   <option [ngValue]="null">Seleccione...</option>
                   @for (cat of catPrioridades(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
                 </select>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">SLA (Días Respuesta)</label>
-                <input formControlName="slaDias" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">SLA (Días)</label>
+                <input formControlName="slaDias" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none focus:border-slate-400">
               </div>
             </div>
 
             <div class="mt-8">
               <div class="flex justify-between items-center mb-4 border-b-2 border-blue-100 pb-2">
-                <h4 class="text-sm font-black text-[#1e3a8a] tracking-widest">Sedes Operativas / Sucursales</h4>
+                <h4 class="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-[0.2em]">Sedes y Sucursales</h4>
                 <button type="button" (click)="agregarSucursal()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 shadow-sm">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
-                  AGREGAR SEDE
+                        class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-3 py-2 rounded-xl font-bold transition-all shadow-md flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
+                  AÑADIR SEDE
                 </button>
               </div>
-
               <div formArrayName="sucursales" class="space-y-6">
                 @for (sucursal of sucursales.controls; track $index; let i = $index) {
-                  <div [formGroupName]="i" class="p-5 border-2 border-gray-100 rounded-2xl bg-gray-50/30 relative animate-fade-in">
-
-                    <button type="button" (click)="eliminarSucursal(i)" class="absolute top-4 right-4 text-red-300 hover:text-red-500 transition-colors">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                  <div [formGroupName]="i" class="p-6 border-2 border-gray-100 rounded-2xl bg-gray-50/30 relative animate-fade-in">
+                    <button type="button" (click)="eliminarSucursal(i)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5"/></svg>
                     </button>
-
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div class="md:col-span-3">
-                        <label class="text-[10px] font-black text-blue-400 uppercase tracking-tighter">Nombre Identificador de la Sede *</label>
-                        <input formControlName="nombre" placeholder="Ej: Centro de Distribución Norte" (input)="validarNombreSucursalUnico(i)"
-                               [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-white': sucursal.get('nombre')?.invalid && sucursal.get('nombre')?.touched}"
-                               class="w-full px-3 py-2 border-b-2 border-gray-200 bg-transparent focus:border-blue-400 outline-none text-sm font-bold transition-all uppercase">
-                        @if (sucursal.get('nombre')?.errors?.['repetido'] && sucursal.get('nombre')?.touched) {
-                          <p class="text-[10px] text-red-600 font-bold mt-1 uppercase">Este nombre de sede ya existe en este cliente</p>
-                        }
+                      <div class="md:col-span-3 border-b border-gray-100 pb-4 mb-2">
+                        <label class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1 block">Identificador de Sede *</label>
+                        <input formControlName="nombre" class="w-full px-0 py-1 bg-transparent border-none outline-none text-xl font-bold text-gray-900 uppercase tracking-tight">
                       </div>
-
                       <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Departamento *</label>
-                        <select formControlName="departamento" (change)="onDepartamentoSucursalChange($event, i)" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('departamento')?.invalid && sucursal.get('departamento')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs outline-none transition-all">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Departamento</label>
+                        <select formControlName="departamento" (change)="onDepartamentoSucursalChange($event, i)" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold outline-none bg-white">
                           <option value="">Seleccione...</option>
                           @for (dpto of ubicacionService.departamentos(); track dpto) { <option [value]="dpto">{{ dpto }}</option> }
                         </select>
                       </div>
-
                       <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Ciudad *</label>
-                        <select formControlName="ciudad" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('ciudad')?.invalid && sucursal.get('ciudad')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs outline-none transition-all">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Ciudad</label>
+                        <select formControlName="ciudad" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold outline-none bg-white">
                           <option value="">Seleccione...</option>
                           @for (ciudad of ciudadesSucursales()[i] || []; track ciudad) { <option [value]="ciudad">{{ ciudad }}</option> }
                         </select>
                       </div>
-
-                      <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Teléfono Sede *</label>
-                        <input formControlName="telefono" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('telefono')?.invalid && sucursal.get('telefono')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs transition-all">
-                      </div>
-
                       <div class="md:col-span-3">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Dirección Exacta *</label>
-                        <input formControlName="direccion" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('direccion')?.invalid && sucursal.get('direccion')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs uppercase transition-all">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Dirección Operativa *</label>
+                        <input formControlName="direccion" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold outline-none uppercase bg-white">
                       </div>
                     </div>
-
-                    <div class="mt-5 pt-4 border-t border-dashed border-gray-200">
-                      <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-gray-500 uppercase tracking-tighter italic">Contactos específicos</span>
-                        <button type="button" (click)="agregarContacto(i)" class="text-[10px] text-blue-600 font-black hover:text-blue-800 uppercase tracking-widest">+ Agregar Contacto</button>
+                    <div class="mt-6 pt-6 border-t border-dashed border-gray-200">
+                      <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">Personal Sede</span>
+                        <button type="button" (click)="agregarContacto(i)" class="text-[10px] text-blue-600 font-bold hover:text-blue-800 transition-colors uppercase">+ Añadir Representante</button>
                       </div>
-
-                      <div formArrayName="contactos" class="space-y-2">
+                      <div formArrayName="contactos" class="space-y-3">
                         @for (contacto of getContactos(i).controls; track $index; let j = $index) {
-                          <div [formGroupName]="j" class="flex gap-2 items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm animate-fade-in">
-                            <div class="flex-1">
-                                <input formControlName="nombre" placeholder="Nombre *" [ngClass]="{'ring-1 ring-red-500': contacto.get('nombre')?.invalid && contacto.get('nombre')?.touched}" class="w-full px-2 py-1.5 text-xs border-none bg-gray-50 rounded-lg outline-none focus:ring-1 focus:ring-blue-300 uppercase">
-                            </div>
-                            <div class="w-40">
-                                <input formControlName="cargo" placeholder="Cargo *" [ngClass]="{'ring-1 ring-red-500': contacto.get('cargo')?.invalid && contacto.get('cargo')?.touched}" class="w-full px-2 py-1.5 text-xs border-none bg-gray-50 rounded-lg outline-none focus:ring-1 focus:ring-blue-300 uppercase">
-                            </div>
-                            <div class="flex-1">
-                                <input formControlName="email" placeholder="Email *" [ngClass]="{'ring-1 ring-red-500': contacto.get('email')?.invalid && contacto.get('email')?.touched}" class="w-full px-2 py-1.5 text-xs border-none bg-gray-50 rounded-lg outline-none lowercase">
-                            </div>
-                            <button type="button" (click)="eliminarContacto(i, j)" class="text-gray-300 hover:text-red-500 transition-colors px-1">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
+                          <div [formGroupName]="j" class="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                            <input formControlName="nombre" placeholder="Nombre completo *" class="flex-1 px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-bold outline-none uppercase border-none">
+                            <input formControlName="cargo" placeholder="Cargo" class="w-full md:w-32 px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-semibold outline-none uppercase border-none">
+
+                            <input formControlName="telefono" placeholder="Teléfono *" class="w-full md:w-32 px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-semibold outline-none border-none">
+
+                            <input formControlName="email" placeholder="Email" class="flex-1 px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-semibold outline-none lowercase border-none">
+                            <button type="button" (click)="eliminarContacto(i, j)" class="p-1.5 text-gray-300 hover:text-red-500 transition-colors self-center">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
                             </button>
                           </div>
                         }
                       </div>
                     </div>
                   </div>
-                } @empty {
-                  <div class="text-center py-8 border-2 border-dashed border-gray-100 rounded-2xl">
-                    <p class="text-xs text-gray-400 font-medium">No has añadido sedes adicionales. Se usará la ubicación base.</p>
-                  </div>
                 }
               </div>
             </div>
 
-            <div class="sticky bottom-0 bg-white pt-5 border-t border-gray-100 flex justify-end gap-3 pb-2 mt-auto">
-              <button type="button" (click)="cerrarModal()" [disabled]="loadingService.isLoading()"
-                      class="px-6 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors text-sm">Cancelar</button>
-              <button type="submit" [disabled]="loadingService.isLoading()"
-                      class="px-8 py-3 bg-[#1e3a8a] text-white font-extrabold rounded-xl shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2 text-sm">
-                @if (loadingService.isLoading()) {
-                  <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span><span>Guardando...</span>
-                } @else {
-                  <span>{{ clienteIdEnEdicion() ? 'Guardar Cambios' : 'Crear Cliente Completo' }}</span>
-                }
+            <div class="sticky bottom-0 bg-white/90 backdrop-blur-md pt-5 border-t border-gray-100 flex justify-end gap-3 pb-2 mt-auto">
+              <button type="button" (click)="cerrarModal()" [disabled]="loadingService.isLoading()" class="px-8 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-2xl transition-all text-sm">Descartar</button>
+              <button type="submit" [disabled]="loadingService.isLoading()" class="px-10 py-3 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:bg-blue-900 transition-all text-sm uppercase tracking-widest">
+                {{ clienteIdEnEdicion() ? 'Guardar Cambios' : 'Registrar Cliente' }}
               </button>
             </div>
           </form>

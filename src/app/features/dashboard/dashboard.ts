@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
+import { ClienteService } from '../../core/services/cliente';
 
 export interface Proyecto {
   codigo: string;
@@ -21,10 +22,24 @@ export interface Proyecto {
   imports: [BaseChartDirective, CurrencyPipe],
   templateUrl: './dashboard.html'
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit{
 
-  // ==========================================
-  // 1. DATOS PARA GRÁFICOS (CHART.JS)
+  private clienteService = inject(ClienteService); // <-- Inyecta el servicio
+
+  // Variable para guardar el número real
+  public cantidadClientesReales: number = 0;
+
+  ngOnInit() {
+    this.cargarCantidadClientes();
+  }
+
+  cargarCantidadClientes() {
+    // Llama al servicio que ya tienes creado
+    this.clienteService.getClientes().subscribe(clientes => {
+      // Filtramos solo los activos, o simplemente contamos todos
+      this.cantidadClientesReales = clientes.filter(c => c.estado === 'ACTIVO').length;
+    });
+  }
   // ==========================================
 
   // Gráfico 1: Facturación General (Barras)

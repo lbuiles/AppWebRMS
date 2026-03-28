@@ -14,7 +14,7 @@ const GET_CLIENTES = gql`
       clienteServicios { tipoServicioId }
       clienteRegiones { regionId }
       sucursales {
-        nombre departamento ciudad direccion telefono
+        nombre departamento ciudad direccion
         contactos { nombre cargo email telefono }
       }
     }

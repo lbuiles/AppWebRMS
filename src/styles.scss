@@ -99,3 +99,9 @@ html {
 .carousel-1 { animation-delay: 0s; }
 .carousel-2 { animation-delay: 6s; }
 .carousel-3 { animation-delay: 12s; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
