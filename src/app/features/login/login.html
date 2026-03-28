@@ -1,0 +1,52 @@
+<div class="min-h-screen flex bg-gray-50 font-sans">
+
+  <div class="hidden lg:flex lg:w-1/2 bg-[#1e3a8a] relative items-center justify-center overflow-hidden">
+
+    <div class="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay" style="background-image: url('/img_home/Telecomunicaciones.jpg');"></div>
+
+    <div class="relative z-10 text-center px-12 flex flex-col items-center">
+      <h1 class="text-7xl xl:text-8xl font-black mb-4 tracking-widest flex justify-center drop-shadow-2xl">
+        <span class="text-[#ffb31c]">R</span>
+        <span class="text-white">M</span>
+        <span class="text-[#ffb31c]">S</span>
+      </h1>
+
+      <div class="w-16 h-1 bg-[#ffb31c] mx-auto mb-6 rounded-full"></div>
+
+      <h2 class="text-3xl text-white font-bold mb-4 drop-shadow-md">Portal de Operaciones</h2>
+      <p class="text-lg text-gray-300 font-medium max-w-md mx-auto leading-relaxed">
+        Acceso exclusivo para el personal administrativo y operativo de diseño y construcción.
+      </p>
+    </div>
+  </div>
+
+
+  <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
+
+    <a routerLink="/" class="absolute top-8 left-8 text-gray-400 hover:text-[#1e3a8a] flex items-center gap-2 font-bold transition-colors text-sm">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+      Volver al inicio
+    </a>
+
+    <div class="max-w-md w-full bg-white p-10 sm:p-12 rounded-3xl shadow-2xl border border-gray-100 text-center">
+
+      <h3 class="text-3xl font-extrabold text-[#1e3a8a] mb-2">Bienvenido de nuevo</h3>
+      <p class="text-gray-500 font-medium mb-10">Ingresa con tu cuenta corporativa para continuar</p>
+
+      <div class="flex justify-center transform hover:scale-105 transition-transform duration-300 mb-8">
+        <asl-google-signin-button type="standard" size="large"></asl-google-signin-button>
+      </div>
+
+      <div class="mt-8 flex items-center text-gray-300">
+        <div class="flex-grow border-t border-gray-200"></div>
+        <span class="px-4 text-xs uppercase font-bold text-gray-400 tracking-wider">Acceso Restringido</span>
+        <div class="flex-grow border-t border-gray-200"></div>
+      </div>
+
+      <p class="text-center text-xs text-gray-400 mt-8 leading-relaxed">
+        Si tienes problemas para acceder a tu cuenta corporativa, por favor contacta al administrador de sistemas de RMS.
+      </p>
+
+    </div>
+  </div>
+</div>

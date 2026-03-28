@@ -1,0 +1,395 @@
+<div class="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+
+  <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-200 pb-5">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Directorio de Clientes</h1>
+      <p class="text-gray-500 mt-1">Gestiona las empresas contratantes, sus sedes y representantes.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+      <div class="relative w-full sm:w-72">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input (input)="buscar($event)" type="text" placeholder="Buscar por empresa, NIT o ciudad..."
+               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all">
+      </div>
+
+      <button (click)="abrirModalParaCrear()"
+              class="bg-[#1e3a8a] hover:bg-blue-800 text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 w-full sm:w-auto transform hover:-translate-y-0.5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Nuevo Cliente
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm text-gray-600">
+        <thead class="bg-gray-50 text-gray-700 font-bold border-b border-gray-100 uppercase text-xs tracking-wider">
+          <tr>
+            <th class="px-6 py-4">Razón Social / NIT</th>
+            <th class="px-6 py-4">Contacto Principal</th>
+            <th class="px-6 py-4">Sedes</th>
+            <th class="px-6 py-4">Ubicación Base</th>
+            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 relative">
+          @if (loadingService.isLoading() && clientes().length === 0) {
+            <tr>
+              <td colspan="6" class="px-6 py-20 text-center">
+                <div class="flex flex-col items-center gap-2">
+                  <div class="w-10 h-10 border-4 border-[#ffb31c] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (cliente of clientesFiltrados(); track cliente.id) {
+              <tr class="hover:bg-blue-50/50 transition-colors">
+                <td class="px-6 py-4">
+                  <div class="font-bold text-gray-900 text-sm uppercase tracking-tight">{{ cliente.razonSocial }}</div>
+                  <div class="text-[10px] text-gray-500 font-mono">NIT: {{ cliente.nit }}</div>
+                </td>
+                <td class="px-6 py-4 font-bold text-gray-700 text-xs uppercase tracking-wide">
+                  {{ cliente.contactoPrincipal }}
+                </td>
+                <td class="px-6 py-4">
+                  <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-[10px] font-black border border-blue-100">
+                    {{ cliente.sucursales?.length || 0 }} SEDES
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex flex-col gap-0.5">
+                    <span class="font-bold text-gray-900 text-sm tracking-tight">{{ cliente.telefono }}</span>
+                    <span class="font-black text-gray-700 text-[10px] uppercase tracking-wider">
+                      {{ cliente.ciudad }}, {{ cliente.departamento }}
+                    </span>
+                    <span class="text-xs text-gray-500 font-medium leading-tight truncate max-w-[150px]">
+                      {{ cliente.direccion }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <span [ngClass]="{
+                    'bg-emerald-100 text-emerald-700 border-emerald-200': cliente.estado === 'ACTIVO',
+                    'bg-red-50 text-red-600 border-red-100': cliente.estado === 'INACTIVO'
+                  }" class="px-3 py-1 rounded-full text-xs font-bold border">
+                    {{ cliente.estado }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex justify-end gap-2">
+                    <button (click)="abrirModalParaEditar(cliente)"
+                            class="text-blue-500 hover:text-blue-700 p-2 transition-all bg-blue-50 hover:bg-blue-100 rounded-xl group">
+                      <svg class="w-5 h-5 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    </button>
+                    <button (click)="toggleEstadoCliente(cliente)"
+                            [ngClass]="cliente.estado === 'ACTIVO' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-emerald-500 bg-emerald-50 hover:bg-emerald-100'"
+                            class="p-2 transition-all rounded-xl group">
+                      @if (cliente.estado === 'ACTIVO') {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                      }
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="px-6 py-16 text-center text-gray-400 italic">No hay clientes registrados.</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (modalAbierto()) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="!loadingService.isLoading() && cerrarModal()"></div>
+
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-fade-in-up max-h-[90vh] flex flex-col">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+          <div>
+            <h3 class="text-xl font-extrabold text-[#1e3a8a]">
+              {{ clienteIdEnEdicion() ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}
+            </h3>
+            <p class="text-xs text-gray-500">Completa la información básica y las sedes operativas.</p>
+          </div>
+          <button (click)="cerrarModal()" [disabled]="loadingService.isLoading()" class="text-gray-400 hover:text-red-500 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
+          </button>
+        </div>
+
+        <div class="overflow-y-auto p-6 bg-white">
+          <form [formGroup]="clienteForm" (ngSubmit)="guardarCliente()" class="space-y-6">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h4 class="col-span-2 text-sm font-black text-gray-400 uppercase tracking-widest border-b pb-1">Datos de la Empresa</h4>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">RAZÓN SOCIAL *</label>
+                <input formControlName="razonSocial" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('razonSocial')?.invalid && clienteForm.get('razonSocial')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none uppercase text-sm transition-all">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">NIT *</label>
+                <input formControlName="nit" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('nit')?.invalid && clienteForm.get('nit')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm transition-all">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">TIPO DE CLIENTE</label>
+                <select formControlName="tipoClienteId" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm outline-none bg-white">
+                  <option [ngValue]="null">Seleccione...</option>
+                  @for (tipo of catTiposCliente(); track tipo.id) { <option [value]="tipo.id">{{ tipo.nombre }}</option> }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1 tracking-tighter">TELÉFONO *</label>
+                <input formControlName="telefono" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('telefono')?.invalid && clienteForm.get('telefono')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm transition-all">
+              </div>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Emails (Separe con coma) *</label>
+                <input formControlName="email" type="text" placeholder="admin@empresa.com, pagos@empresa.com" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('email')?.invalid && clienteForm.get('email')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none lowercase text-sm transition-all">
+              </div>
+
+              <div class="col-span-2 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="md:col-span-1">
+                  <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Departamento *</label>
+                  <select formControlName="departamento" (change)="onDepartamentoChange($event)" [ngClass]="{'border-red-500 ring-1 ring-red-500': clienteForm.get('departamento')?.invalid && clienteForm.get('departamento')?.touched}" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm outline-none transition-all">
+                    <option value="">Seleccione...</option>
+                    @for (dpto of ubicacionService.departamentos(); track dpto) { <option [value]="dpto">{{ dpto }}</option> }
+                  </select>
+                </div>
+                <div class="md:col-span-1">
+                  <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Ciudad *</label>
+                  <select formControlName="ciudad" [ngClass]="{'border-red-500 ring-1 ring-red-500': clienteForm.get('ciudad')?.invalid && clienteForm.get('ciudad')?.touched}" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm outline-none transition-all">
+                    <option value="">Seleccione...</option>
+                    @for (ciudad of ciudadesDisponibles(); track ciudad) { <option [value]="ciudad">{{ ciudad }}</option> }
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Dirección Fiscal *</label>
+                  <input formControlName="direccion" type="text" placeholder="Calle, Avenida, Edificio..." [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('direccion')?.invalid && clienteForm.get('direccion')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm uppercase outline-none transition-all">
+                </div>
+              </div>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-tighter">Representante / Contacto Principal *</label>
+                <input formControlName="contactoPrincipal" type="text" [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-red-50/30': clienteForm.get('contactoPrincipal')?.invalid && clienteForm.get('contactoPrincipal')?.touched}" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm uppercase outline-none transition-all">
+              </div>
+            </div>
+
+            <div class="p-5 bg-blue-50/40 rounded-2xl border border-blue-100 grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+              <h4 class="col-span-4 text-xs font-black text-blue-700 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
+                Condiciones Comerciales y Facturación
+              </h4>
+
+              <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Tipo Contrato</label>
+                <select formControlName="tipoContratoId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                  <option [ngValue]="null">Ninguno</option>
+                  @for (cat of catTiposContrato(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Condición de Pago</label>
+                <select formControlName="condicionPagoId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                  <option [ngValue]="null">Seleccione...</option>
+                  @for (cat of catCondicionesPago(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Moneda</label>
+                <select formControlName="monedaId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-bold bg-white">
+                  <option [ngValue]="null">Seleccione...</option>
+                  @for (cat of catMonedas(); track cat.id) { <option [value]="cat.id">{{ cat.codigo }} - {{ cat.nombre }}</option> }
+                </select>
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Email Facturación</label>
+                <input formControlName="emailFacturacion" type="email" placeholder="facturacion@empresa.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs lowercase bg-white">
+              </div>
+              <div class="md:col-span-1">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Tipo Facturación</label>
+                <select formControlName="tipoFacturacionId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                  <option [ngValue]="null">Seleccione...</option>
+                  @for (cat of catTiposFacturacion(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
+                </select>
+              </div>
+              <div class="md:col-span-1 flex flex-col justify-end pb-1">
+                 <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                      <input type="checkbox" formControlName="requiereOC" class="w-3.5 h-3.5 text-blue-600 rounded">
+                      <span class="text-[10px] font-bold text-gray-600">REQ. OC</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                      <input type="checkbox" formControlName="requierePolizas" class="w-3.5 h-3.5 text-blue-600 rounded">
+                      <span class="text-[10px] font-bold text-gray-600">PÓLIZAS</span>
+                    </label>
+                 </div>
+              </div>
+
+              @if (clienteForm.get('requierePolizas')?.value) {
+                <div class="md:col-span-4 animate-fade-in">
+                  <label class="block text-[10px] font-bold text-blue-600 uppercase italic mb-1">Seleccione las Pólizas Exigidas (Use Ctrl/Cmd para seleccionar varias)</label>
+                  <select multiple formControlName="polizasIds" class="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white h-24 focus:ring-2 focus:ring-blue-400">
+                    @for (cat of catTiposPoliza(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-blue-50">{{ cat.nombre }}</option> }
+                  </select>
+                </div>
+              }
+            </div>
+
+            <div class="p-5 bg-orange-50/30 rounded-2xl border border-orange-100 grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+              <h4 class="col-span-4 text-xs font-black text-orange-700 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2"/></svg>
+                Información Operativa
+              </h4>
+
+              <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Regiones de Cobertura</label>
+                <select multiple formControlName="regionesIds" class="w-full px-3 py-2 border border-orange-200 rounded-lg text-xs bg-white h-24 focus:ring-2 focus:ring-orange-400">
+                  @for (cat of catRegiones(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-orange-50">{{ cat.nombre }}</option> }
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipos de Servicio</label>
+                <select multiple formControlName="serviciosIds" class="w-full px-3 py-2 border border-orange-200 rounded-lg text-xs bg-white h-24 focus:ring-2 focus:ring-orange-400">
+                  @for (cat of catTiposServicio(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-orange-50">{{ cat.nombre }}</option> }
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Prioridad de Atención</label>
+                <select formControlName="prioridadId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+                  <option [ngValue]="null">Seleccione...</option>
+                  @for (cat of catPrioridades(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">SLA (Días Respuesta)</label>
+                <input formControlName="slaDias" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+              </div>
+            </div>
+
+            <div class="mt-8">
+              <div class="flex justify-between items-center mb-4 border-b-2 border-blue-100 pb-2">
+                <h4 class="text-sm font-black text-[#1e3a8a] tracking-widest">Sedes Operativas / Sucursales</h4>
+                <button type="button" (click)="agregarSucursal()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
+                  AGREGAR SEDE
+                </button>
+              </div>
+
+              <div formArrayName="sucursales" class="space-y-6">
+                @for (sucursal of sucursales.controls; track $index; let i = $index) {
+                  <div [formGroupName]="i" class="p-5 border-2 border-gray-100 rounded-2xl bg-gray-50/30 relative animate-fade-in">
+
+                    <button type="button" (click)="eliminarSucursal(i)" class="absolute top-4 right-4 text-red-300 hover:text-red-500 transition-colors">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                    </button>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div class="md:col-span-3">
+                        <label class="text-[10px] font-black text-blue-400 uppercase tracking-tighter">Nombre Identificador de la Sede *</label>
+                        <input formControlName="nombre" placeholder="Ej: Centro de Distribución Norte" (input)="validarNombreSucursalUnico(i)"
+                               [ngClass]="{'border-red-500 ring-1 ring-red-500 bg-white': sucursal.get('nombre')?.invalid && sucursal.get('nombre')?.touched}"
+                               class="w-full px-3 py-2 border-b-2 border-gray-200 bg-transparent focus:border-blue-400 outline-none text-sm font-bold transition-all uppercase">
+                        @if (sucursal.get('nombre')?.errors?.['repetido'] && sucursal.get('nombre')?.touched) {
+                          <p class="text-[10px] text-red-600 font-bold mt-1 uppercase">Este nombre de sede ya existe en este cliente</p>
+                        }
+                      </div>
+
+                      <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Departamento *</label>
+                        <select formControlName="departamento" (change)="onDepartamentoSucursalChange($event, i)" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('departamento')?.invalid && sucursal.get('departamento')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs outline-none transition-all">
+                          <option value="">Seleccione...</option>
+                          @for (dpto of ubicacionService.departamentos(); track dpto) { <option [value]="dpto">{{ dpto }}</option> }
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Ciudad *</label>
+                        <select formControlName="ciudad" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('ciudad')?.invalid && sucursal.get('ciudad')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs outline-none transition-all">
+                          <option value="">Seleccione...</option>
+                          @for (ciudad of ciudadesSucursales()[i] || []; track ciudad) { <option [value]="ciudad">{{ ciudad }}</option> }
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Teléfono Sede *</label>
+                        <input formControlName="telefono" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('telefono')?.invalid && sucursal.get('telefono')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs transition-all">
+                      </div>
+
+                      <div class="md:col-span-3">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Dirección Exacta *</label>
+                        <input formControlName="direccion" [ngClass]="{'border-red-500 ring-1 ring-red-500': sucursal.get('direccion')?.invalid && sucursal.get('direccion')?.touched}" class="w-full px-3 py-2 border rounded-lg text-xs uppercase transition-all">
+                      </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-dashed border-gray-200">
+                      <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-gray-500 uppercase tracking-tighter italic">Contactos específicos</span>
+                        <button type="button" (click)="agregarContacto(i)" class="text-[10px] text-blue-600 font-black hover:text-blue-800 uppercase tracking-widest">+ Agregar Contacto</button>
+                      </div>
+
+                      <div formArrayName="contactos" class="space-y-2">
+                        @for (contacto of getContactos(i).controls; track $index; let j = $index) {
+                          <div [formGroupName]="j" class="flex gap-2 items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm animate-fade-in">
+                            <div class="flex-1">
+                                <input formControlName="nombre" placeholder="Nombre *" [ngClass]="{'ring-1 ring-red-500': contacto.get('nombre')?.invalid && contacto.get('nombre')?.touched}" class="w-full px-2 py-1.5 text-xs border-none bg-gray-50 rounded-lg outline-none focus:ring-1 focus:ring-blue-300 uppercase">
+                            </div>
+                            <div class="w-40">
+                                <input formControlName="cargo" placeholder="Cargo *" [ngClass]="{'ring-1 ring-red-500': contacto.get('cargo')?.invalid && contacto.get('cargo')?.touched}" class="w-full px-2 py-1.5 text-xs border-none bg-gray-50 rounded-lg outline-none focus:ring-1 focus:ring-blue-300 uppercase">
+                            </div>
+                            <div class="flex-1">
+                                <input formControlName="email" placeholder="Email *" [ngClass]="{'ring-1 ring-red-500': contacto.get('email')?.invalid && contacto.get('email')?.touched}" class="w-full px-2 py-1.5 text-xs border-none bg-gray-50 rounded-lg outline-none lowercase">
+                            </div>
+                            <button type="button" (click)="eliminarContacto(i, j)" class="text-gray-300 hover:text-red-500 transition-colors px-1">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="text-center py-8 border-2 border-dashed border-gray-100 rounded-2xl">
+                    <p class="text-xs text-gray-400 font-medium">No has añadido sedes adicionales. Se usará la ubicación base.</p>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="sticky bottom-0 bg-white pt-5 border-t border-gray-100 flex justify-end gap-3 pb-2 mt-auto">
+              <button type="button" (click)="cerrarModal()" [disabled]="loadingService.isLoading()"
+                      class="px-6 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors text-sm">Cancelar</button>
+              <button type="submit" [disabled]="loadingService.isLoading()"
+                      class="px-8 py-3 bg-[#1e3a8a] text-white font-extrabold rounded-xl shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2 text-sm">
+                @if (loadingService.isLoading()) {
+                  <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span><span>Guardando...</span>
+                } @else {
+                  <span>{{ clienteIdEnEdicion() ? 'Guardar Cambios' : 'Crear Cliente Completo' }}</span>
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+</div>

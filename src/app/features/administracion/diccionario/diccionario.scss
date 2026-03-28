@@ -1,0 +1,16 @@
+/* Personalización de scrollbars internas para las cards */
+.overflow-y-auto {
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+  }
+}

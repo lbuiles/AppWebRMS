@@ -1,0 +1,65 @@
+<div class="space-y-8 animate-fade-in-up font-sans h-full flex flex-col">
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#1e3a8a]"></div>
+
+    <div class="flex items-center gap-4">
+      <div class="bg-blue-50 p-3 rounded-xl text-[#1e3a8a] shadow-inner">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+      </div>
+      <div>
+        <h2 class="text-2xl font-black text-[#1e3a8a] tracking-wide uppercase">Divisiones Operativas</h2>
+        <p class="text-xs text-gray-500 font-medium mt-1">Selecciona la línea de negocio para gestionar sus proyectos</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
+
+    @for (cat of categorias; track cat.id) {
+      <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col hover:shadow-2xl transition-all duration-500 group relative overflow-hidden cursor-pointer hover:-translate-y-2">
+
+        <svg class="absolute -right-10 -bottom-10 w-64 h-64 opacity-[0.03] group-hover:scale-110 group-hover:rotate-12 transition-all duration-700" [ngClass]="cat.colorTema" fill="currentColor" viewBox="0 0 24 24">
+          <path [attr.d]="cat.icono"></path>
+        </svg>
+
+        <div class="relative z-10 flex-1">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-8 shadow-inner transition-transform group-hover:scale-110 duration-300" [ngClass]="[cat.bgTema, cat.colorTema]">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" [attr.d]="cat.icono"></path>
+            </svg>
+          </div>
+
+          <h3 class="text-3xl font-black text-gray-800 leading-tight mb-4 group-hover:text-[#1e3a8a] transition-colors">
+            {{ cat.nombre }}
+          </h3>
+          <p class="text-gray-500 font-medium leading-relaxed h-20 line-clamp-3">
+            {{ cat.descripcion }}
+          </p>
+
+          <div class="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-gray-100">
+            <div>
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Proyectos Activos</p>
+              <p class="text-2xl font-black text-gray-800">{{ cat.cantidadActivos }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Valor Contratado</p>
+              <p class="text-lg font-black text-gray-800 truncate" [title]="cat.presupuestoTotal | currency:'USD':'symbol':'1.0-0'">
+                {{ cat.presupuestoTotal | currency:'USD':'symbol':'1.0-0' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 relative z-10">
+          <button [routerLink]="['/proyectos', cat.id]" class="w-full flex items-center justify-center gap-3 bg-gray-50 border border-gray-200 text-gray-600 py-4 rounded-xl font-bold group-hover:bg-[#1e3a8a] group-hover:text-white group-hover:border-[#1e3a8a] transition-all duration-300 shadow-sm">
+            Ingresar al Portafolio
+            <svg class="w-5 h-5 transform group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+          </button>
+        </div>
+
+      </div>
+    }
+
+  </div>
+</div>

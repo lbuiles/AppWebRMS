@@ -1,1 +1,101 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #f3f4f6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+/* ================= ANIMACIONES DE CLIENTES CORREGIDAS ================= */
+/* Animación hacia la izquierda */
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); } /* Se detiene justo a la mitad para reiniciar el loop */
+}
+
+/* Animación hacia la derecha */
+@keyframes scroll-right {
+  0% { transform: translateX(-50%); } /* Empieza desplazado para que parezca que viene de afuera */
+  100% { transform: translateX(0); }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 40s linear infinite;
+}
+
+.animate-scroll-right {
+  animation: scroll-right 40s linear infinite;
+}
+
+/* Evitar pausas al pasar el mouse (opcional) o mantenerlo */
+.animate-scroll-left:hover,
+.animate-scroll-right:hover {
+  animation-play-state: paused;
+}
+
+/* ================= EFECTO DE BRILLO EXACTO Y LIMPIO ================= */
+.brillo-r, .brillo-m, .brillo-s {
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* El truco de oro: Hacemos el fondo 4 veces más grande para esconder el degradado */
+  background-size: 400% 100%;
+  background-repeat: no-repeat;
+  background-position: 100% center; /* Lo mantenemos en la zona sólida por defecto */
+}
+
+/* R y S: 100% AMARILLO sólido, con una franja BLANCA en el puro centro */
+.brillo-r, .brillo-s {
+  background-image: linear-gradient(120deg,
+    #ffb31c 0%,
+    #ffb31c 45%,
+    #ffffff 50%, /* El destello blanco */
+    #ffb31c 55%,
+    #ffb31c 100%
+  );
+}
+
+/* M: 100% BLANCA sólida, con una franja AMARILLA en el puro centro */
+.brillo-m {
+  background-image: linear-gradient(120deg,
+    #ffffff 0%,
+    #ffffff 45%,
+    #ffb31c 50%, /* El destello amarillo corporativo */
+    #ffffff 55%,
+    #ffffff 100%
+  );
+}
+
+/* Animaciones: El rayo entra con un retraso en cada letra para hacer el efecto de "ola" */
+.brillo-r { animation: rayo-luz 6s infinite linear; }
+.brillo-m { animation: rayo-luz 6s infinite linear; animation-delay: 0.15s; }
+.brillo-s { animation: rayo-luz 6s infinite linear; animation-delay: 0.3s; }
+
+/* Movemos el lienzo gigante de izquierda (100%) a derecha (0%) */
+@keyframes rayo-luz {
+  0% { background-position: 100% center; }   /* El brillo espera escondido a la izquierda */
+  15% { background-position: 0% center; }    /* Cruza a la velocidad de la luz hacia la derecha */
+  100% { background-position: 0% center; }   /* Se queda en la zona de color puro y sólido el resto del tiempo */
+}
+
+/* Animación de desvanecimiento suave */
+@keyframes cross-fade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; } /* Entra suave en el primer 10% del tiempo */
+  33%  { opacity: 1; } /* Se mantiene visible hasta el 33% */
+  43%  { opacity: 0; } /* Se desvanece mientras la siguiente ya está entrando */
+  100% { opacity: 0; }
+}
+
+/* Aplicamos la misma animación a todas, pero con retrasos escalonados */
+.animate-fade-carousel {
+  animation: cross-fade 18s infinite; /* 18 segundos ciclo total (6 seg por imagen) */
+  animation-fill-mode: both;
+}
+
+.carousel-1 { animation-delay: 0s; }
+.carousel-2 { animation-delay: 6s; }
+.carousel-3 { animation-delay: 12s; }

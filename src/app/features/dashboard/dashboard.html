@@ -1,0 +1,156 @@
+<div class="space-y-8 animate-fade-in-up">
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-4 items-center justify-between relative overflow-hidden">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#1e3a8a]"></div>
+
+    <div class="w-full lg:w-auto flex items-center gap-3">
+      <div class="bg-blue-50 p-2 rounded-lg text-[#1e3a8a]">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-black text-[#1e3a8a] uppercase tracking-wide">Tracker de Seguimiento</h2>
+        <p class="text-xs text-gray-500 font-medium">RMS Diseño y Construcción SAS</p>
+      </div>
+    </div>
+
+    <div class="w-full lg:w-auto flex flex-wrap gap-3 flex-1 lg:justify-end">
+      <select class="border border-gray-200 bg-gray-50 text-gray-700 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ffb31c] focus:bg-white transition-all font-medium cursor-pointer shadow-sm">
+        <option>Centro de costos</option>
+      </select>
+      <select class="border border-gray-200 bg-gray-50 text-gray-700 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ffb31c] focus:bg-white transition-all font-medium cursor-pointer shadow-sm">
+        <option>Cliente</option>
+      </select>
+      <select class="border border-gray-200 bg-gray-50 text-gray-700 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ffb31c] focus:bg-white transition-all font-medium cursor-pointer shadow-sm">
+        <option>Área / Responsable</option>
+      </select>
+      <select class="border border-gray-200 bg-gray-50 text-gray-700 p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#ffb31c] focus:bg-white transition-all font-medium cursor-pointer shadow-sm">
+        <option>Fecha</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-[#1e3a8a] relative overflow-hidden group hover:shadow-md transition-shadow">
+      <div class="relative z-10">
+        <h3 class="text-4xl font-black text-gray-800">42</h3>
+        <p class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wider">Proyectos Activos</p>
+      </div>
+      <svg class="absolute -right-4 -bottom-4 w-24 h-24 text-gray-50 opacity-50 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-red-500 relative overflow-hidden group hover:shadow-md transition-shadow">
+      <div class="relative z-10">
+        <h3 class="text-4xl font-black text-red-600">8</h3>
+        <p class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wider">Con Alerta</p>
+      </div>
+      <svg class="absolute -right-4 -bottom-4 w-24 h-24 text-red-50 opacity-50 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-green-500 relative overflow-hidden group hover:shadow-md transition-shadow">
+      <div class="relative z-10">
+        <h3 class="text-4xl font-black text-gray-800">50</h3>
+        <p class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wider">Finalizados</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-[#ffb31c] relative overflow-hidden group hover:shadow-md transition-shadow col-span-1 xl:col-span-2">
+      <div class="relative z-10">
+        <h3 class="text-3xl font-black text-gray-800">$125,680,000</h3>
+        <p class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wider">Valor PO Contratado</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-[#1e3a8a] relative overflow-hidden group hover:shadow-md transition-shadow">
+      <div class="relative z-10">
+        <h3 class="text-3xl font-black text-gray-800">15</h3>
+        <p class="text-xs text-gray-500 mt-1 font-semibold uppercase tracking-wider">Sin PO</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-96 flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-sm font-black text-[#1e3a8a] uppercase tracking-wide">Facturación general</h3>
+      </div>
+      <div class="flex-1 relative">
+        <canvas canvasStyle="width: 100%; height: 100%;" baseChart [data]="facturacionData" [options]="facturacionOptions" [type]="'bar'"></canvas>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-96 flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-sm font-black text-[#1e3a8a] uppercase tracking-wide">Distribución de estados</h3>
+      </div>
+      <div class="flex-1 relative min-h-0 pb-4">
+        <canvas canvasStyle="width: 100%; height: 100%;" baseChart [data]="estadosData" [options]="estadosOptions" [type]="'doughnut'"></canvas>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-96 flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-sm font-black text-[#1e3a8a] uppercase tracking-wide">Utilidad por proyecto</h3>
+      </div>
+      <div class="flex-1 relative">
+        <canvas canvasStyle="width: 100%; height: 100%;" baseChart [data]="utilidadData" [options]="utilidadOptions" [type]="'bar'"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+      <h3 class="text-lg font-black text-[#1e3a8a] uppercase tracking-wide">Resumen de Proyectos</h3>
+      <button class="bg-white border border-gray-200 text-[#1e3a8a] px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 shadow-sm transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Exportar
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left whitespace-nowrap">
+        <thead class="bg-[#1e3a8a] text-white text-xs uppercase font-bold tracking-wider">
+          <tr>
+            <th class="px-6 py-5 rounded-tl-lg">Código Sitio</th>
+            <th class="px-6 py-5">Proyecto</th>
+            <th class="px-6 py-5">Cliente</th>
+            <th class="px-6 py-5 text-center">Estado</th>
+            <th class="px-6 py-5 text-center">No. PO</th>
+            <th class="px-6 py-5 text-right">Valor PO</th>
+            <th class="px-6 py-5 text-right">Facturado</th>
+            <th class="px-6 py-5 text-right">Gasto</th>
+            <th class="px-6 py-5 rounded-tr-lg">Responsable</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 divide-y divide-gray-100">
+          @for (p of proyectos; track p.codigo) {
+            <tr class="hover:bg-blue-50/50 transition-colors group cursor-default">
+              <td class="px-6 py-4 font-black text-[#1e3a8a]">{{ p.codigo }}</td>
+              <td class="px-6 py-4 font-medium">{{ p.nombre }}</td>
+              <td class="px-6 py-4">{{ p.cliente }}</td>
+              <td class="px-6 py-4 text-center">
+                <span class="px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-wider shadow-sm border"
+                      [class.bg-blue-100]="p.estado === 'En ejecución'" [class.text-blue-800]="p.estado === 'En ejecución'" [class.border-blue-200]="p.estado === 'En ejecución'"
+                      [class.bg-yellow-100]="p.estado === 'Pendiente'" [class.text-yellow-800]="p.estado === 'Pendiente'" [class.border-yellow-200]="p.estado === 'Pendiente'"
+                      [class.bg-green-100]="p.estado === 'Finalizado'" [class.text-green-800]="p.estado === 'Finalizado'" [class.border-green-200]="p.estado === 'Finalizado'"
+                      [class.bg-red-100]="p.estado === 'Cancelado'" [class.text-red-800]="p.estado === 'Cancelado'" [class.border-red-200]="p.estado === 'Cancelado'">
+                  {{ p.estado }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-center font-bold text-gray-500">{{ p.noPO }}</td>
+              <td class="px-6 py-4 text-right font-bold text-gray-800">{{ p.valorPO | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="px-6 py-4 text-right font-bold text-green-600">{{ p.facturado | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="px-6 py-4 text-right font-bold text-red-500">{{ p.gasto | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="px-6 py-4 font-medium text-gray-500 flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                  {{ p.responsable.charAt(0) }}
+                </div>
+                {{ p.responsable }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
