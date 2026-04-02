@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Apollo, gql } from 'apollo-angular';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../../environments/environment'; // Verifica que la ruta sea correcta
 
 // --- QUERIES Y MUTATIONS ---
 
@@ -13,6 +15,7 @@ const GET_CLIENTES = gql`
       clientePolizas { tipoPolizaId }
       clienteServicios { tipoServicioId }
       clienteRegiones { regionId }
+      documentos { tipoDocumento url }
       sucursales {
         nombre departamento ciudad direccion
         contactos { nombre cargo email telefono }
@@ -69,6 +72,7 @@ const DELETE_CLIENTE = gql`
 })
 export class ClienteService {
   private apollo = inject(Apollo);
+  private http = inject(HttpClient); // Inyectamos el cliente HTTP para la carga de archivos
 
   constructor() { }
 
@@ -120,5 +124,15 @@ export class ClienteService {
       mutation: ACTIVATE_CLIENTE,
       variables: { id }
     }).pipe(map((result: any) => result.data?.activateCliente));
+  }
+
+  // --- NUEVO: MÉTODO PARA SUBIR ARCHIVO VÍA REST ---
+  subirDocumento(archivo: File, modulo: string): Observable<{url: string}> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('modulo', modulo);
+
+    // Usamos environment.restUrl para que se adapte automáticamente en dev y prod
+    return this.http.post<{url: string}>(`${environment.restUrl}/upload/documento`, formData);
   }
 }

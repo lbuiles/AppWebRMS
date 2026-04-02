@@ -15,6 +15,7 @@ import { AdministracionComponent } from './features/administracion/administracio
 import { ClientesComponent } from './features/clientes/clientes';
 import { UsuariosComponent } from './features/administracion/usuarios/usuarios';
 import { Diccionario } from './features/administracion/diccionario/diccionario';
+import { TrackerListComponent } from './features/proyectos/tracker-list/tracker-list';
 
 export const routes: Routes = [
   // --- ZONA PÚBLICA ---
@@ -68,6 +69,12 @@ export const routes: Routes = [
       {
         path: 'proyectos',
         component: ProyectosComponent,
+        canActivate: [permissionGuard],
+        data: { permiso: 'proyectos' }
+      },
+      {
+        path: 'proyectos/:linea',
+        component: TrackerListComponent,
         canActivate: [permissionGuard],
         data: { permiso: 'proyectos' }
       },

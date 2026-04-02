@@ -1,12 +1,25 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in font-sans">
+<div class="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in font-sans h-full flex flex-col">
 
-  <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-200 pb-5">
+  <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-200 pb-5 shrink-0">
     <div>
       <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio de Clientes</h1>
       <p class="text-gray-500 mt-1 text-sm font-medium">Gestiona las empresas contratantes, sus sedes y representantes.</p>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+    <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto items-center">
+
+      <button type="button" (click)="mostrarInactivos.set(!mostrarInactivos())"
+              class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm">
+        <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300"
+             [ngClass]="mostrarInactivos() ? 'bg-red-500' : 'bg-gray-300'">
+          <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-300 shadow-sm"
+                [ngClass]="mostrarInactivos() ? 'translate-x-4.5' : 'translate-x-1'"></span>
+        </div>
+        <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+          Ver Inactivos
+        </span>
+      </button>
+
       <div class="relative w-full sm:w-72">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,13 +37,14 @@
         </svg>
         Nuevo Cliente
       </button>
+
     </div>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="overflow-x-auto">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col min-h-0">
+    <div class="overflow-x-auto h-full">
       <table class="w-full text-left text-sm text-gray-600">
-        <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-100 uppercase text-[11px] tracking-[0.12em]">
+        <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-100 uppercase text-[11px] tracking-[0.12em] sticky top-0 z-10">
           <tr>
             <th class="px-6 py-4">Razón Social / NIT</th>
             <th class="px-6 py-4">Contacto Principal</th>
@@ -209,6 +223,23 @@
           </div>
 
           <div class="space-y-4">
+            <h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Documentación Legal</h4>
+            @if(clienteSel.documentos && clienteSel.documentos.length > 0) {
+              <div class="grid grid-cols-2 gap-3">
+                @for(doc of clienteSel.documentos; track doc.url) {
+                  <a [href]="serverUrl + doc.url" target="_blank"
+                     class="flex flex-col items-center justify-center p-3 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-colors group cursor-pointer">
+                    <svg class="w-8 h-8 text-gray-400 group-hover:text-blue-600 transition-colors mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight">{{ doc.tipoDocumento }}</span>
+                  </a>
+                }
+              </div>
+            } @else {
+              <p class="text-xs text-gray-400 italic font-medium">El cliente no tiene documentos registrados.</p>
+            }
+          </div>
+
+          <div class="space-y-4">
             <h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1 flex justify-between">
               <span>Sedes / Sucursales</span>
               <span class="text-blue-600">{{ clienteSel.sucursales?.length || 0 }} Registradas</span>
@@ -263,7 +294,6 @@
                   [disabled]="clienteSel.estado === 'INACTIVO'"
                   [ngClass]="clienteSel.estado === 'ACTIVO' ? 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md' : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
                   class="w-full py-3.5 rounded-xl font-bold transition-all uppercase text-[11px] tracking-widest flex items-center justify-center gap-2">
-
             @if (clienteSel.estado === 'ACTIVO') {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
               <span>Editar Ficha Completa</span>
@@ -273,9 +303,9 @@
             }
           </button>
         </div>
-              </div>
-            </div>
-          }
+      </div>
+    </div>
+  }
 
   @if (modalAbierto()) {
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -386,12 +416,25 @@
                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" formControlName="requiereOC" class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">REQ. OC</span></label>
                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" formControlName="requierePolizas" class="w-4 h-4 text-blue-600 rounded"><span class="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">PÓLIZAS</span></label>
               </div>
+
               @if (clienteForm.get('requierePolizas')?.value) {
                 <div class="md:col-span-4 animate-fade-in pt-2">
-                  <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5 italic">Seleccione Pólizas Exigidas</label>
-                  <select multiple formControlName="polizasIds" class="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs font-semibold bg-white h-24 outline-none">
-                    @for (cat of catTiposPoliza(); track cat.id) { <option [value]="cat.id" class="py-1 px-2 mb-0.5 rounded hover:bg-blue-50 cursor-pointer">{{ cat.nombre }}</option> }
-                  </select>
+                  <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2 italic">Seleccione Pólizas Exigidas</label>
+                  <div class="flex flex-wrap gap-2 p-3 bg-white rounded-xl border border-blue-100">
+                    @for (cat of catTiposPoliza(); track cat.id) {
+                      <button type="button"
+                              (click)="toggleSeleccion('polizas', cat.id)"
+                              [class]="seleccionados.polizas().includes(cat.id)
+                                ? 'bg-blue-600 text-white border-blue-700 shadow-sm ring-1 ring-blue-600/30'
+                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'"
+                              class="px-3 py-1.5 rounded border text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                        @if (seleccionados.polizas().includes(cat.id)) {
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                        }
+                        {{ cat.nombre }}
+                      </button>
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -401,28 +444,103 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2.5"/></svg>
                 Configuración Operativa
               </h4>
-              <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Regiones Cobertura</label>
-                <select multiple formControlName="regionesIds" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold h-28 outline-none focus:ring-1 focus:ring-slate-400">
-                  @for (cat of catRegiones(); track cat.id) { <option [value]="cat.id" class="p-1.5 rounded hover:bg-slate-100 cursor-pointer">{{ cat.nombre }}</option> }
-                </select>
+
+              <div class="md:col-span-4 mb-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Servicios Contratados</label>
+                <div class="flex flex-wrap gap-2 p-4 bg-white rounded-xl border border-slate-200 shadow-inner shadow-slate-50">
+                  @for (cat of catTiposServicio(); track cat.id) {
+                    <button type="button"
+                            (click)="toggleSeleccion('servicios', cat.id)"
+                            [class]="seleccionados.servicios().includes(cat.id)
+                              ? 'bg-slate-700 text-white border-slate-800 shadow-md ring-2 ring-slate-700/20'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'"
+                            class="px-4 py-2 rounded-lg border text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer">
+                      @if (seleccionados.servicios().includes(cat.id)) {
+                        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                      }
+                      {{ cat.nombre }}
+                    </button>
+                  }
+                </div>
               </div>
-              <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Servicios Contratados</label>
-                <select multiple formControlName="serviciosIds" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold h-28 outline-none focus:ring-1 focus:ring-slate-400">
-                  @for (cat of catTiposServicio(); track cat.id) { <option [value]="cat.id" class="p-1.5 rounded hover:bg-slate-100 cursor-pointer">{{ cat.nombre }}</option> }
-                </select>
+
+              <div class="md:col-span-4 mb-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Regiones de Cobertura</label>
+                <div class="flex flex-wrap gap-2 p-4 bg-white rounded-xl border border-slate-200 shadow-inner shadow-slate-50">
+                  @for (cat of catRegiones(); track cat.id) {
+                    <button type="button"
+                            (click)="toggleSeleccion('regiones', cat.id)"
+                            [class]="seleccionados.regiones().includes(cat.id)
+                              ? 'bg-slate-700 text-white border-slate-800 shadow-md ring-2 ring-slate-700/20'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'"
+                            class="px-4 py-2 rounded-lg border text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer">
+                      @if (seleccionados.regiones().includes(cat.id)) {
+                        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                      }
+                      {{ cat.nombre }}
+                    </button>
+                  }
+                </div>
               </div>
-              <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Prioridad Atención</label>
-                <select formControlName="prioridadId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none focus:border-slate-400">
-                  <option [ngValue]="null">Seleccione...</option>
-                  @for (cat of catPrioridades(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
-                </select>
+
+              <div class="md:col-span-2 space-y-4">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Prioridad Atención</label>
+                  <select formControlName="prioridadId" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none focus:border-slate-400">
+                    <option [ngValue]="null">Seleccione...</option>
+                    @for (cat of catPrioridades(); track cat.id) { <option [value]="cat.id">{{ cat.nombre }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">SLA (Días)</label>
+                  <input formControlName="slaDias" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none focus:border-slate-400">
+                </div>
               </div>
-              <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">SLA (Días)</label>
-                <input formControlName="slaDias" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold outline-none focus:border-slate-400">
+            </div>
+
+            <div class="mt-8">
+              <div class="flex justify-between items-center mb-4 border-b-2 border-blue-100 pb-2">
+                <h4 class="text-[11px] font-bold text-[#1e3a8a] uppercase tracking-[0.2em]">Documentos Corporativos</h4>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="p-5 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 flex flex-col gap-3">
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">1. Seleccionar Tipo</label>
+                  <select #tipoDocSelect class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+                    <option value="">Seleccione un tipo...</option>
+                    @for(tipo of tiposDeDocumento; track tipo) {
+                      <option [value]="tipo">{{ tipo }}</option>
+                    }
+                  </select>
+
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-2">2. Adjuntar Archivo (PDF, DOCX)</label>
+                  <input type="file" (change)="onArchivoSeleccionado($event, tipoDocSelect)"
+                         class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#1e3a8a] file:text-white hover:file:bg-blue-800 cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
+                </div>
+
+                <div class="p-5 border border-gray-100 rounded-2xl bg-white shadow-sm flex flex-col gap-3">
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Documentos Anexados ({{ documentosCargados().length }})</label>
+
+                  @if(documentosCargados().length === 0) {
+                    <div class="text-center py-6 text-xs text-gray-400 font-medium italic">
+                      Aún no hay documentos adjuntos.
+                    </div>
+                  } @else {
+                    <div class="space-y-2 overflow-y-auto max-h-40 pr-2">
+                      @for(doc of documentosCargados(); track doc.url; let i = $index) {
+                        <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-xl animate-fade-in">
+                          <div class="flex items-center gap-3 overflow-hidden">
+                            <svg class="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="text-xs font-bold text-blue-900 truncate">{{ doc.tipoDocumento }}</span>
+                          </div>
+                          <button type="button" (click)="eliminarDocumento(i)" class="text-gray-400 hover:text-red-500 p-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
               </div>
             </div>
 
