@@ -34,6 +34,7 @@ export class UsuariosComponent implements OnInit {
   public loading: boolean = true;
   public showModal: boolean = false;
   public isEditing: boolean = false;
+  public mostrarInactivos: boolean = false;
 
   // Formulario
   public usuarioIdParaEditar: string | null = null;
@@ -50,7 +51,7 @@ export class UsuariosComponent implements OnInit {
     this.usuarioService.getUsuarios().subscribe({
       next: (data) => {
         this.usuariosOriginales = data;
-        this.usuariosFiltrados = data;
+        this.filtrarUsuarios();
         this.loading = false;
       },
       error: () => this.loading = false
@@ -164,8 +165,9 @@ export class UsuariosComponent implements OnInit {
         this.cerrarModal();
       },
       error: (err) => {
-        // CAPTURA DE ERROR DE PERMISOS
-        if (err.message?.includes('not authorized') || err.message?.includes('permission')) {
+        const errorString = JSON.stringify(err).toLowerCase();
+
+        if (errorString.includes('not authorized') || errorString.includes('not_authorized') || errorString.includes('permission')) {
           Swal.fire({
             icon: 'error',
             title: 'Acceso Denegado',
@@ -174,6 +176,7 @@ export class UsuariosComponent implements OnInit {
           });
         } else {
           Swal.fire('Error', 'No se pudo procesar la solicitud. Intente de nuevo.', 'error');
+          console.error("Error GraphQL original:", err); // Útil para que lo veas en consola
         }
       }
     });
@@ -181,24 +184,58 @@ export class UsuariosComponent implements OnInit {
 
   toggleEstado(u: UsuarioData): void {
     const esActivo = u.estado === 'ACTIVO';
-    const op = esActivo ? this.usuarioService.deleteUsuario(u.id) : this.usuarioService.activateUsuario(u.id);
+    const accionText = esActivo ? 'inactivar' : 'activar';
+    const colorBoton = esActivo ? '#ef4444' : '#10b981';
 
-    op.subscribe({
-      next: () => this.listar(),
-      error: (err) => {
-        if (err.message?.includes('not authorized')) {
-          Swal.fire('Acceso Denegado', 'No tienes permiso para cambiar el estado de colaboradores.', 'error');
-        } else {
-          Swal.fire('Error', 'No se pudo cambiar el estado.', 'error');
-        }
+    Swal.fire({
+      title: `¿Estás seguro?`,
+      text: `Vas a ${accionText} al colaborador ${u.nombre}.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: colorBoton,
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: `Sí, ${accionText}`,
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+      if (result.isConfirmed) {
+        const op = esActivo ? this.usuarioService.deleteUsuario(u.id) : this.usuarioService.activateUsuario(u.id);
+
+        op.subscribe({
+          next: () => {
+            Swal.fire({ icon: 'success', title: 'Estado actualizado', timer: 1500, showConfirmButton: false });
+            this.listar();
+          },
+          error: (err) => {
+            const errorString = JSON.stringify(err).toLowerCase();
+
+            if (errorString.includes('not authorized') || errorString.includes('not_authorized') || errorString.includes('permission')) {
+              Swal.fire('Acceso Denegado', 'No tienes permiso para cambiar el estado de colaboradores.', 'error');
+            } else {
+              Swal.fire('Error', 'No se pudo cambiar el estado.', 'error');
+              console.error("Error GraphQL original:", err);
+            }
+          }
+        });
       }
+
     });
+  }
+
+  toggleMostrarInactivos(): void {
+    this.mostrarInactivos = !this.mostrarInactivos;
+    this.filtrarUsuarios();
   }
 
   filtrarUsuarios(): void {
     const term = this.searchTerm.toLowerCase();
-    this.usuariosFiltrados = this.usuariosOriginales.filter(u =>
-      u.nombre.toLowerCase().includes(term) || u.email.toLowerCase().includes(term)
-    );
+    this.usuariosFiltrados = this.usuariosOriginales.filter(u => {
+      // 1. Filtro por texto
+      const coincideTexto = u.nombre.toLowerCase().includes(term) || u.email.toLowerCase().includes(term);
+      // 2. Filtro por estado
+      const coincideEstado = this.mostrarInactivos ? true : u.estado === 'ACTIVO';
+
+      return coincideTexto && coincideEstado;
+    });
   }
 }

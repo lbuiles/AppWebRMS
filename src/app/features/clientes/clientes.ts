@@ -6,9 +6,11 @@ import { ClienteService } from '../../core/services/cliente';
 import Swal from 'sweetalert2';
 import { LoadingService } from '../../core/services/loading';
 import { AuthService } from '../../core/auth/auth.service';
+import { environment } from '../../../environments/environment';
 
 export interface Contacto { nombre: string; cargo?: string; email?: string; telefono?: string; }
 export interface Sucursal { nombre: string; departamento: string; ciudad: string; direccion: string; telefono: string; contactos?: Contacto[]; }
+export interface Documento { tipoDocumento: string; url: string; }
 
 export interface Cliente {
   id: string; razonSocial: string; nit: string; departamento: string; ciudad: string;
@@ -19,6 +21,7 @@ export interface Cliente {
   clientePolizas?: { tipoPolizaId: number }[];
   clienteServicios?: { tipoServicioId: number }[];
   clienteRegiones?: { regionId: number }[];
+  documentos?: Documento[];
   sucursales?: Sucursal[];
 }
 
@@ -36,14 +39,26 @@ export class ClientesComponent implements OnInit {
   private clienteService = inject(ClienteService);
   public loadingService = inject(LoadingService);
   public authService = inject(AuthService);
+  public serverUrl = environment.production ? '' : 'http://localhost:5180';
 
   // --- SEÑALES DE ESTADO ---
   public clientes = signal<Cliente[]>([]);
   public clienteIdEnEdicion = signal<string | null>(null);
   public modalAbierto = signal<boolean>(false);
-  public clienteSeleccionado = signal<Cliente | null>(null); // Para el Panel Lateral
+  public clienteSeleccionado = signal<Cliente | null>(null);
   public ciudadesDisponibles = signal<string[]>([]);
   public terminoBusqueda = signal<string>('');
+  public mostrarInactivos = signal<boolean>(false);
+  // --- SEÑALES PARA SELECCIÓN MÚLTIPLE (CHIPS) ---
+  public seleccionados = {
+    servicios: signal<number[]>([]),
+    polizas: signal<number[]>([]),
+    regiones: signal<number[]>([])
+  };
+
+  // --- SEÑALES PARA DOCUMENTOS ---
+  public documentosCargados = signal<Documento[]>([]);
+  public tiposDeDocumento = ['RUT', 'Cámara de Comercio', 'Cédula Representante Legal', 'Certificación Bancaria', 'Póliza', 'Otro'];
 
   // --- SEÑALES PARA CATÁLOGOS ---
   public catTiposCliente = signal<any[]>([]);
@@ -75,9 +90,7 @@ export class ClientesComponent implements OnInit {
     requierePolizas: [false],
     prioridadId: [null],
     slaDias: [0],
-    regionesIds: [[]],
-    serviciosIds: [[]],
-    polizasIds: [[]],
+    // regionesIds ya no es necesario aquí, lo maneja la señal
     sucursales: this.fb.array([])
   });
 
@@ -87,6 +100,16 @@ export class ClientesComponent implements OnInit {
   ngOnInit() {
     this.cargarCatalogos();
     this.cargarClientes();
+  }
+
+  // --- LÓGICA DE SELECCIÓN MÚLTIPLE (CHIPS) ---
+  toggleSeleccion(tipo: 'servicios' | 'polizas' | 'regiones', id: number) {
+    const listaActual = this.seleccionados[tipo]();
+    if (listaActual.includes(id)) {
+      this.seleccionados[tipo].set(listaActual.filter(item => item !== id));
+    } else {
+      this.seleccionados[tipo].set([...listaActual, id]);
+    }
   }
 
   // --- MÉTODOS DE CARGA ---
@@ -149,7 +172,13 @@ export class ClientesComponent implements OnInit {
     this.cerrarDetalle();
     this.clienteIdEnEdicion.set(null);
     this.sucursales.clear();
-    this.clienteForm.reset({ requiereOC: false, requierePolizas: false, slaDias: 0, regionesIds: [], serviciosIds: [], polizasIds: [] });
+
+    this.seleccionados.servicios.set([]);
+    this.seleccionados.polizas.set([]);
+    this.seleccionados.regiones.set([]);
+    this.documentosCargados.set([]);
+
+    this.clienteForm.reset({ requiereOC: false, requierePolizas: false, slaDias: 0 });
     this.clienteForm.get('ciudad')?.disable();
     this.modalAbierto.set(true);
   }
@@ -169,6 +198,11 @@ export class ClientesComponent implements OnInit {
     this.clienteIdEnEdicion.set(cliente.id);
     this.sucursales.clear();
     this.ciudadesSucursales.set({});
+
+    this.seleccionados.servicios.set(cliente.clienteServicios?.map(s => s.tipoServicioId) || []);
+    this.seleccionados.polizas.set(cliente.clientePolizas?.map(p => p.tipoPolizaId) || []);
+    this.seleccionados.regiones.set(cliente.clienteRegiones?.map(r => r.regionId) || []);
+    this.documentosCargados.set(cliente.documentos || []);
 
     if (cliente.sucursales) {
       cliente.sucursales.forEach((suc, sIdx) => {
@@ -194,10 +228,8 @@ export class ClientesComponent implements OnInit {
       requiereOC: cliente.condiciones?.requiereOC || false,
       requierePolizas: cliente.condiciones?.requierePolizas || false,
       prioridadId: cliente.operacion?.prioridadId || null,
-      slaDias: cliente.operacion?.slaDias || 0,
-      polizasIds: cliente.clientePolizas?.map(p => p.tipoPolizaId) || [],
-      serviciosIds: cliente.clienteServicios?.map(s => s.tipoServicioId) || [],
-      regionesIds: cliente.clienteRegiones?.map(r => r.regionId) || []
+      slaDias: cliente.operacion?.slaDias || 0
+      // regionesIds eliminado de aquí, ya está en la señal
     };
 
     this.clienteForm.patchValue(formData);
@@ -206,8 +238,56 @@ export class ClientesComponent implements OnInit {
     this.modalAbierto.set(true);
   }
 
-  guardarCliente() {
+  // --- LÓGICA DE DOCUMENTOS ---
+  onArchivoSeleccionado(event: any, tipoSelect: HTMLSelectElement) {
+    const file = event.target.files[0] as File;
+    const tipoDocumento = tipoSelect.value;
 
+    if (!file) return;
+
+    // --- NUEVA VALIDACIÓN DE TAMAÑO (4MB) ---
+    const MAX_MEGABYTES = 4;
+    const MAX_BYTES = MAX_MEGABYTES * 1024 * 1024;
+
+    if (file.size > MAX_BYTES) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Archivo muy pesado',
+        text: `El documento excede el límite permitido de ${MAX_MEGABYTES}MB. Por favor, reduce su tamaño e intenta de nuevo.`,
+        confirmButtonColor: '#1e3a8a'
+      });
+      event.target.value = ''; // Limpiamos el input para que no se quede colgado
+      return; // Detenemos la ejecución aquí
+    }
+    // ----------------------------------------
+
+    if (!tipoDocumento) {
+      Swal.fire('Atención', 'Selecciona el tipo de documento antes de subir el archivo', 'warning');
+      event.target.value = '';
+      return;
+    }
+
+    this.loadingService.show();
+    this.clienteService.subirDocumento(file, 'clientes').subscribe({
+      next: (res) => {
+        this.documentosCargados.update(docs => [...docs, { tipoDocumento, url: res.url }]);
+        this.loadingService.hide();
+        event.target.value = '';
+        tipoSelect.value = '';
+      },
+      error: (err) => {
+        console.error(err);
+        this.loadingService.hide();
+        Swal.fire('Error', 'No se pudo subir el archivo. Revisa la consola.', 'error');
+      }
+    });
+  }
+
+  eliminarDocumento(index: number) {
+    this.documentosCargados.update(docs => docs.filter((_, i) => i !== index));
+  }
+
+  guardarCliente() {
     const nombresSucursales = this.sucursales.controls.map(s => s.get('nombre')?.value?.trim().toUpperCase());
     const nombresDuplicados = nombresSucursales.filter((nombre, index) => nombre !== '' && nombresSucursales.indexOf(nombre) !== index);
 
@@ -218,9 +298,9 @@ export class ClientesComponent implements OnInit {
         text: `No puedes tener más de una sede llamada "${nombresDuplicados[0]}". Por favor, usa nombres únicos.`,
         confirmButtonColor: '#1e3a8a'
       });
-      return; // Detiene el guardado inmediatamente
+      return;
     }
-    // 1. Validación estricta que tenías originalmente
+
     if (this.clienteForm.invalid) {
       this.clienteForm.markAllAsTouched();
       this.sucursales.controls.forEach(suc => {
@@ -235,13 +315,10 @@ export class ClientesComponent implements OnInit {
     const formRaw = this.clienteForm.getRawValue();
     const emailUsuarioLogueado = this.authService.usuarioActual()?.email || 'SISTEMA';
 
-    // 2. Parseo de Ids (ESTO FUE LO QUE OMITÍ Y ROMPIÓ EL GUARDADO)
     const parseId = (val: any) => val ? parseInt(val.toString()) : null;
-    const parseIdArray = (arr: any[]) => arr ? arr.map(x => parseInt(x.toString())) : [];
 
     const datosParaEnviar = {
       ...formRaw,
-      // Formateo correcto de emails
       email: formRaw.email.split(',').map((e: string) => e.trim()).filter((e: string) => e !== '').join(','),
       razonSocial: formRaw.razonSocial.toUpperCase(),
       contactoPrincipal: formRaw.contactoPrincipal.toUpperCase(),
@@ -249,7 +326,6 @@ export class ClientesComponent implements OnInit {
       emailFacturacion: (formRaw.emailFacturacion || '').toLowerCase(),
       usuarioCreacion: emailUsuarioLogueado,
 
-      // Asignación de Ids parseados a enteros para C#
       tipoClienteId: parseId(formRaw.tipoClienteId),
       tipoContratoId: parseId(formRaw.tipoContratoId),
       condicionPagoId: parseId(formRaw.condicionPagoId),
@@ -257,11 +333,16 @@ export class ClientesComponent implements OnInit {
       tipoFacturacionId: parseId(formRaw.tipoFacturacionId),
       prioridadId: parseId(formRaw.prioridadId),
 
-      regionesIds: parseIdArray(formRaw.regionesIds),
-      serviciosIds: parseIdArray(formRaw.serviciosIds),
-      polizasIds: parseIdArray(formRaw.polizasIds),
+      // Todo desde las señales
+      regionesIds: this.seleccionados.regiones(),
+      serviciosIds: this.seleccionados.servicios(),
+      polizasIds: this.seleccionados.polizas(),
 
-      // Mapeo correcto de sucursales anidadas
+      documentos: this.documentosCargados().map((doc: any) => ({
+        tipoDocumento: doc.tipoDocumento,
+        url: doc.url
+      })),
+
       sucursales: formRaw.sucursales.map((s: any) => ({
         ...s,
         nombre: s.nombre.toUpperCase(),
@@ -297,7 +378,16 @@ export class ClientesComponent implements OnInit {
   // --- LÓGICA DE FILTRADO Y BÚSQUEDA ---
   public clientesFiltrados = computed(() => {
     const term = this.terminoBusqueda().toLowerCase();
-    return this.clientes().filter(c => c.razonSocial.toLowerCase().includes(term) || c.nit.includes(term));
+    const mostrarInactivos = this.mostrarInactivos();
+
+    return this.clientes().filter(c => {
+      // 1. Filtro por texto
+      const coincideTexto = c.razonSocial.toLowerCase().includes(term) || c.nit.includes(term);
+      // 2. Filtro por estado
+      const coincideEstado = mostrarInactivos ? true : c.estado === 'ACTIVO';
+
+      return coincideTexto && coincideEstado;
+    });
   });
 
   buscar(event: Event) { this.terminoBusqueda.set((event.target as HTMLInputElement).value); }
@@ -348,7 +438,6 @@ export class ClientesComponent implements OnInit {
     const currentCtrl = this.sucursales.at(index).get('nombre');
     const nombre = currentCtrl?.value?.trim().toUpperCase();
 
-    // 1. Limpiamos el error previo de "repetido" para volver a evaluar
     if (currentCtrl?.hasError('repetido')) {
       const errors = { ...currentCtrl.errors };
       delete errors['repetido'];
@@ -357,12 +446,10 @@ export class ClientesComponent implements OnInit {
 
     if (!nombre) return;
 
-    // 2. Buscamos si hay otro con el mismo nombre
     const duplicado = this.sucursales.controls.some((ctrl, i) =>
       i !== index && ctrl.get('nombre')?.value?.trim().toUpperCase() === nombre
     );
 
-    // 3. Si es duplicado, le asignamos el error
     if (duplicado) {
       currentCtrl?.setErrors({ ...currentCtrl.errors, repetido: true });
     }
@@ -371,18 +458,52 @@ export class ClientesComponent implements OnInit {
   toggleEstadoCliente(cliente: Cliente) {
     const esActivo = cliente.estado === 'ACTIVO';
     const nuevoEstado = esActivo ? 'INACTIVO' : 'ACTIVO';
+
     Swal.fire({
       title: esActivo ? '¿Desactivar cliente?' : '¿Reactivar cliente?',
+      text: esActivo ? 'El cliente dejará de aparecer en las listas de selección activa.' : 'El cliente podrá volver a ser asignado a proyectos.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
-      confirmButtonColor: '#1e3a8a'
+      confirmButtonColor: '#1e3a8a',
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        const peticion = esActivo ? this.clienteService.deleteCliente(cliente.id) : this.clienteService.activateCliente(cliente.id);
-        peticion.subscribe(() => {
-          this.clientes.update(list => list.map(c => c.id === cliente.id ? { ...c, estado: nuevoEstado } : c));
-          Swal.fire('¡Éxito!', `Cliente actualizado correctamente`, 'success');
+        this.loadingService.show(); // Activamos el loader mientras valida
+
+        const peticion = esActivo
+          ? this.clienteService.deleteCliente(cliente.id)
+          : this.clienteService.activateCliente(cliente.id);
+
+        peticion.subscribe({
+          next: () => {
+            this.clientes.update(list => list.map(c => c.id === cliente.id ? { ...c, estado: nuevoEstado } : c));
+            this.loadingService.hide();
+            Swal.fire('¡Éxito!', `Cliente ${esActivo ? 'desactivado' : 'reactivado'} correctamente`, 'success');
+
+            // Si el cliente estaba abierto en el detalle, cerramos el panel para refrescar la vista
+            if (this.clienteSeleccionado()?.id === cliente.id) {
+              this.cerrarDetalle();
+            }
+          },
+          error: (err) => {
+            this.loadingService.hide();
+
+            // VALIDACIÓN DE REGLA DE NEGOCIO (Proyectos Activos)
+            const errorStr = JSON.stringify(err).toLowerCase();
+
+            if (errorStr.includes('cliente_con_proyectos_activos')) {
+              Swal.fire({
+                icon: 'error',
+                title: 'No se puede inactivar',
+                text: 'Este cliente tiene proyectos vigentes en ejecución. Debes finalizar o cancelar los proyectos antes de poder desactivar al cliente.',
+                confirmButtonColor: '#1e3a8a'
+              });
+            } else {
+              Swal.fire('Error', 'Hubo un problema al cambiar el estado del cliente.', 'error');
+              console.error("Error original:", err);
+            }
+          }
         });
       }
     });

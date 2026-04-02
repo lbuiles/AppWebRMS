@@ -9,6 +9,7 @@ import { environment } from '../../../environments/environment';
  * Ya no dependemos de un string "ADMIN" o "OPERADOR"
  */
 export interface UsuarioRMS {
+  id: string;
   nombre: string;
   email: string;
   fotoUrl: string;
@@ -56,6 +57,7 @@ export class AuthService {
         query: `
           query {
             miPerfil {
+              id
               nombre
               email
               avatarUrl
@@ -86,6 +88,7 @@ export class AuthService {
       );
 
       const usuarioProcesado: UsuarioRMS = {
+        id: perfil.id,
         nombre: perfil.nombre,
         email: perfil.email,
         fotoUrl: perfil.avatarUrl || `https://ui-avatars.com/api/?name=${perfil.nombre}&background=1e3a8a&color=fff`,
