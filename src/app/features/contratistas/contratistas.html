@@ -1,0 +1,983 @@
+<div class="min-h-screen bg-slate-50/50 p-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-xl font-black text-slate-800 uppercase tracking-widest">Contratistas y Proveedores</h1>
+      <p class="text-xs text-slate-400 mt-0.5">Formulario RMS-ADM-FT-02 · Conocimiento de terceros</p>
+    </div>
+    <button (click)="abrirModal()"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Nuevo Tercero
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex gap-3 mb-5 flex-wrap items-center">
+    <input [value]="busqueda()" (input)="busqueda.set($any($event.target).value)"
+           placeholder="Buscar por nombre o NIT..."
+           class="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white w-64 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-colors">
+    @for (tipo of ['Todos','Contratista','Proveedor','Ambos']; track tipo) {
+      <button (click)="filtroTipo.set(tipo)"
+              class="text-xs font-medium px-3 py-2 rounded-lg border transition-colors"
+              [ngClass]="filtroTipo() === tipo ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'">
+        {{ tipo }}
+      </button>
+    }
+    <!-- Toggle inactivos -->
+    <div class="flex items-center gap-2 ml-2">
+      <button type="button" (click)="mostrarInactivos.set(!mostrarInactivos())"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              [ngClass]="mostrarInactivos() ? 'bg-red-500' : 'bg-slate-300'">
+        <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+              [ngClass]="mostrarInactivos() ? 'translate-x-6' : 'translate-x-1'"></span>
+      </button>
+      <span class="text-xs text-slate-500 font-medium">Ver Inactivos</span>
+    </div>
+    <span class="ml-auto text-xs text-slate-400 self-center">{{ tercerosFiltrados.length }} registro(s)</span>
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    @if (cargando()) {
+      <div class="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
+    } @else if (tercerosFiltrados.length === 0) {
+      <div class="flex flex-col items-center justify-center h-40 text-slate-400">
+        <svg class="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <p class="text-sm">No hay contratistas ni proveedores registrados.</p>
+      </div>
+    } @else {
+        <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider">Nombre / Razón Social</th>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider">Identificación</th>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider">Contacto</th>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider text-center">Estado</th>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider text-center">PEP</th>
+            <th class="px-5 py-3 font-bold text-slate-500 uppercase tracking-wider text-center">Docs</th>
+            <th class="px-5 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @for (t of tercerosFiltrados; track t.id) {
+            <tr class="hover:bg-slate-50 transition-colors"
+                [ngClass]="t.estado === 'INACTIVO' ? 'opacity-60' : ''">
+              <td class="px-5 py-3">
+                <p class="font-bold text-slate-800">{{ t.razonSocial || t.nombreCompleto }}</p>
+                <span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase border"
+                      [ngClass]="t.tipoPersona === 'Natural' ? 'bg-teal-50 text-teal-700 border-teal-200' : 'bg-blue-50 text-blue-700 border-blue-200'">
+                  {{ t.tipoPersona }}
+                </span>
+              </td>
+              <td class="px-5 py-3 text-slate-600">{{ t.nit ? 'NIT ' + t.nit : (t.numeroDocumento ? 'CC ' + t.numeroDocumento : '—') }}</td>
+              <td class="px-5 py-3">
+                <span class="px-2 py-1 rounded text-[9px] font-bold border"
+                      [ngClass]="{
+                        'bg-amber-50 text-amber-700 border-amber-200': t.tipoTercero === 'Contratista',
+                        'bg-purple-50 text-purple-700 border-purple-200': t.tipoTercero === 'Proveedor',
+                        'bg-indigo-50 text-indigo-700 border-indigo-200': t.tipoTercero === 'Ambos'
+                      }">
+                  {{ t.tipoTercero }}
+                </span>
+              </td>
+              <td class="px-5 py-3 text-slate-500">{{ t.correoElectronico || t.emailEmpresa || '—' }}</td>
+              <td class="px-5 py-3 text-center">
+                <span class="px-2 py-1 rounded text-[9px] font-bold border"
+                      [ngClass]="t.estado === 'ACTIVO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'">
+                  {{ t.estado }}
+                </span>
+              </td>
+              <td class="px-5 py-3 text-center">
+                @if (t.esPEP || t.sancionadoLavadoActivos) {
+                  <span class="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Alerta
+                  </span>
+                } @else {
+                  <span class="text-slate-300 text-xs">—</span>
+                }
+              </td>
+              <td class="px-5 py-3 text-center">
+                <span class="text-[10px] font-bold text-slate-500">{{ t.documentos?.length || 0 }}</span>
+              </td>
+              <td class="px-5 py-3 text-right flex items-center gap-1 justify-end">
+                <button (click)="verDetalle(t)"
+                        class="text-slate-600 hover:text-slate-800 font-bold text-[10px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors">
+                  Ver
+                </button>
+                <button (click)="abrirModal(t)"
+                        [disabled]="t.estado === 'INACTIVO'"
+                        class="font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors"
+                        [ngClass]="t.estado === 'ACTIVO' ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' : 'text-slate-300 bg-slate-50 cursor-not-allowed'">
+                  Editar
+                </button>
+                <button (click)="toggleEstado(t)"
+                        class="font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors"
+                        [ngClass]="t.estado === 'ACTIVO' ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'">
+                  {{ t.estado === 'ACTIVO' ? 'Inactivar' : 'Activar' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- =============================================
+     PANEL LATERAL DE DETALLE (solo lectura)
+     ============================================= -->
+@if (panelDetalleAbierto() && terceroDetalle(); as t) {
+  <div class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm" (click)="cerrarDetalle()"></div>
+  <div class="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-white shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50 shrink-0">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">{{ t.tipoTercero }} · {{ t.tipoPersona }}</p>
+        <h2 class="text-sm font-black text-slate-800">{{ t.razonSocial || t.nombreCompleto }}</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-1 rounded text-[9px] font-bold border"
+              [ngClass]="t.estado === 'ACTIVO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'">
+          {{ t.estado }}
+        </span>
+        <button (click)="abrirModal(t); cerrarDetalle()"
+                [disabled]="t.estado === 'INACTIVO'"
+                class="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors"
+                [ngClass]="t.estado === 'ACTIVO' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'">
+          Editar
+        </button>
+        <button (click)="cerrarDetalle()" class="text-slate-400 hover:text-slate-700 ml-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenido scrolleable -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+
+      <!-- Identificación -->
+      <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Identificación</p>
+        <div class="grid grid-cols-2 gap-3">
+          @if (t.tipoPersona === 'Natural') {
+            <div class="col-span-2"><p class="text-slate-400 text-[9px] uppercase mb-0.5">Nombres y Apellidos</p><p class="font-bold text-slate-800">{{ t.nombreCompleto || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Tipo Doc.</p><p class="font-bold text-slate-800">{{ t.tipoDocumento || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">No. Documento</p><p class="font-bold text-slate-800">{{ t.numeroDocumento || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">F. Expedición</p><p class="font-bold text-slate-800">{{ t.fechaExpedicion ? (t.fechaExpedicion | date:'dd/MM/yyyy') : '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Lugar Expedición</p><p class="font-bold text-slate-800">{{ t.lugarExpedicion || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Nacionalidad</p><p class="font-bold text-slate-800">{{ t.nacionalidad || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Estado Civil</p><p class="font-bold text-slate-800">{{ t.estadoCivil || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Dirección</p><p class="font-bold text-slate-800">{{ t.direccionResidencia || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Ciudad / Depto.</p><p class="font-bold text-slate-800">{{ t.ciudad || '—' }} / {{ t.departamento || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Actividad / CIIU</p><p class="font-bold text-slate-800">{{ t.actividadEconomica || '—' }} {{ t.codigoCIIU ? '(' + t.codigoCIIU + ')' : '' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Empleados a cargo</p><p class="font-bold text-slate-800">{{ t.empleadosACargo ?? '—' }}</p></div>
+          } @else {
+            <div class="col-span-2"><p class="text-slate-400 text-[9px] uppercase mb-0.5">Razón Social</p><p class="font-black text-slate-800 text-sm">{{ t.razonSocial || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">NIT</p><p class="font-bold text-slate-800">{{ t.nit }}-{{ t.digitoVerificador }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Tipo Empresa</p><p class="font-bold text-slate-800">{{ t.tipoEmpresa || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Dirección</p><p class="font-bold text-slate-800">{{ t.direccionEmpresa || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Ciudad / País</p><p class="font-bold text-slate-800">{{ t.ciudadEmpresa || '—' }} / {{ t.paisEmpresa || '—' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Actividad / CIIU</p><p class="font-bold text-slate-800">{{ t.actividadEconomicaEmpresa || '—' }} {{ t.codigoCIIUEmpresa ? '(' + t.codigoCIIUEmpresa + ')' : '' }}</p></div>
+            <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Página Web</p><p class="font-bold text-slate-800 truncate">{{ t.paginaWeb || '—' }}</p></div>
+            <div class="col-span-2 pt-2 border-t border-slate-100">
+              <p class="text-slate-400 text-[9px] uppercase mb-1">Representante Legal</p>
+              <p class="font-bold text-slate-800">{{ t.nombreRepresentanteLegal || '—' }} · {{ t.documentoRepresentanteLegal || '—' }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Contacto -->
+      <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Contacto</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Email</p><p class="font-bold text-slate-800 truncate">{{ t.correoElectronico || t.emailEmpresa || '—' }}</p></div>
+          <div><p class="text-slate-400 text-[9px] uppercase mb-0.5">Teléfono</p><p class="font-bold text-slate-800">{{ t.numeroContacto || t.telefonoEmpresa || '—' }}</p></div>
+        </div>
+      </div>
+
+      <!-- PEP -->
+      <div class="rounded-xl border p-4" [ngClass]="(t.esPEP || t.sancionadoLavadoActivos || t.tieneVinculoPEP || t.administraRecursosPublicos || t.pagoConRecursosPublicos) ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'">
+        <p class="text-[10px] font-black uppercase tracking-widest mb-3" [ngClass]="(t.esPEP || t.sancionadoLavadoActivos) ? 'text-red-600' : 'text-slate-400'">Información PEP</p>
+        <div class="space-y-1.5">
+          @for (pep of [
+            {label:'¿Es PEP?', val: t.esPEP},
+            {label:'¿Administra recursos públicos?', val: t.administraRecursosPublicos},
+            {label:'¿Pago con recursos públicos?', val: t.pagoConRecursosPublicos},
+            {label:'¿Sancionado por lavado de activos?', val: t.sancionadoLavadoActivos},
+            {label:'¿Tiene vínculo PEP?', val: t.tieneVinculoPEP}
+          ]; track pep.label) {
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">{{ pep.label }}</span>
+              <span class="font-bold" [ngClass]="pep.val ? 'text-red-600' : 'text-emerald-600'">{{ pep.val ? 'Sí ⚠' : 'No' }}</span>
+            </div>
+          }
+          @if (t.tieneVinculoPEP && t.vinculoPEPNombre) {
+            <div class="mt-2 pt-2 border-t border-red-100">
+              <p class="text-red-700 font-bold">{{ t.vinculoPEPNombre }} · {{ t.vinculoPEPParentesco }}</p>
+              <p class="text-red-500">{{ t.vinculoPEPDocumento }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Tributaria -->
+      <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Información Tributaria</p>
+        <div class="grid grid-cols-2 gap-1.5">
+          @for (item of [
+            {label:'Agente de retención', val: t.esAgenteRetencion},
+            {label:'Gran Contribuyente', val: t.esGranContribuyente},
+            {label:'Autoretenedor', val: t.esAutoretenedor},
+            {label:'No Responsable IVA', val: t.esNoResponsableIVA},
+            {label:'Régimen Simple', val: t.esRegimenSimple},
+            {label:'Régimen Especial', val: t.esRegimenEspecial},
+            {label:'Régimen Común', val: t.esRegimenComun},
+            {label:'Declarante de Renta', val: t.esDeclaranteRenta},
+            {label:'Facturación Electrónica', val: t.obligadoFacturacionElectronica}
+          ]; track item.label) {
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full shrink-0" [ngClass]="item.val ? 'bg-emerald-400' : 'bg-slate-200'"></span>
+              <span [ngClass]="item.val ? 'text-slate-700 font-medium' : 'text-slate-400'">{{ item.label }}</span>
+            </div>
+          }
+        </div>
+        @if (t.resolucionGranContribuyente) {
+          <p class="mt-2 text-slate-500">Res. Gran Contribuyente: <span class="font-bold text-slate-700">{{ t.resolucionGranContribuyente }}</span></p>
+        }
+        @if (t.resolucionAutoretenedor) {
+          <p class="text-slate-500">Res. Autoretenedor: <span class="font-bold text-slate-700">{{ t.resolucionAutoretenedor }}</span></p>
+        }
+        @if (t.esRegimenEspecial && t.cualRegimenEspecial) {
+          <p class="text-slate-500">Régimen especial: <span class="font-bold text-slate-700">{{ t.cualRegimenEspecial }}</span></p>
+        }
+      </div>
+
+      <!-- Financiera -->
+      @if (t.ingresosMensuales || t.totalActivos || t.patrimonio) {
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Información Financiera</p>
+          <div class="grid grid-cols-2 gap-3">
+            @for (f of [
+              {label:'Ingresos mensuales', val: t.ingresosMensuales},
+              {label:'Egresos mensuales', val: t.egresosMensuales},
+              {label:'Activos', val: t.totalActivos},
+              {label:'Pasivos', val: t.totalPasivos},
+              {label:'Patrimonio', val: t.patrimonio},
+              {label:'Otros ingresos', val: t.otrosIngresos}
+            ]; track f.label) {
+              @if (f.val) {
+                <div>
+                  <p class="text-slate-400 text-[9px] uppercase mb-0.5">{{ f.label }}</p>
+                  <p class="font-bold text-slate-800">{{ f.val | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                </div>
+              }
+            }
+          </div>
+          @if (t.conceptoOtrosIngresos) {
+            <p class="mt-2 text-slate-500">Concepto: {{ t.conceptoOtrosIngresos }}</p>
+          }
+          @if (t.poseeCuentasExterior) {
+            <p class="mt-2 text-amber-600 font-medium">⚠ Posee cuentas en el exterior — País: {{ t.paisCuentaExterior || 'N/A' }}</p>
+          }
+        </div>
+      }
+
+      <!-- Cuentas bancarias -->
+      @if (t.cuentasBancarias?.length > 0) {
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Cuentas Bancarias</p>
+          <div class="space-y-2">
+            @for (c of t.cuentasBancarias; track c.id) {
+              <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100">
+                <div>
+                  <p class="font-bold text-slate-800">{{ c.entidad }}</p>
+                  <p class="text-slate-400">{{ c.tipoProducto }} · {{ c.numeroCuenta }}</p>
+                </div>
+                <span class="text-[9px] text-slate-400">{{ c.ciudad || c.pais }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Referencias Comerciales -->
+      @if (t.referencias?.length > 0) {
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Referencias Comerciales</p>
+          <div class="space-y-2">
+            @for (r of t.referencias; track r.id) {
+              <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100">
+                <div>
+                  <p class="font-bold text-slate-800">{{ r.entidad }}</p>
+                  <p class="text-slate-400">{{ r.nombreContacto || '—' }}</p>
+                </div>
+                <span class="text-[9px] text-indigo-600 font-bold">{{ r.telefono || '—' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Accionistas (solo PJ) -->
+      @if (t.tipoPersona === 'Jurídica' && t.accionistas?.length > 0) {
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Composición Accionaria</p>
+          <div class="space-y-2">
+            @for (a of t.accionistas; track a.id) {
+              <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100">
+                <div>
+                  <p class="font-bold text-slate-800">{{ a.nombreRazonSocial }}</p>
+                  <p class="text-slate-400">{{ a.tipoDocumento }} {{ a.numeroDocumento }}</p>
+                </div>
+                @if (a.tieneCategoriaPEP) {
+                  <span class="text-[9px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">PEP</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Documentos adjuntos -->
+      @if (t.documentos?.length > 0) {
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Documentos Adjuntos</p>
+          <div class="space-y-2">
+            @for (doc of t.documentos; track doc.url) {
+              <div class="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-100">
+                <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-slate-700 text-[10px]">{{ doc.tipoDocumento }}</p>
+                  <p class="text-slate-400 text-[9px] truncate">{{ nombreArchivo(doc.url) }}</p>
+                </div>
+                <a [href]="serverUrl + doc.url" target="_blank"
+                   class="text-[10px] text-indigo-600 font-bold hover:underline shrink-0">Ver</a>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-between items-center">
+      <button (click)="toggleEstado(t)"
+              class="text-[11px] font-bold px-4 py-2 rounded-lg transition-colors"
+              [ngClass]="t.estado === 'ACTIVO' ? 'text-red-600 bg-red-50 hover:bg-red-100 border border-red-200' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'">
+        {{ t.estado === 'ACTIVO' ? 'Inactivar' : 'Activar' }}
+      </button>
+      <p class="text-[9px] text-slate-400">Registrado: {{ t.fechaCreacion | date:'dd/MM/yyyy' }}</p>
+    </div>
+  </div>
+}
+
+<!-- =============================================
+     MODAL — Formulario de 6 pasos
+     ============================================= -->
+@if (modalAbierto()) {
+  <div class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto py-8 px-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl" [formGroup]="form">
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest">
+            {{ terceroEditando() ? 'Editar Tercero' : 'Nuevo Contratista / Proveedor' }}
+          </h2>
+          <p class="text-[10px] text-slate-400">RMS-ADM-FT-02 · Paso {{ pasoActual() }} de {{ TOTAL_PASOS }}</p>
+        </div>
+        <button (click)="cerrarModal()" class="text-slate-400 hover:text-slate-700 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Barra de pasos -->
+      <div class="flex gap-0 border-b border-slate-100">
+        @for (paso of [
+          {n:1, label:'Clasificación'},
+          {n:2, label:'Identidad'},
+          {n:3, label:'PEP'},
+          {n:4, label:'Tributaria'},
+          {n:5, label:'Financiera / Bancaria'},
+          {n:6, label:'Documentos'}
+        ]; track paso.n) {
+          <button (click)="irPaso(paso.n)"
+                  class="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2"
+                  [ngClass]="pasoActual() === paso.n
+                    ? 'border-indigo-500 text-indigo-600 bg-indigo-50/50'
+                    : 'border-transparent text-slate-400 hover:text-slate-600'">
+            {{ paso.label }}
+          </button>
+        }
+      </div>
+
+      <!-- Contenido del paso -->
+      <div class="px-6 py-5 space-y-4">
+
+        <!-- PASO 1: Clasificación -->
+        @if (pasoActual() === 1) {
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Tipo de Tercero <span class="text-red-500">*</span></label>
+              <select formControlName="tipoTercero" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400">
+                <option value="Contratista">Contratista</option>
+                <option value="Proveedor">Proveedor</option>
+                <option value="Ambos">Ambos</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Tipo de Persona <span class="text-red-500">*</span></label>
+              <select formControlName="tipoPersona" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400">
+                <option value="Natural">Persona Natural</option>
+                <option value="Jurídica">Persona Jurídica</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Estado del Formulario</label>
+              <select formControlName="estadoRegistro" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+                <option value="Nuevo">Nuevo</option>
+                <option value="Actualización">Actualización</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Fecha de Diligenciamiento</label>
+              <input type="date" formControlName="fechaDiligenciamiento" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+            </div>
+          </div>
+        }
+
+        <!-- PASO 2: Identidad (PN o PJ condicional) -->
+        @if (pasoActual() === 2) {
+          @if (esNatural) {
+            <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§1 Persona Natural</p>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2">
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nombres y Apellidos completos <span class="text-red-500">*</span></label>
+                <input type="text" formControlName="nombreCompleto" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Tipo de Documento</label>
+                <select formControlName="tipoDocumento" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+                  <option value="">Seleccionar...</option>
+                  <option value="CC">Cédula de Ciudadanía</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                  <option value="CE">Cédula de Extranjería</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">No. Documento</label>
+                <input type="text" formControlName="numeroDocumento" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Fecha de Expedición</label>
+                <input type="date" formControlName="fechaExpedicion" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Lugar de Expedición</label>
+                <input type="text" formControlName="lugarExpedicion" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nacionalidad</label>
+                <input type="text" formControlName="nacionalidad" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Estado Civil</label>
+                <select formControlName="estadoCivil" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+                  <option value="">Seleccionar...</option>
+                  <option>Soltero(a)</option><option>Casado(a)</option>
+                  <option>Unión libre</option><option>Divorciado(a)</option><option>Viudo(a)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Número de Contacto</label>
+                <input type="text" formControlName="numeroContacto" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Correo Electrónico</label>
+                <input type="email" formControlName="correoElectronico" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div class="col-span-2">
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Dirección Residencia</label>
+                <input type="text" formControlName="direccionResidencia" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Ciudad</label>
+                <input type="text" formControlName="ciudad" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Departamento</label>
+                <input type="text" formControlName="departamento" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Actividad Económica</label>
+                <input type="text" formControlName="actividadEconomica" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Código CIIU</label>
+                <input type="text" formControlName="codigoCIIU" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Empleados a cargo</label>
+                <input type="number" formControlName="empleadosACargo" min="0" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+            </div>
+          } @else {
+            <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§2 Persona Jurídica</p>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2">
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nombre o Razón Social <span class="text-red-500">*</span></label>
+                <input type="text" formControlName="razonSocial" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">NIT</label>
+                <input type="text" formControlName="nit" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">DV</label>
+                <input type="text" formControlName="digitoVerificador" maxlength="1" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div class="col-span-2">
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Dirección</label>
+                <input type="text" formControlName="direccionEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">País</label>
+                <input type="text" formControlName="paisEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Ciudad</label>
+                <input type="text" formControlName="ciudadEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Departamento</label>
+                <input type="text" formControlName="departamentoEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Actividad Económica</label>
+                <input type="text" formControlName="actividadEconomicaEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Código CIIU</label>
+                <input type="text" formControlName="codigoCIIUEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">E-mail</label>
+                <input type="email" formControlName="emailEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Teléfono</label>
+                <input type="text" formControlName="telefonoEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Tipo de Empresa</label>
+                <select formControlName="tipoEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+                  <option value="">Seleccionar...</option>
+                  <option>Pública</option><option>Privada</option>
+                  <option>Mixta</option><option>Multinacional</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Página Web</label>
+                <input type="url" formControlName="paginaWeb" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+              <!-- Representante Legal -->
+              <div class="col-span-2 pt-2 border-t border-slate-100">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">§2.1 Representante Legal</p>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nombres y Apellidos</label>
+                    <input type="text" formControlName="nombreRepresentanteLegal" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">No. Documento</label>
+                    <input type="text" formControlName="documentoRepresentanteLegal" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                  </div>
+                </div>
+              </div>
+              <!-- Accionistas -->
+              @if (esJuridica) {
+                <div class="col-span-2 pt-2 border-t border-slate-100">
+                  <div class="flex items-center justify-between mb-3">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">§2.2 Composición Accionaria</p>
+                    <button type="button" (click)="agregarAccionista()"
+                            class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+                      + Accionista
+                    </button>
+                  </div>
+                  @if (accionistas.length === 0) {
+                    <p class="text-xs text-slate-400 italic">No hay accionistas registrados.</p>
+                  }
+                  <div formArrayName="accionistas" class="space-y-3">
+                    @for (a of accionistas.controls; track $index) {
+                      <div [formGroupName]="$index" class="grid grid-cols-4 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div class="col-span-2">
+                          <label class="block text-[8px] text-slate-400 mb-0.5">Nombre / Razón Social</label>
+                          <input type="text" formControlName="nombreRazonSocial" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                        </div>
+                        <div>
+                          <label class="block text-[8px] text-slate-400 mb-0.5">Tipo Doc.</label>
+                          <select formControlName="tipoDocumento" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white">
+                            <option value="CC">CC</option><option value="NIT">NIT</option><option value="CE">CE</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-[8px] text-slate-400 mb-0.5">Número</label>
+                          <input type="text" formControlName="numeroDocumento" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                        </div>
+                        <div class="col-span-3 flex items-center gap-2">
+                          <input type="checkbox" formControlName="tieneCategoriaPEP" class="rounded text-red-500">
+                          <label class="text-[10px] text-slate-600">¿Tiene categoría PEP?</label>
+                        </div>
+                        <div class="flex justify-end">
+                          <button type="button" (click)="eliminarAccionista($index)"
+                                  class="text-[9px] text-red-600 bg-red-50 px-2 py-1 rounded-lg hover:bg-red-100">Eliminar</button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        <!-- PASO 3: PEP -->
+        @if (pasoActual() === 3) {
+          <p class="text-[10px] font-black text-red-600 uppercase tracking-widest border-b border-slate-100 pb-2">Información PEP — Persona Expuesta Políticamente</p>
+          <div class="space-y-3">
+            @for (pregunta of [
+              {ctrl: 'esPEP', label: '¿Es usted una persona catalogada como PEP?'},
+              {ctrl: 'administraRecursosPublicos', label: '¿Por su cargo o actividad, administra recursos públicos?'},
+              {ctrl: 'pagoConRecursosPublicos', label: '¿El pago del servicio o compra del bien va a ser con recursos públicos?'},
+              {ctrl: 'sancionadoLavadoActivos', label: '¿Ha sido sancionado por procesos de lavado de activos, financiación del terrorismo o corrupción?'},
+              {ctrl: 'tieneVinculoPEP', label: '¿Existe algún vínculo entre usted y alguna persona expuesta políticamente?'}
+            ]; track pregunta.ctrl) {
+              <div class="flex items-start gap-4 p-3 rounded-xl border border-slate-100 bg-slate-50">
+                <p class="text-xs text-slate-700 flex-1">{{ pregunta.label }}</p>
+                <div class="flex gap-4 shrink-0">
+                  <label class="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <input type="radio" [formControlName]="pregunta.ctrl" [value]="true" class="text-red-500"> Sí
+                  </label>
+                  <label class="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <input type="radio" [formControlName]="pregunta.ctrl" [value]="false" class="text-indigo-500"> No
+                  </label>
+                </div>
+              </div>
+            }
+            @if (form.get('tieneVinculoPEP')?.value) {
+              <div class="grid grid-cols-3 gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nombres y Apellidos</label>
+                  <input type="text" formControlName="vinculoPEPNombre" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">No. Documento</label>
+                  <input type="text" formControlName="vinculoPEPDocumento" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Parentesco</label>
+                  <select formControlName="vinculoPEPParentesco" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white">
+                    <option value="">Seleccionar...</option>
+                    <option>Cónyuge</option><option>Padres</option><option>Hijos</option>
+                    <option>Abuelos</option><option>Hermanos</option><option>Nietos</option>
+                  </select>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- PASO 4: Tributaria -->
+        @if (pasoActual() === 4) {
+          <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§3 Información Tributaria</p>
+          <div class="grid grid-cols-2 gap-3">
+            @for (opt of [
+              {ctrl:'esAgenteRetencion', label:'23 - Agente de retención en ventas'},
+              {ctrl:'esGranContribuyente', label:'13 - Gran Contribuyente'},
+              {ctrl:'esAutoretenedor', label:'15 - Autoretenedor'},
+              {ctrl:'esNoResponsableIVA', label:'49 - No Responsable de IVA'},
+              {ctrl:'esRegimenSimple', label:'47 - Régimen simple de tributación'},
+              {ctrl:'esRegimenEspecial', label:'Régimen especial'},
+              {ctrl:'esRegimenComun', label:'Régimen Común'},
+              {ctrl:'esDeclaranteRenta', label:'Declarante de Renta'},
+              {ctrl:'obligadoFacturacionElectronica', label:'Obligado a facturar electrónicamente'}
+            ]; track opt.ctrl) {
+              <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                <input type="checkbox" [formControlName]="opt.ctrl" class="rounded text-indigo-500 shrink-0">
+                <span class="text-xs text-slate-700">{{ opt.label }}</span>
+              </label>
+            }
+          </div>
+          <!-- Resoluciones condicionales -->
+          @if (form.get('esGranContribuyente')?.value) {
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Resolución Gran Contribuyente</label>
+              <input type="text" formControlName="resolucionGranContribuyente" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+            </div>
+          }
+          @if (form.get('esAutoretenedor')?.value) {
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Resolución Autoretenedor</label>
+              <input type="text" formControlName="resolucionAutoretenedor" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+            </div>
+          }
+          @if (form.get('esRegimenEspecial')?.value) {
+            <div>
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">¿Cuál régimen especial?</label>
+              <input type="text" formControlName="cualRegimenEspecial" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+            </div>
+          }
+        }
+
+        <!-- PASO 5: Financiera + Bancaria + Referencias -->
+        @if (pasoActual() === 5) {
+          <!-- Financiera -->
+          <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§4 Información Financiera</p>
+          <div class="grid grid-cols-2 gap-4">
+            @for (campo of [
+              {ctrl:'ingresosMensuales', label:'Ingresos mensuales ($)'},
+              {ctrl:'egresosMensuales', label:'Egresos mensuales ($)'},
+              {ctrl:'totalActivos', label:'Activos ($)'},
+              {ctrl:'totalPasivos', label:'Pasivos ($)'},
+              {ctrl:'patrimonio', label:'Patrimonio ($)'},
+              {ctrl:'otrosIngresos', label:'Otros Ingresos ($)'}
+            ]; track campo.ctrl) {
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">{{ campo.label }}</label>
+                <input type="number" [formControlName]="campo.ctrl" min="0" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              </div>
+            }
+            <div class="col-span-2">
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Concepto otros ingresos</label>
+              <input type="text" formControlName="conceptoOtrosIngresos" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+            </div>
+          </div>
+
+          <!-- Internacional -->
+          <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2">
+            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer flex-1">
+              <input type="checkbox" formControlName="poseeCuentasExterior" class="rounded text-indigo-500">
+              §5 ¿Posee cuentas en el exterior?
+            </label>
+            @if (form.get('poseeCuentasExterior')?.value) {
+              <div class="flex items-center gap-2">
+                <label class="text-[9px] text-slate-500 uppercase">País</label>
+                <input type="text" formControlName="paisCuentaExterior" class="border border-slate-200 rounded-lg px-2 py-1.5 text-xs w-28">
+              </div>
+            }
+          </div>
+
+          <!-- Cuentas Bancarias -->
+          <div class="pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">§6 Cuenta Bancaria para Pagos</p>
+              <button type="button" (click)="agregarCuenta()"
+                      class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100">
+                + Cuenta
+              </button>
+            </div>
+            <div formArrayName="cuentasBancarias" class="space-y-3">
+              @for (c of cuentasBancarias.controls; track $index) {
+                <div [formGroupName]="$index" class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Tipo <span class="text-red-400">*</span></label>
+                    <select formControlName="tipoProducto" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white">
+                      <option value="">Seleccionar...</option>
+                      <option>Ahorros</option><option>Corriente</option><option>Fiducia</option><option>Otro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">No. Cuenta <span class="text-red-400">*</span></label>
+                    <input type="text" formControlName="numeroCuenta" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Entidad <span class="text-red-400">*</span></label>
+                    <input type="text" formControlName="entidad" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Ciudad</label>
+                    <input type="text" formControlName="ciudad" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">País</label>
+                    <input type="text" formControlName="pais" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div class="flex items-end">
+                    <button type="button" (click)="eliminarCuenta($index)"
+                            class="text-[9px] text-red-600 bg-red-50 px-2 py-1.5 rounded-lg hover:bg-red-100 w-full">Eliminar</button>
+                  </div>
+                  <div class="col-span-3">
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Observaciones</label>
+                    <input type="text" formControlName="observaciones" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Referencias -->
+          <div class="pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">§8 Referencias Comerciales</p>
+              <button type="button" (click)="agregarReferencia()"
+                      class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100">
+                + Referencia
+              </button>
+            </div>
+            <div formArrayName="referencias" class="space-y-2">
+              @for (r of referencias.controls; track $index) {
+                <div [formGroupName]="$index" class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Entidad <span class="text-red-400">*</span></label>
+                    <input type="text" formControlName="entidad" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Nombre Contacto</label>
+                    <input type="text" formControlName="nombreContacto" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[8px] text-slate-400 mb-0.5">Teléfono</label>
+                    <input type="text" formControlName="telefono" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
+                  </div>
+                  <div class="col-span-3 flex justify-end">
+                    <button type="button" (click)="eliminarReferencia($index)"
+                            class="text-[9px] text-red-600 bg-red-50 px-2 py-1 rounded-lg hover:bg-red-100">Eliminar</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Declaración §7 -->
+          <div class="pt-2 border-t border-slate-100">
+            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">§7 Declaración de Origen de Fondos</label>
+            <textarea formControlName="declaracionOrigenFondos" rows="3"
+                      placeholder="Los recursos que poseo provienen de las siguientes fuentes..."
+                      class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm resize-none"></textarea>
+          </div>
+        }
+
+        <!-- PASO 6: Documentos -->
+        @if (pasoActual() === 6) {
+          <!-- Documentos recibidos (checkboxes §10) -->
+          <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§10 Documentos Requeridos</p>
+          <div class="grid grid-cols-1 gap-2 mb-5">
+            @if (esNatural) {
+              @for (doc of [
+                {ctrl:'docIdentificacion', label:'Copia de documento de identificación'},
+                {ctrl:'docRUT', label:'Registro Único Tributario (RUT) actualizado'},
+                {ctrl:'docCertificacionBancaria', label:'Certificación Bancaria de la cuenta autorizada'},
+                {ctrl:'docPlanillaSeguridadSocial', label:'Afiliaciones o última planilla seguridad social'},
+                {ctrl:'docReferenciasComerciales', label:'Dos referencias comerciales'},
+                {ctrl:'docDeclaracionRenta', label:'Declaración de renta último período gravable'},
+                {ctrl:'docAutorizacionDatos', label:'Autorización tratamiento de datos'}
+              ]; track doc.ctrl) {
+                <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                  <input type="checkbox" [formControlName]="doc.ctrl" class="rounded text-emerald-500">
+                  <span class="text-xs text-slate-700">{{ doc.label }}</span>
+                  @if (form.get(doc.ctrl)?.value) {
+                    <span class="ml-auto text-[9px] text-emerald-600 font-bold">✓ Recibido</span>
+                  }
+                </label>
+              }
+            } @else {
+              @for (doc of [
+                {ctrl:'docCertificadoExistencia', label:'Certificado de Existencia y Representación Legal (≤30 días)'},
+                {ctrl:'docRUT', label:'Registro Único Tributario (RUT) actualizado'},
+                {ctrl:'docIdentificacion', label:'Copia documento de identidad del Representante Legal'},
+                {ctrl:'docCertificacionBancaria', label:'Certificación Bancaria de la cuenta autorizada'},
+                {ctrl:'docAutorizacionDatos', label:'Autorización tratamiento de datos'},
+                {ctrl:'docEstadosFinancieros', label:'Últimos estados financieros'},
+                {ctrl:'docDeclaracionRenta', label:'Declaración de renta último período gravable'}
+              ]; track doc.ctrl) {
+                <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                  <input type="checkbox" [formControlName]="doc.ctrl" class="rounded text-emerald-500">
+                  <span class="text-xs text-slate-700">{{ doc.label }}</span>
+                  @if (form.get(doc.ctrl)?.value) {
+                    <span class="ml-auto text-[9px] text-emerald-600 font-bold">✓ Recibido</span>
+                  }
+                </label>
+              }
+            }
+          </div>
+
+          <!-- Adjuntar archivos físicos -->
+          <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">Archivos Adjuntos</p>
+          <div class="flex gap-3 items-end mb-3">
+            <div class="flex-1">
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Tipo de documento</label>
+              <select [(ngModel)]="tipoDocSelect" [ngModelOptions]="{standalone:true}"
+                      class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+                <option value="">Seleccionar tipo...</option>
+                @for (t of TIPOS_DOCUMENTO_CP; track t.value) {
+                  <option [value]="t.value">{{ t.label }}</option>
+                }
+              </select>
+            </div>
+            <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              Subir archivo
+              <input type="file" (change)="onArchivoSeleccionado($event)" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+            </label>
+          </div>
+
+          @if (documentosCargados().length === 0) {
+            <p class="text-xs text-slate-400 italic text-center py-4">No hay archivos adjuntos aún.</p>
+          } @else {
+            <div class="space-y-2">
+              @for (doc of documentosCargados(); track doc.url; let i = $index) {
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-700">{{ doc.tipoDocumento }}</p>
+                    <p class="text-[10px] text-slate-400 truncate">{{ nombreArchivo(doc.url) }}</p>
+                  </div>
+                  <a [href]="serverUrl + doc.url" target="_blank"
+                     class="text-[10px] text-indigo-600 font-bold hover:underline">Ver</a>
+                  <button type="button" (click)="eliminarDocumento(doc, i)"
+                          class="text-[10px] text-red-600 font-bold ml-1 hover:text-red-800 px-2 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors">Eliminar</button>
+                </div>
+              }
+            </div>
+          }
+        }
+
+      </div><!-- fin contenido pasos -->
+
+      <!-- Footer del modal -->
+      <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl">
+        <button type="button" (click)="irPaso(pasoActual() - 1)"
+                [disabled]="pasoActual() === 1"
+                class="text-xs font-bold text-slate-500 hover:text-slate-800 disabled:opacity-30 flex items-center gap-1">
+          ← Anterior
+        </button>
+        <span class="text-[10px] text-slate-400">{{ pasoActual() }} / {{ TOTAL_PASOS }}</span>
+        @if (pasoActual() < TOTAL_PASOS) {
+          <button type="button" (click)="irPaso(pasoActual() + 1)"
+                  class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2 rounded-xl transition-colors flex items-center gap-1">
+            Siguiente →
+          </button>
+        } @else {
+          <button type="button" (click)="guardar()"
+                  [disabled]="guardando()"
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2">
+            @if (guardando()) {
+              <svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              Guardando...
+            } @else {
+              ✓ Guardar Registro
+            }
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}

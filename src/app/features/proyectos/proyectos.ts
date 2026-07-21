@@ -49,4 +49,8 @@ export class ProyectosComponent implements OnInit {
   tienePermiso(permiso: string): boolean {
     return this.authService.hasPermission(permiso);
   }
+
+  get esGerente(): boolean {
+    return this.authService.hasPermission('proyectos.gerente');
+  }
 }

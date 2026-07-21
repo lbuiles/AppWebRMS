@@ -1,0 +1,170 @@
+<div class="space-y-5 animate-fade-in">
+
+  <!-- Header -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <a routerLink="/proyectos" class="text-slate-400 hover:text-slate-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </a>
+      <div>
+        <h1 class="text-lg font-black text-slate-900 tracking-tight">Vista Gerencial — Todos los Proyectos</h1>
+        <p class="text-[11px] text-slate-400 mt-0.5">Supervisión ejecutiva del portafolio completo</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <select [value]="filtroDivision()" (change)="filtroDivision.set($any($event.target).value)"
+              class="border border-slate-200 bg-slate-50 text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none">
+        <option value="todas">Todas las divisiones</option>
+        <option value="civiles">Construcción</option>
+        <option value="energia">Energía</option>
+        <option value="telecomunicaciones">O&M</option>
+      </select>
+      <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)"
+              class="border border-slate-200 bg-slate-50 text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none">
+        <option value="todos">Todos los estados</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="PENDIENTE_PRELIMINARES">Preliminares</option>
+        <option value="EN_EJECUCIÓN">En Ejecución</option>
+        <option value="FINALIZADO_PARCIAL">Fin. Parcial</option>
+        <option value="FINALIZADO_TOTAL">Finalizado</option>
+        <option value="Cancelado">Cancelado</option>
+      </select>
+      <button type="button" (click)="mostrarFinalizados.set(!mostrarFinalizados())"
+              class="text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors"
+              [ngClass]="mostrarFinalizados() ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200'">
+        {{ mostrarFinalizados() ? 'Ocultando finalizados' : 'Ver finalizados' }}
+      </button>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="flex items-center justify-center h-40 text-slate-400">
+      <svg class="animate-spin w-6 h-6 mr-3" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+      Cargando proyectos...
+    </div>
+  } @else {
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Proyectos activos</p>
+      <p class="text-3xl font-black text-slate-900">{{ kpiActivos() }}</p>
+      <p class="text-[10px] text-slate-400 mt-1">de {{ proyectosFiltrados().length }} totales</p>
+    </div>
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Presupuestado</p>
+      <p class="text-lg font-black text-slate-900">{{ kpiPresupuesto() | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+    </div>
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Facturado</p>
+      <p class="text-lg font-black text-emerald-600">{{ kpiFacturado() | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+    </div>
+    <div class="bg-[#1e3a8a] p-4 rounded-2xl shadow-md">
+      <p class="text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-1">Utilidad</p>
+      <p class="text-lg font-black text-white">{{ kpiUtilidad() | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+    </div>
+  </div>
+
+  <!-- Tabla ejecutiva -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+      <h3 class="text-sm font-bold text-slate-800">Desglose por Proyecto</h3>
+      <span class="text-[11px] text-slate-400">{{ proyectosFiltrados().length }} registros</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left whitespace-nowrap">
+        <thead class="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100">
+          <tr>
+            <th class="px-3 py-3">Código</th>
+            <th class="px-3 py-3">Proyecto</th>
+            <th class="px-3 py-3">División</th>
+            <th class="px-3 py-3">Cliente</th>
+            <th class="px-3 py-3">Responsable</th>
+            <th class="px-3 py-3">Ejecutor</th>
+            <th class="px-3 py-3 text-center">Estado</th>
+            <th class="px-3 py-3 text-center">SLA</th>
+            <th class="px-3 py-3">OC / PO</th>
+            <th class="px-3 py-3 text-right">Presupuestado</th>
+            <th class="px-3 py-3 text-right">Facturado</th>
+            <th class="px-3 py-3 text-right">Gasto</th>
+            <th class="px-3 py-3 text-right">Margen</th>
+            <th class="px-3 py-3 text-center">Avance</th>
+            <th class="px-3 py-3">F. Inicio</th>
+            <th class="px-3 py-3">F. Tentativa</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 text-xs text-slate-700">
+          @for (p of proyectosFiltrados(); track p.id) {
+            <tr class="hover:bg-slate-50/60 transition-colors">
+              <td class="px-3 py-3 font-black text-[#1e3a8a] text-[11px]">{{ p.codigo }}</td>
+              <td class="px-3 py-3 font-semibold text-slate-900 max-w-[160px] truncate">{{ p.nombre }}</td>
+              <td class="px-3 py-3">
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full" [ngClass]="divisionColor(p.lineaNegocio)">
+                  {{ divisionLabel(p.lineaNegocio) }}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-slate-500 max-w-[120px] truncate">{{ p.cliente?.razonSocial || '—' }}</td>
+              <td class="px-3 py-3 text-slate-500">{{ p.responsable?.nombre || '—' }}</td>
+              <td class="px-3 py-3 text-slate-600 font-medium max-w-[120px] truncate">{{ ejecutor(p) }}</td>
+              <td class="px-3 py-3 text-center">
+                <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase"
+                      [ngClass]="estadoClass(p.estado)">
+                  {{ p.estado?.replace('_', ' ') }}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-center">
+                <span class="text-[10px] font-bold" [ngClass]="slaColor(p)">
+                  {{ slaTexto(p) }}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-[10px] font-bold" [ngClass]="ocColor(p)">
+                {{ ocTexto(p) }}
+              </td>
+              <td class="px-3 py-3 text-right font-bold text-slate-700">
+                {{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </td>
+              <td class="px-3 py-3 text-right font-bold text-emerald-600">
+                {{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </td>
+              <td class="px-3 py-3 text-right font-bold text-amber-600">
+                {{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </td>
+              <td class="px-3 py-3 text-right font-bold" [ngClass]="margenColor(p)">
+                {{ margen(p) }}
+              </td>
+              <td class="px-3 py-3 text-center">
+                <div class="flex items-center gap-1.5 justify-center">
+                  <div class="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all"
+                         [ngClass]="avanceColor(p)"
+                         [style.width]="avanceReal(p) + '%'"></div>
+                  </div>
+                  <span class="text-[10px] font-bold" [ngClass]="avanceReal(p) === 100 ? 'text-emerald-600' : 'text-slate-500'">
+                    {{ avanceReal(p) }}%
+                  </span>
+                </div>
+              </td>
+              <td class="px-3 py-3 text-slate-500">
+                {{ p.fechaInicioActividades ? (p.fechaInicioActividades | date:'dd/MM/yy') : '—' }}
+              </td>
+              <td class="px-3 py-3 text-blue-600 font-medium">
+                {{ p.fechaTentativaFin ? (p.fechaTentativaFin | date:'dd/MM/yy') : '—' }}
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="16" class="px-5 py-12 text-center text-slate-400 text-xs italic">
+                No hay proyectos para mostrar con los filtros actuales.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  } <!-- end @if cargando -->
+</div>

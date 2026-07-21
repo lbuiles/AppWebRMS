@@ -56,9 +56,14 @@ export class AdministracionComponent implements OnInit {
       bg: 'bg-blue-50'
     },
     'admin.proveedores': {
-      descripcion: 'Base de datos de terceros para ejecución de obras o compra de materiales.',
-      color: 'text-[#ffb31c]',
-      bg: 'bg-yellow-50'
+      descripcion: 'Registro de contratistas y proveedores — Formulario RMS-ADM-FT-02.',
+      color: 'text-amber-600',
+      bg: 'bg-amber-50'
+    },
+    'admin.contratistas': {
+      descripcion: 'Registro de contratistas y proveedores — Formulario RMS-ADM-FT-02.',
+      color: 'text-amber-600',
+      bg: 'bg-amber-50'
     },
     'admin.usuarios': {
       descripcion: 'Administra los roles de acceso al sistema (Directores, Residentes).',

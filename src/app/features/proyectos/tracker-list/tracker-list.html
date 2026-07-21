@@ -1,18 +1,19 @@
 <div class="space-y-6 animate-fade-in-up font-sans h-full flex flex-col">
 
-  <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden shrink-0">
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between relative overflow-hidden shrink-0">
     <div class="absolute left-0 top-0 bottom-0 w-1.5" [ngClass]="configVisual().bgColor"></div>
 
     <div class="flex items-center gap-4 pl-2">
-      <button routerLink="/proyectos" class="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+      <button routerLink="/proyectos" class="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
       </button>
 
       <div>
-        <h2 class="text-2xl font-black tracking-wide uppercase" [ngClass]="configVisual().textoColor">
-          Portafolio: {{ configVisual().titulo }}
-        </h2>
-        <p class="text-xs text-gray-500 font-medium mt-1">Gestión y control de proyectos operativos</p>
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full shrink-0" [ngClass]="configVisual().bgColor"></div>
+          <h2 class="text-base font-semibold text-slate-900 tracking-tight">{{ configVisual().titulo }}</h2>
+        </div>
+        <p class="text-xs text-slate-400 mt-0.5 ml-4.5">Gestión y control de proyectos operativos</p>
       </div>
     </div>
 
@@ -24,25 +25,25 @@
     </div>
   </div>
 
-  <div class="flex gap-6 border-b border-gray-200 px-6 shrink-0 bg-white shadow-sm rounded-t-2xl">
+  <div class="flex gap-6 border-b border-slate-200 px-6 shrink-0 bg-white shadow-sm rounded-t-2xl">
     <button (click)="vistaPrincipal.set('portafolio')"
             class="py-4 text-sm font-black tracking-wide border-b-2 transition-colors flex items-center gap-2"
-            [ngClass]="vistaPrincipal() === 'portafolio' ? ('border-' + configVisual().bgColor.replace('bg-', '') + ' ' + configVisual().textoColor) : 'border-transparent text-gray-400 hover:text-gray-700'">
+            [ngClass]="vistaPrincipal() === 'portafolio' ? ('border-' + configVisual().bgColor.replace('bg-', '') + ' ' + configVisual().textoColor) : 'border-transparent text-slate-400 hover:text-slate-700'">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
       Control de Portafolio
     </button>
     <button (click)="vistaPrincipal.set('alertas')"
             class="py-4 text-sm font-black tracking-wide border-b-2 transition-colors flex items-center gap-2"
-            [ngClass]="vistaPrincipal() === 'alertas' ? ('border-' + configVisual().bgColor.replace('bg-', '') + ' ' + configVisual().textoColor) : 'border-transparent text-gray-400 hover:text-gray-700'">
+            [ngClass]="vistaPrincipal() === 'alertas' ? ('border-' + configVisual().bgColor.replace('bg-', '') + ' ' + configVisual().textoColor) : 'border-transparent text-slate-400 hover:text-slate-700'">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
       Panel de Alertas (SLA)
     </button>
   </div>
 
-  <div class="bg-white rounded-b-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col min-h-0">
+  <div class="bg-white rounded-b-2xl shadow-sm border border-slate-100 flex-1 overflow-hidden flex flex-col min-h-0">
 
     @if (cargando()) {
-      <div class="p-10 flex flex-col items-center justify-center text-gray-400 h-full">
+      <div class="p-10 flex flex-col items-center justify-center text-slate-400 h-full">
         <svg class="animate-spin w-8 h-8 mb-4" [ngClass]="configVisual().textoColor" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -53,50 +54,116 @@
     @else {
 
       @if (vistaPrincipal() === 'portafolio') {
+        <!-- Barra de herramientas: vista por rol + toggle finalizados -->
+        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white gap-3">
+          <!-- Vista activa -->
+          <div class="flex items-center gap-2">
+            @if (!esGerente) {
+              <span class="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                Mis proyectos
+              </span>
+            } @else {
+              <span class="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Todos los proyectos
+              </span>
+            }
+            <span class="text-[11px] text-slate-400">{{ proyectosFiltrados.length }} proyecto(s)</span>
+          </div>
+          <!-- Toggle finalizados -->
+          <button type="button" (click)="mostrarFinalizados.set(!mostrarFinalizados())"
+                  class="flex items-center gap-2 text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-colors"
+                  [ngClass]="mostrarFinalizados() ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            {{ mostrarFinalizados() ? 'Ocultando finalizados' : 'Ver finalizados' }}
+          </button>
+        </div>
         <div class="overflow-x-auto h-full animate-fade-in">
           <table class="w-full text-left whitespace-nowrap">
-            <thead class="bg-gray-50 text-gray-500 text-[10px] uppercase font-bold tracking-widest border-b border-gray-100 sticky top-0 z-10">
+            <thead class="bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
               <tr>
-                <th class="px-6 py-4">Código</th>
-                <th class="px-6 py-4">Proyecto</th>
-                <th class="px-6 py-4">Cliente</th>
-                <th class="px-6 py-4 text-center">Estado</th>
+                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Código</th>
+                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Proyecto</th>
+                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Cliente</th>
+                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-center">Estado</th>
 
                 @if (esAdminFase()) {
-                  <th class="px-6 py-4 text-right">Valor OC</th>
-                  <th class="px-6 py-4 text-right">Facturado</th>
+                  <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-right">Presupuesto</th>
+                  <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-right">Facturado</th>
                 }
 
-                <th class="px-6 py-4">Responsable</th>
+                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Responsable</th>
+                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
+            <tbody class="text-sm text-slate-700 divide-y divide-slate-100">
 
-              @for (p of proyectos(); track p.id) {
-                <tr (click)="abrirPanel(p)" class="transition-colors cursor-pointer group border-l-4"
-                    [class.border-l-transparent]="true"
-                    [class.hover:opacity-80]="true">
+              @for (p of proyectosFiltrados; track p.id) {
+                <tr (click)="abrirPanel(p)" class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors cursor-pointer">
 
-                  <td class="px-6 py-4 font-black text-xs" [ngClass]="configVisual().textoColor">{{ p.codigo }}</td>
-                  <td class="px-6 py-4 font-bold text-gray-900">{{ p.nombre }}</td>
-                  <td class="px-6 py-4 text-xs font-semibold text-gray-500">{{ p.cliente?.razonSocial || 'Sin Asignar' }}</td>
-                  <td class="px-6 py-4 text-center">
-                    <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border shadow-sm"
+                  <td class="px-4 py-2.5"><span class="text-xs font-bold" [ngClass]="configVisual().textoColor">{{ p.codigo }}</span></td>
+                  <td class="px-4 py-2.5 font-medium text-slate-900 text-sm">{{ p.nombre }}</td>
+                  <td class="px-4 py-2.5 text-xs text-slate-400">{{ p.cliente?.razonSocial || 'Sin asignar' }}</td>
+                  <td class="px-4 py-2.5 text-center">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-medium"
                           [ngClass]="obtenerClaseEstado(p.estado)">
-                      {{ p.estado }}
+                      {{ p.estado.replace('_', ' ').toLowerCase() | titlecase }}
                     </span>
                   </td>
 
                   @if (esAdminFase()) {
-                    <td class="px-6 py-4 text-right font-bold text-gray-800 text-xs">{{ p.valorOC | currency:'USD':'symbol':'1.0-0' }}</td>
-                    <td class="px-6 py-4 text-right font-bold text-emerald-600 text-xs">{{ p.valorFacturado | currency:'USD':'symbol':'1.0-0' }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-medium text-slate-700">{{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-medium text-emerald-600">{{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                   }
 
-                  <td class="px-6 py-4 font-semibold text-gray-600 text-xs flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-700" [ngClass]="configVisual().bgClaro">
-                      {{ p.responsable?.nombre?.charAt(0) || '?' }}
+                  <td class="px-4 py-2.5">
+                    <div class="flex items-center gap-2">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold bg-slate-100 text-slate-600 shrink-0">
+                        {{ p.responsable?.nombre?.charAt(0) || '?' }}
+                      </div>
+                      <span class="text-xs text-slate-600">{{ p.responsable?.nombre || 'Sin asignar' }}</span>
                     </div>
-                    {{ p.responsable?.nombre || 'No asignado' }}
+                  </td>
+                  <td class="px-4 py-2.5 text-center" (click)="$event.stopPropagation()">
+                    <div class="flex items-center justify-center gap-1.5">
+                      <!-- Botón OT -->
+                      <button type="button"
+                              (click)="proyectoSeleccionado.set(p); abrirModalOT(); $event.stopPropagation()"
+                              [disabled]="p.estado === 'FINALIZADO_TOTAL' || p.estado === 'Cancelado'"
+                              title="Órdenes de Trabajo"
+                              class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#1e3a8a] shrink-0"></span>
+                        OT
+                        @if (p.ordenesTrabajo?.length > 0) {
+                          <span class="bg-slate-100 text-slate-500 rounded px-1 text-[10px]">{{ p.ordenesTrabajo.length }}</span>
+                        }
+                      </button>
+                      <!-- Botón Requisición -->
+                      <button type="button"
+                              (click)="proyectoSeleccionado.set(p); abrirModalReq(); $event.stopPropagation()"
+                              [disabled]="p.estado === 'FINALIZADO_TOTAL' || p.estado === 'Cancelado'"
+                              title="Requisiciones Internas"
+                              class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-600 shrink-0"></span>
+                        REQ
+                        @if (p.requisiciones?.length > 0) {
+                          <span class="bg-slate-100 text-slate-500 rounded px-1 text-[10px]">{{ p.requisiciones.length }}</span>
+                        }
+                      </button>
+                      <!-- Botón Anticipo -->
+                      <button type="button"
+                              (click)="abrirModalAnticipoDirecto(p); $event.stopPropagation()"
+                              [disabled]="p.estado === 'FINALIZADO_TOTAL' || p.estado === 'Cancelado'"
+                              title="Anticipos"
+                              class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                        ANT
+                        @if (p.anticiposDirectos?.length > 0) {
+                          <span class="bg-slate-100 text-slate-500 rounded px-1 text-[10px]">{{ p.anticiposDirectos.length }}</span>
+                        }
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
@@ -108,8 +175,8 @@
                       <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4" [ngClass]="configVisual().bgClaro">
                         <svg class="w-8 h-8 opacity-50" [ngClass]="configVisual().textoColor" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
                       </div>
-                      <p class="text-gray-500 font-medium">No hay proyectos activos en esta línea de negocio.</p>
-                      <p class="text-xs text-gray-400 mt-1">Haz clic en "Crear Proyecto" para comenzar el registro.</p>
+                      <p class="text-slate-500 font-medium">No hay proyectos activos en esta línea de negocio.</p>
+                      <p class="text-xs text-slate-400 mt-1">Haz clic en "Crear Proyecto" para comenzar el registro.</p>
                     </div>
                   </td>
                 </tr>
@@ -121,111 +188,1142 @@
       }
 
       @if (vistaPrincipal() === 'alertas') {
-        <div class="flex flex-col h-full animate-fade-in bg-slate-50/50">
+        <div class="flex flex-col h-full animate-fade-in overflow-hidden">
 
-          <div class="grid grid-cols-4 gap-4 p-6 shrink-0">
-            <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>
-              <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">SLA A Tiempo</p>
-                <p class="text-2xl font-black text-slate-800">{{ kpiSLA().aTiempo }}</p>
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-5 shrink-0 bg-white border-b border-slate-100">
+
+            <button type="button" (click)="filtroAlertas.set('criticos')"
+                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    [ngClass]="filtroAlertas() === 'criticos' ? 'border-red-300 bg-red-50/60 shadow-sm' : 'border-slate-200 bg-white hover:bg-slate-50'">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                   [ngClass]="filtroAlertas() === 'criticos' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600'">
+                <i class="ti ti-alert-circle text-lg" aria-hidden="true"></i>
               </div>
-            </div>
-            <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
               <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">SLA Incumplido</p>
-                <p class="text-2xl font-black text-red-600">{{ kpiSLA().retraso }}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Críticos</p>
+                <p class="text-2xl font-black" [ngClass]="kpiCriticos() > 0 ? 'text-red-600' : 'text-slate-700'">{{ kpiCriticos() }}</p>
+                <p class="text-[9px] text-slate-400">Acción inmediata</p>
               </div>
-            </div>
-            <div class="bg-white rounded-xl p-4 border border-red-200 shadow-sm flex items-center gap-4 bg-red-50/30">
-              <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+            </button>
+
+            <button type="button" (click)="filtroAlertas.set('ejecucion')"
+                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    [ngClass]="filtroAlertas() === 'ejecucion' ? 'border-amber-300 bg-amber-50/60 shadow-sm' : 'border-slate-200 bg-white hover:bg-slate-50'">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                   [ngClass]="filtroAlertas() === 'ejecucion' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-600'">
+                <i class="ti ti-clock-exclamation text-lg" aria-hidden="true"></i>
+              </div>
               <div>
-                <p class="text-xs font-bold text-red-500 uppercase tracking-wider">Inicios sin OC</p>
-                <p class="text-2xl font-black text-red-800">{{ kpiOC() }}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ejecución vencida</p>
+                <p class="text-2xl font-black" [ngClass]="kpiEjecucionVencida() > 0 ? 'text-amber-700' : 'text-slate-700'">{{ kpiEjecucionVencida() }}</p>
+                <p class="text-[9px] text-slate-400">Fin de obra superado</p>
               </div>
-            </div>
-            <div class="bg-white rounded-xl p-4 border border-orange-200 shadow-sm flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg></div>
+            </button>
+
+            <button type="button" (click)="filtroAlertas.set('cierre')"
+                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    [ngClass]="filtroAlertas() === 'cierre' ? 'border-blue-300 bg-blue-50/60 shadow-sm' : 'border-slate-200 bg-white hover:bg-slate-50'">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                   [ngClass]="filtroAlertas() === 'cierre' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600'">
+                <i class="ti ti-file-invoice text-lg" aria-hidden="true"></i>
+              </div>
               <div>
-                <p class="text-xs font-bold text-orange-500 uppercase tracking-wider">Atascados (Oficina)</p>
-                <p class="text-2xl font-black text-slate-800">{{ kpiCierre() }}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cierre pendiente</p>
+                <p class="text-2xl font-black text-blue-700">{{ kpiCierre() }}</p>
+                <p class="text-[9px] text-slate-400">En finalizado parcial</p>
               </div>
-            </div>
+            </button>
+
+            <button type="button" (click)="filtroAlertas.set('todos')"
+                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    [ngClass]="filtroAlertas() === 'todos' ? 'border-emerald-300 bg-emerald-50/60 shadow-sm' : 'border-slate-200 bg-white hover:bg-slate-50'">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                   [ngClass]="filtroAlertas() === 'todos' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600'">
+                <i class="ti ti-circle-check text-lg" aria-hidden="true"></i>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SLA a tiempo</p>
+                <p class="text-2xl font-black text-emerald-700">{{ kpiSLA().aTiempo }}</p>
+                <p class="text-[9px] text-slate-400">Ver todos los activos</p>
+              </div>
+            </button>
           </div>
 
-          <div class="flex-1 overflow-x-auto border-t border-slate-200 bg-white">
-            <table class="w-full text-left whitespace-nowrap">
-              <thead class="bg-slate-800 text-slate-300 text-[10px] uppercase font-bold tracking-widest sticky top-0 z-10">
-                <tr>
-                  <th class="px-5 py-3">Cód / Proyecto</th>
-                  <th class="px-5 py-3 text-center">F. Asignación</th>
-                  <th class="px-5 py-3 text-center">F. Respuesta</th>
-                  <th class="px-5 py-3 text-center border-r border-slate-600">SLA 24h</th>
-                  <th class="px-5 py-3 text-center">Envío Presup.</th>
-                  <th class="px-5 py-3 text-center border-r border-slate-600">Tiempo Aprobación</th>
-                  <th class="px-5 py-3">Control OC</th>
-                  <th class="px-5 py-3">Alerta General (Estado)</th>
-                </tr>
-              </thead>
-              <tbody class="text-xs text-slate-700 divide-y divide-slate-100">
-                @for (p of proyectos(); track p.id) {
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-5 py-3">
-                      <p class="font-black text-slate-800">{{ p.codigo }}</p>
-                      <p class="text-[10px] font-bold text-slate-400">{{ p.nombre | slice:0:30 }}...</p>
-                    </td>
-                    <td class="px-5 py-3 text-center text-slate-500">{{ p.fechaAsignacion | date:'dd/MMM/yy' }}</td>
-                    <td class="px-5 py-3 text-center text-slate-800 font-bold">{{ p.fechaRespuestaCliente ? (p.fechaRespuestaCliente | date:'dd/MMM/yy') : '---' }}</td>
-
-                    <td class="px-5 py-3 text-center border-r border-slate-100">
-                      @if (obtenerEstadoSLA(p); as sla) {
-                        <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border" [ngClass]="sla.badge">
-                          {{ sla.texto }} {{ sla.dias !== null ? '(' + sla.dias + 'd)' : '' }}
-                        </span>
-                      }
-                    </td>
-
-                    <td class="px-5 py-3 text-center text-slate-500">{{ p.fechaEnvioPresupuesto ? (p.fechaEnvioPresupuesto | date:'dd/MMM/yy') : '---' }}</td>
-
-                    <td class="px-5 py-3 text-center font-bold border-r border-slate-100">
-                      @if (p.fechaEnvioPresupuesto && p.fechaAprobacionPresupuesto) {
-                        {{ calcularDiasDiferencia(p.fechaEnvioPresupuesto, p.fechaAprobacionPresupuesto) }} días
-                      } @else if (p.fechaEnvioPresupuesto && !p.fechaAprobacionPresupuesto) {
-                        <span class="text-orange-500">Esperando cliente...</span>
-                      } @else {
-                        <span class="text-slate-300">N/A</span>
-                      }
-                    </td>
-
-                    <td class="px-5 py-3">
-                      @if (obtenerAlertaOC(p); as ocAlert) {
-                        <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase border" [ngClass]="ocAlert.badge">
-                          {{ ocAlert.texto }}
-                        </span>
-                      }
-                    </td>
-
-                    <td class="px-5 py-3">
-                      <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border"
-                            [ngClass]="obtenerClaseEstado(p.estado)">
-                        {{ p.estado }}
-                      </span>
-                    </td>
-                  </tr>
+          <!-- Filtros rápidos -->
+          <div class="flex items-center gap-2 px-5 py-3 bg-white border-b border-slate-100 shrink-0 flex-wrap">
+            <span class="text-[11px] font-medium text-slate-400 mr-1">Filtrar:</span>
+            @for (f of [{id:'todos',label:'Todos'},{id:'criticos',label:'Críticos'},{id:'ejecucion',label:'Ejecución vencida'},{id:'cierre',label:'Cierre pendiente'},{id:'ok',label:'Sin alertas activas'}]; track f.id) {
+              <button type="button" (click)="setFiltroAlertas(f.id)"
+                      class="text-[11px] px-3 py-1.5 rounded-lg border transition-all font-medium"
+                      [ngClass]="filtroAlertas() === f.id
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'">
+                {{ f.label }}
+                @if (f.id === 'criticos' && kpiCriticos() > 0) {
+                  <span class="ml-1 bg-red-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5">{{ kpiCriticos() }}</span>
                 }
-              </tbody>
-            </table>
+              </button>
+            }
+            <span class="ml-auto text-[10px] text-slate-400">{{ alertasFiltradas().length }} proyecto(s)</span>
+          </div>
+
+          <!-- Lista de alertas -->
+          <div class="flex-1 overflow-y-auto p-5 space-y-3">
+
+            @if (alertasFiltradas().length === 0) {
+              <div class="flex flex-col items-center justify-center h-64 text-slate-400">
+                <i class="ti ti-mood-happy text-5xl mb-3 opacity-30" aria-hidden="true"></i>
+                <p class="text-sm font-medium">Sin proyectos en esta categoría</p>
+              </div>
+            }
+
+            <!-- Sección críticos -->
+            @if (tieneCriticosEnFiltro()) {
+              <p class="text-[11px] font-medium text-red-600 flex items-center gap-1.5">
+                <i class="ti ti-alert-triangle" aria-hidden="true"></i> Críticos — acción inmediata
+              </p>
+            }
+
+            @for (p of alertasFiltradas(); track p.id; let idx = $index) {
+
+              @if (filtroAlertas() === 'todos' && p._severidad !== alertasFiltradas()[idx - 1]?._severidad) {
+                @if (p._severidad === 'advertencia') {
+                  <p class="text-[11px] font-medium text-amber-600 flex items-center gap-1.5 pt-2">
+                    <i class="ti ti-clock" aria-hidden="true"></i> Advertencias — seguimiento requerido
+                  </p>
+                }
+                @if (p._severidad === 'cierre') {
+                  <p class="text-[11px] font-medium text-blue-600 flex items-center gap-1.5 pt-2">
+                    <i class="ti ti-file-invoice" aria-hidden="true"></i> Cierre administrativo pendiente
+                  </p>
+                }
+                @if (p._severidad === 'ok') {
+                  <p class="text-[11px] font-medium text-emerald-600 flex items-center gap-1.5 pt-2">
+                    <i class="ti ti-circle-check" aria-hidden="true"></i> Sin alertas
+                  </p>
+                }
+              }
+
+              <div class="bg-white border rounded-xl overflow-hidden transition-all hover:shadow-sm"
+                   [ngClass]="{
+                     'border-l-4 border-l-red-400 border-slate-100':   p._severidad === 'critico',
+                     'border-l-4 border-l-amber-400 border-slate-100': p._severidad === 'advertencia',
+                     'border-l-4 border-l-blue-400 border-slate-100':  p._severidad === 'cierre',
+                     'border-l-4 border-l-emerald-400 border-slate-100': p._severidad === 'ok'
+                   }">
+                <div class="p-4 flex items-start gap-4">
+
+                  <!-- Info proyecto -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] font-bold text-slate-400">{{ p.codigo }}</span>
+                      <span class="text-xs font-black text-slate-800 truncate">{{ p.nombre }}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mb-2">{{ p.cliente?.razonSocial || 'Sin cliente' }} · {{ p.responsable?.nombre || 'Sin responsable' }}</p>
+
+                    <!-- Chips de alertas -->
+                    <div class="flex flex-wrap gap-1.5">
+                      @for (alerta of p._alertas; track alerta.texto) {
+                        <span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border"
+                              [ngClass]="{
+                                'bg-red-50 text-red-700 border-red-200':     alerta.tipo === 'rojo',
+                                'bg-amber-50 text-amber-700 border-amber-200': alerta.tipo === 'ambar',
+                                'bg-blue-50 text-blue-700 border-blue-200':   alerta.tipo === 'azul',
+                                'bg-emerald-50 text-emerald-700 border-emerald-200': alerta.tipo === 'verde'
+                              }">
+                          <i class="ti text-[11px]" [ngClass]="alerta.icono" aria-hidden="true"></i>
+                          {{ alerta.texto }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Acciones -->
+                  <div class="flex flex-col gap-2 shrink-0 items-end">
+                    <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                          [ngClass]="{
+                            'bg-red-100 text-red-700':     p._severidad === 'critico',
+                            'bg-amber-100 text-amber-700': p._severidad === 'advertencia',
+                            'bg-blue-100 text-blue-700':   p._severidad === 'cierre',
+                            'bg-emerald-100 text-emerald-700': p._severidad === 'ok'
+                          }">
+                      {{ p.estado.replace('_', ' ') }}
+                    </span>
+                    <button type="button" (click)="abrirPanel(p)"
+                            class="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1">
+                      <i class="ti ti-external-link text-xs" aria-hidden="true"></i> Abrir
+                    </button>
+                    @if (p._severidad === 'critico') {
+                      <button type="button" (click)="notificarGerencia(p)"
+                              class="text-[11px] font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1">
+                        <i class="ti ti-bell-ringing text-xs" aria-hidden="true"></i> Notificar
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         </div>
       }
     }
   </div>
-
 </div>
+@if (panelAbierto()) {
+  <div class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm transition-opacity" (click)="cerrarPanel()"></div>
+
+  <div class="fixed inset-y-0 right-0 z-[70] w-full lg:w-[1100px] bg-slate-50 shadow-2xl border-l border-slate-200 transform transition-transform duration-500 ease-out flex flex-col animate-slide-left">
+
+    @if (proyectoSeleccionado(); as p) {
+
+      <div class="px-8 py-5 border-b border-slate-200 flex justify-between items-center shrink-0 bg-white shadow-sm z-20">
+        <div class="flex items-center gap-5">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-inner"
+               [ngClass]="configVisual().bgClaro + ' ' + configVisual().textoColor">
+            {{ p.codigo.split('-')[1] || p.codigo.charAt(0) }}
+          </div>
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <h2 class="text-base font-semibold text-slate-900">{{ p.nombre }}</h2>
+              <span class="px-2 py-0.5 rounded text-[11px] font-medium"
+                    [ngClass]="obtenerClaseEstado(p.estado)">
+                {{ p.estado.replace('_', ' ').toLowerCase() | titlecase }}
+              </span>
+            </div>
+            <p class="text-xs font-semibold text-slate-500 flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              Cliente: <span class="text-slate-700">{{ p.cliente?.razonSocial || 'No asignado' }}</span>
+              <span class="mx-2 text-slate-300">|</span>
+              <span class="text-blue-600 font-bold">{{ p.codigo }}</span>
+            </p>
+          </div>
+        </div>
+
+        <button (click)="cerrarPanel()" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 hover:rotate-90 transition-all duration-300 shadow-sm border border-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div [formGroup]="actualizarForm" class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-50/50 relative">
+
+          <div class="flex border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 shrink-0 z-10">
+            <button type="button" (click)="vistaPanel.set('resumen')"
+                    class="px-4 py-3.5 text-xs font-medium border-b-2 transition-all"
+                    [class.border-blue-600]="vistaPanel() === 'resumen'" [class.text-blue-700]="vistaPanel() === 'resumen'"
+                    [class.border-transparent]="vistaPanel() !== 'resumen'" [class.text-slate-400]="vistaPanel() !== 'resumen'">
+              Flujo de ejecución
+            </button>
+            <button type="button" (click)="vistaPanel.set('resumen_general')"
+                    class="px-4 py-3.5 text-xs font-medium border-b-2 transition-all"
+                    [class.border-blue-600]="vistaPanel() === 'resumen_general'" [class.text-blue-700]="vistaPanel() === 'resumen_general'"
+                    [class.border-transparent]="vistaPanel() !== 'resumen_general'" [class.text-slate-400]="vistaPanel() !== 'resumen_general'">
+              Resumen general
+            </button>
+            <button type="button" (click)="vistaPanel.set('detalles')"
+                    class="px-4 py-3.5 text-xs font-medium border-b-2 transition-all"
+                    [class.border-blue-600]="vistaPanel() === 'detalles'" [class.text-blue-700]="vistaPanel() === 'detalles'"
+                    [class.border-transparent]="vistaPanel() !== 'detalles'" [class.text-slate-400]="vistaPanel() !== 'detalles'">
+              Panel de detalles
+            </button>
+            <button type="button" (click)="vistaPanel.set('bitacora')"
+                    class="px-4 py-3.5 text-xs font-medium border-b-2 transition-all flex items-center gap-2"
+                    [class.border-blue-600]="vistaPanel() === 'bitacora'" [class.text-blue-700]="vistaPanel() === 'bitacora'"
+                    [class.border-transparent]="vistaPanel() !== 'bitacora'" [class.text-slate-400]="vistaPanel() !== 'bitacora'">
+              Bitácora
+              <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-[9px]">{{ p.observaciones?.length || 0 }}</span>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-8">
+
+            @if (vistaPanel() === 'resumen') {
+              <div class="max-w-3xl mx-auto animate-fade-in-up">
+
+                <div class="relative border-l-2 border-slate-200 ml-4 space-y-10 pb-12">
+
+                  <div class="relative group">
+                    <div class="absolute -left-[17px] top-4 bg-slate-50 p-1">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm transition-all"
+                           [ngClass]="p.fechaRespuestaCliente ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white ring-4 ring-blue-100'">
+                        @if(p.fechaRespuestaCliente) { <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> } @else { 1 }
+                      </div>
+                    </div>
+
+                    <div class="ml-10 bg-white border rounded-2xl p-6 transition-all"
+                         [ngClass]="p.fechaRespuestaCliente && p.centroDeCostos ? 'border-emerald-100 bg-emerald-50/20 opacity-80' : 'border-blue-200 shadow-lg ring-1 ring-blue-50'">
+                      <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Configuración Inicial</h3>
+                        @if(p.fechaRespuestaCliente && p.centroDeCostos) { <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[9px] font-bold">Completado</span> }
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Líder / Responsable</label>
+                          <select formControlName="responsableId" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white transition-colors">
+                            <option value="">Selecciona responsable...</option>
+                            @for (u of listasFormulario().usuarios; track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Respuesta Cliente (SLA) <span class="text-red-500">*</span></label>
+                          <input type="date" formControlName="fechaRespuestaCliente" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white">
+                        </div>
+                        <!-- Centro de Costos — 2do paso del flujo, primer campo preliminar -->
+                        <div class="col-span-2">
+                          <label class="block text-[10px] font-bold text-orange-600 uppercase mb-1.5 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            Centro de Costos (WorldOffice) <span class="text-red-500">*</span>
+                            <span class="text-slate-400 normal-case font-normal">— primer requisito de preliminares</span>
+                          </label>
+                          <input type="text" formControlName="centroDeCostos" placeholder="Ej: CC-1025"
+                                 class="w-full border rounded-lg px-3 py-2 text-sm font-bold transition-colors"
+                                 [ngClass]="actualizarForm.get('centroDeCostos')?.value?.trim() ? 'border-emerald-300 bg-emerald-50/30 text-slate-800' : 'border-orange-300 bg-orange-50/20 text-slate-700'">
+                          @if (!actualizarForm.get('centroDeCostos')?.value?.trim()) {
+                            <p class="text-[10px] text-orange-600 mt-1 flex items-center gap-1">
+                              <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                              Sin este ID el proyecto no podrá avanzar a la fase de permisos ni cerrarse.
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      @if(!p.fechaRespuestaCliente || !p.centroDeCostos) {
+                        <button type="button" (click)="guardarActualizacion()"
+                                [disabled]="!actualizarForm.get('fechaRespuestaCliente')?.value || !actualizarForm.get('centroDeCostos')?.value?.trim() || actualizando()"
+                                class="mt-4 bg-blue-600 text-white font-bold text-xs px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50">
+                          Guardar y Continuar
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="relative group">
+                    <div class="absolute -left-[17px] top-4 bg-slate-50 p-1">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm transition-all"
+                           [ngClass]="p.fechaInicioActividades ? 'bg-emerald-500 text-white' :
+                                      (p.fechaRespuestaCliente ? 'bg-amber-500 text-white ring-4 ring-amber-100' : 'bg-white border-2 border-slate-300 text-slate-400')">
+                        @if(p.fechaInicioActividades) { <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> } @else { 2 }
+                      </div>
+                    </div>
+
+                    <div class="ml-10 bg-white border rounded-2xl p-6 transition-all"
+                         [ngClass]="!p.fechaRespuestaCliente ? 'opacity-50 pointer-events-none grayscale-[50%]' :
+                                    (p.fechaInicioActividades ? 'border-emerald-100 bg-emerald-50/20 opacity-80' : 'border-amber-200 shadow-lg ring-1 ring-amber-50')">
+
+                      <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                        <div>
+                          <h3 class="text-sm font-semibold text-slate-800">Configuración de inicio</h3>
+                          <p class="text-[10px] text-slate-400 font-medium">Datos contractuales, acceso y presupuesto.</p>
+                        </div>
+                        @if(p.fechaInicioActividades) { <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[9px] font-bold">Aprobado</span> }
+                      </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 relative overflow-hidden" [ngClass]="p.fechaAprobacionPermisos ? 'border-emerald-200 bg-emerald-50/30' : ''">
+                          <div class="flex items-center justify-between mb-2">
+                            <label class="text-[9px] font-medium text-slate-400 flex items-center gap-1">
+                              <svg class="w-3 h-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                              Autorización / Acceso
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                              <input type="checkbox" formControlName="requierePermisos" class="rounded text-amber-500 w-3 h-3 cursor-pointer">
+                              <span class="text-[9px] text-slate-500">¿Requiere?</span>
+                            </label>
+                          </div>
+                          @if (actualizarForm.get('requierePermisos')?.value) {
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                              <div>
+                                <label class="block text-[8px] text-slate-400 mb-0.5">F. Solicitud</label>
+                                <input type="date" formControlName="fechaSolicitudPermisos"
+                                       class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs bg-white">
+                              </div>
+                              <div>
+                                <label class="block text-[8px] text-orange-500 font-bold mb-0.5">F. Visita Técnica</label>
+                                <input type="date" formControlName="fechaVisitaTecnica"
+                                       class="w-full border rounded px-2 py-1.5 text-xs bg-white transition-colors"
+                                       [ngClass]="actualizarForm.get('fechaVisitaTecnica')?.value ? 'border-emerald-300 bg-emerald-50/20' : 'border-orange-200 bg-orange-50/20'">
+                              </div>
+                            </div>
+                            <div>
+                              <label class="block text-[8px] text-slate-400 mb-0.5">F. Aprobación Cliente</label>
+                              <input type="date" formControlName="fechaAprobacionPermisos"
+                                     class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs bg-white focus:border-emerald-400"
+                                     [class.border-emerald-300]="p.fechaAprobacionPermisos">
+                            </div>
+                          } @else {
+                            <p class="text-[10px] text-slate-400 italic py-2">No requiere permisos de acceso — obra nueva o cliente directo.</p>
+                          }
+                        </div>
+
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 relative overflow-hidden" [ngClass]="p.fechaAprobacionPresupuesto ? 'border-emerald-200 bg-emerald-50/30' : ''">
+                          <label class="block text-[9px] font-medium text-slate-400 mb-2 flex items-center gap-1 justify-between">
+                            <span class="flex items-center gap-1"><svg class="w-3 h-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Presupuesto</span>
+                            @if(actualizarForm.get('fechaEnvioPresupuesto')?.value && !p.fechaAprobacionPresupuesto) {
+                              <span class="text-[8px] bg-amber-100 text-amber-700 px-1.5 rounded animate-pulse">Esperando Cliente</span>
+                            }
+                          </label>
+                          <div class="flex gap-2 mb-2">
+                            <div class="w-full">
+                              <label class="block text-[8px] text-slate-400 mb-0.5">F. Envío</label>
+                              <input type="date" formControlName="fechaEnvioPresupuesto" class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs bg-white">
+                            </div>
+                            <div class="w-full">
+                              <label class="block text-[8px] text-slate-400 mb-0.5">Aprobación Cliente</label>
+                              <input type="date" formControlName="fechaAprobacionPresupuesto" class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs bg-white focus:border-emerald-400">
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="col-span-1 md:col-span-2 grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 mt-2">
+                          <div>
+                            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">No. OC / PO Cliente</label>
+                            <div class="flex gap-2 items-center">
+                              <input type="text" formControlName="numeroOC" placeholder="Ej: OC-2026-001"
+                                     [attr.disabled]="actualizarForm.get('sinOcAun')?.value ? true : null"
+                                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:bg-white uppercase font-bold text-slate-700 disabled:opacity-50">
+                              <label class="flex items-center gap-1.5 cursor-pointer shrink-0">
+                                <input type="checkbox" formControlName="sinOcAun"
+                                       class="rounded w-3 h-3 cursor-pointer text-amber-500"
+                                       (change)="actualizarForm.get('numeroOC')?.setValue(actualizarForm.get('sinOcAun')?.value ? 'PENDIENTE' : '')">
+                                <span class="text-[9px] text-slate-500 whitespace-nowrap">Sin OC aún</span>
+                              </label>
+                            </div>
+                            @if (!actualizarForm.get('numeroOC')?.value?.trim() || actualizarForm.get('sinOcAun')?.value) {
+                              <p class="text-[9px] text-amber-600 mt-1">Registra el número cuando el cliente lo emita.</p>
+                            }
+                          </div>
+                          <div>
+                            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Estado Pólizas <span class="text-red-500">*</span></label>
+                            <select formControlName="polizas" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs bg-slate-50 focus:bg-white font-bold text-slate-700 cursor-pointer">
+                              <option value="">Seleccionar...</option>
+                              <option value="Requiere - Pendiente">Requiere - Pendiente</option>
+                              <option value="Requiere - Aprobada">Requiere - Aprobada</option>
+                              <option value="No Requiere">No Requiere</option>
+                            </select>
+                          </div>
+
+                          <!-- Ejecutor: informativo, viene de la OT asignada -->
+                          <div class="col-span-2">
+                            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                              <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                              Ejecutor de Obra
+                              <span class="text-slate-400 normal-case font-normal text-[8px]">(asignado desde la OT)</span>
+                            </label>
+                            @if (obtenerEjecutorDesdeOT(p)) {
+                              <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-100 text-emerald-700 shrink-0">
+                                  {{ obtenerEjecutorDesdeOT(p)!.charAt(0) }}
+                                </div>
+                                <span class="text-xs font-bold text-slate-700">{{ obtenerEjecutorDesdeOT(p) }}</span>
+                                <span class="ml-auto text-[9px] text-slate-400 italic">desde OT</span>
+                              </div>
+                            } @else {
+                              <div class="flex items-center gap-2 bg-slate-50 border border-dashed border-slate-300 rounded-lg px-3 py-2">
+                                <span class="text-[11px] text-slate-400 italic">Sin ejecutor asignado — crea una OT para asignarlo</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      @if(!p.fechaInicioActividades) {
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+
+                          <!-- Aviso de requisitos pendientes (espeja candados del backend) -->
+                          @if (razonesBloqueoInicio.length > 0) {
+                            <div class="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                              <p class="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Requisitos pendientes para iniciar obra
+                              </p>
+                              <ul class="space-y-1">
+                                @for (razon of razonesBloqueoInicio; track razon) {
+                                  <li class="flex items-start gap-2 text-[11px] text-amber-800">
+                                    <svg class="w-3 h-3 shrink-0 mt-0.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                    {{ razon }}
+                                  </li>
+                                }
+                              </ul>
+                            </div>
+                          }
+                          <!-- Advertencia OC sin registrar (no bloquea) -->
+                          @if (advertenciaOC) {
+                            <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+                              <svg class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              <p class="text-[11px] text-blue-700">{{ advertenciaOC }}</p>
+                            </div>
+                          }
+
+                          <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                            <button type="button" (click)="guardarActualizacion()" [disabled]="actualizando()"
+                                    class="text-[11px] font-bold text-slate-500 hover:text-slate-800 transition-colors w-full md:w-auto px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">
+                              Guardar Borrador
+                            </button>
+
+                            <button type="button"
+                                    (click)="actualizarForm.get('fechaInicioActividades')?.setValue(hoy()); guardarActualizacion()"
+                                    [disabled]="!puedeIniciarObra || actualizando()"
+                                    class="w-full md:w-auto bg-orange-500 text-white font-black text-xs px-6 py-2.5 rounded-lg shadow-md hover:bg-orange-600 hover:shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                              AUTORIZAR INICIO DE OBRA
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="relative group">
+                    <div class="absolute -left-[17px] top-4 bg-slate-50 p-1">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm transition-all"
+                           [ngClass]="p.fechaFinalizacionActividades ? 'bg-emerald-500 text-white' :
+                                      (p.fechaInicioActividades ? 'bg-orange-500 text-white ring-4 ring-orange-100 animate-pulse' : 'bg-white border-2 border-slate-300 text-slate-400')">
+                        @if(p.fechaFinalizacionActividades) { <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> } @else { 3 }
+                      </div>
+                    </div>
+
+                    <div class="ml-10 bg-white border rounded-2xl p-6 transition-all"
+                         [ngClass]="!p.fechaInicioActividades ? 'opacity-50 pointer-events-none grayscale-[50%]' :
+                                    (p.fechaFinalizacionActividades ? 'border-emerald-100 bg-emerald-50/20 opacity-80' : 'border-orange-300 shadow-xl ring-2 ring-orange-50')">
+
+                      <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                          <svg class="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                          Obra en Sitio
+                        </h3>
+                        @if(p.fechaInicioActividades && !p.fechaFinalizacionActividades) { <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-[9px] font-bold">En Ejecución</span> }
+                      </div>
+
+                      @if(p.fechaInicioActividades && !p.fechaFinalizacionActividades) {
+                        <div class="bg-orange-50/50 border border-orange-100 rounded-xl p-4 flex flex-col gap-4">
+                          <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div>
+                              <p class="text-xs text-orange-800 font-bold mb-1">Ejecución en Terreno</p>
+                              <p class="text-[10px] text-orange-600/80">Iniciado el: {{ p.fechaInicioActividades | date:'longDate' }}</p>
+                            </div>
+                            <div class="flex flex-col gap-2 w-full md:w-auto">
+                              <div class="flex flex-col gap-1">
+                                <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Fecha Tentativa de Fin</label>
+                                <input type="date" formControlName="fechaTentativaFin"
+                                       class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm text-blue-800 bg-blue-50 shadow-sm"
+                                       (change)="guardarActualizacion()">
+                                <p class="text-[9px] text-slate-400">Compromiso del colaborador</p>
+                              </div>
+                              <div class="flex gap-2 items-center">
+                                <div class="flex flex-col gap-1 flex-1">
+                                  <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Fecha Real de Fin</label>
+                                  <input type="date" formControlName="fechaFinalizacionActividades" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-orange-800 bg-white shadow-sm">
+                                </div>
+                                <button type="button" (click)="guardarActualizacion()"
+                                        [disabled]="!puedeFinalizarObra || actualizando()"
+                                        class="bg-orange-500 text-white font-black text-xs px-5 py-2.5 rounded-lg shadow-md hover:bg-orange-600 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed mt-4">
+                                  Finalizar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Panel de bloqueo: sub-flujos pendientes -->
+                          @if (razonesBloqueoFinalizacion.length > 0) {
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-3">
+                              <p class="text-[10px] font-black text-red-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                No puedes finalizar la obra todavía
+                              </p>
+                              <ul class="space-y-1.5">
+                                @for (razon of razonesBloqueoFinalizacion; track razon) {
+                                  <li class="flex items-start gap-2 text-[11px] text-red-800">
+                                    <svg class="w-3 h-3 shrink-0 mt-0.5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                    {{ razon }}
+                                  </li>
+                                }
+                              </ul>
+                              <p class="text-[10px] text-red-600 mt-2 pt-2 border-t border-red-100">
+                                Resuelve los pendientes antes de registrar el fin de obra.
+                              </p>
+                            </div>
+                          }
+                        </div>
+                      } @else if(p.fechaFinalizacionActividades) {
+                        <p class="text-xs text-slate-500 font-bold">Obra terminada el: <span class="text-slate-800">{{ p.fechaFinalizacionActividades | date:'longDate' }}</span></p>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="relative group">
+                    <div class="absolute -left-[17px] top-4 bg-slate-50 p-1">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm transition-all"
+                           [ngClass]="p.estado === 'FINALIZADO_TOTAL' ? 'bg-emerald-500 text-white' :
+                                      (p.fechaFinalizacionActividades ? 'bg-indigo-600 text-white ring-4 ring-indigo-100' : 'bg-white border-2 border-slate-300 text-slate-400')">
+                        @if(p.estado === 'FINALIZADO_TOTAL') { <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> } @else { 4 }
+                      </div>
+                    </div>
+
+                    <div class="ml-10 bg-white border rounded-2xl p-6 transition-all"
+                         [ngClass]="!p.fechaFinalizacionActividades ? 'opacity-50 pointer-events-none grayscale-[50%]' :
+                                    (p.estado === 'FINALIZADO_TOTAL' ? 'border-emerald-100 bg-emerald-50/20' : 'border-indigo-300 shadow-xl ring-1 ring-indigo-50')">
+
+                      <div class="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Auditoría y Cierre</h3>
+                          <p class="text-[10px] text-slate-400 font-medium">Requisitos para cierre y facturación.</p>
+                        </div>
+                        @if(p.estado === 'FINALIZADO_TOTAL') {
+                          <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[9px] font-bold">Cerrado</span>
+                        } @else {
+                          <!-- Barra de progreso -->
+                          <div class="flex flex-col items-end gap-1">
+                            <span class="text-[10px] font-bold"
+                                  [ngClass]="puedeAuditoriaCierre ? 'text-emerald-600' : 'text-slate-500'">
+                              {{ itemsCierreOk }} / {{ itemsAuditoriaCierre.length }}
+                            </span>
+                            <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div class="h-full rounded-full transition-all duration-500"
+                                   [ngClass]="puedeAuditoriaCierre ? 'bg-emerald-500' : 'bg-indigo-400'"
+                                   [style.width.%]="(itemsCierreOk / itemsAuditoriaCierre.length) * 100">
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Checkboxes manuales (primeros 4 items) -->
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <label class="flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors shadow-sm"
+                               [ngClass]="actualizarForm.get('cierreTecnicoAprobado')?.value ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'">
+                          <input type="checkbox" formControlName="cierreTecnicoAprobado" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" (change)="guardarActualizacion()">
+                          <div>
+                            <span class="text-[11px] font-bold text-slate-700">Cierre Técnico en Terreno</span>
+                            <p class="text-[9px] text-slate-400">Aprobado por el supervisor del cliente</p>
+                          </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors shadow-sm"
+                               [ngClass]="actualizarForm.get('dossierEntregado')?.value ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'">
+                          <input type="checkbox" formControlName="dossierEntregado" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" (change)="guardarActualizacion()">
+                          <div>
+                            <span class="text-[11px] font-bold text-slate-700">Dossier / Informe a Cliente</span>
+                            <p class="text-[9px] text-slate-400">Documento entregado y aceptado</p>
+                          </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors shadow-sm"
+                               [ngClass]="actualizarForm.get('liquidacionTerminada')?.value ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'">
+                          <input type="checkbox" formControlName="liquidacionTerminada" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" (change)="guardarActualizacion()">
+                          <div>
+                            <span class="text-[11px] font-bold text-slate-700">Liquidación Contratistas</span>
+                            <p class="text-[9px] text-slate-400">Pagos y cierres de OTs completados</p>
+                          </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors shadow-sm"
+                               [ngClass]="actualizarForm.get('facturacionCompletada')?.value ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'">
+                          <input type="checkbox" formControlName="facturacionCompletada" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" (change)="guardarActualizacion()">
+                          <div>
+                            <span class="text-[11px] font-bold text-slate-700">Facturación Emitida</span>
+                            <p class="text-[9px] text-slate-400">Área Contable confirmó la factura</p>
+                          </div>
+                        </label>
+                      </div>
+
+                      <!-- Pre-checklist completo de condiciones del backend -->
+                      @if(p.estado !== 'FINALIZADO_TOTAL') {
+                        <div class="border rounded-xl overflow-hidden mb-4"
+                             [ngClass]="puedeAuditoriaCierre ? 'border-emerald-200' : 'border-slate-200'">
+                          <div class="px-3 py-2 flex items-center gap-2"
+                               [ngClass]="puedeAuditoriaCierre ? 'bg-emerald-50' : 'bg-slate-50'">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 [ngClass]="puedeAuditoriaCierre ? 'text-emerald-600' : 'text-slate-400'">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            <span class="text-[10px] font-black uppercase tracking-wider"
+                                  [ngClass]="puedeAuditoriaCierre ? 'text-emerald-700' : 'text-slate-500'">
+                              {{ puedeAuditoriaCierre ? '✓ Proyecto listo para cierre definitivo' : 'Verificación previa al cierre' }}
+                            </span>
+                          </div>
+                          <div class="divide-y divide-slate-100">
+                            @for (item of itemsAuditoriaCierre; track item.label) {
+                              <div class="flex items-start gap-2.5 px-3 py-2"
+                                   [ngClass]="item.ok ? 'bg-white' : 'bg-red-50/40'">
+                                <!-- Icono estado -->
+                                @if (item.ok) {
+                                  <svg class="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                  </svg>
+                                } @else {
+                                  <svg class="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                  </svg>
+                                }
+                                <span class="text-[11px] leading-tight"
+                                      [ngClass]="item.ok ? 'text-slate-600' : 'text-red-700 font-medium'">
+                                  {{ item.label }}
+                                </span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <button type="button" (click)="guardarActualizacion()"
+                                [disabled]="actualizando() || !puedeAuditoriaCierre"
+                                class="w-full font-black text-sm py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                                [ngClass]="puedeAuditoriaCierre
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200'
+                                  : 'bg-slate-200 text-slate-400 disabled:opacity-100'">
+                          @if (actualizando()) {
+                            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Procesando Cierre...
+                          } @else if (puedeAuditoriaCierre) {
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Cerrar Proyecto Definitivamente
+                          } @else {
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            Completa los requisitos para continuar
+                          }
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (vistaPanel() === 'resumen_general') {
+<div class="space-y-4 animate-fade-in p-1">
+
+                <!-- Identificación -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center" [ngClass]="configVisual().bgClaro">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Identificación del Proyecto</p>
+                    <span class="text-[9px] font-bold px-2 py-1 rounded-full"
+                          [ngClass]="p.estado === 'EN_EJECUCIÓN' ? 'bg-blue-100 text-blue-700' :
+                                     p.estado === 'FINALIZADO_TOTAL' ? 'bg-emerald-100 text-emerald-700' :
+                                     p.estado === 'FINALIZADO_PARCIAL' ? 'bg-purple-100 text-purple-700' :
+                                     'bg-amber-100 text-amber-700'">
+                      {{ p.estado?.replace('_', ' ') }}
+                    </span>
+                  </div>
+                  <div class="p-4 grid grid-cols-2 gap-3 text-xs">
+                    <div class="col-span-2">
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Nombre del Proyecto</p>
+                      <p class="font-black text-slate-800 text-sm">{{ p.nombre }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Código</p>
+                      <p class="font-bold text-slate-700">{{ p.codigo }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">División</p>
+                      <p class="font-bold text-slate-700">{{ configVisual().titulo }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Cliente</p>
+                      <p class="font-bold text-slate-700">{{ p.cliente?.razonSocial || '—' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Responsable</p>
+                      <p class="font-bold text-slate-700">{{ p.responsable?.nombre || '—' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Supervisor Cliente</p>
+                      <p class="font-bold text-slate-700">{{ p.supervisorCliente || '—' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Centro de Costos</p>
+                      <p class="font-bold" [ngClass]="p.centroDeCostos ? 'text-emerald-600' : 'text-red-400'">
+                        {{ p.centroDeCostos || 'Sin registrar' }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fechas clave -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div class="px-5 py-3 border-b border-slate-100" [ngClass]="configVisual().bgClaro">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Fechas Clave</p>
+                  </div>
+                  <div class="p-4 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Fecha Asignación</p>
+                      <p class="font-bold text-slate-700">{{ p.fechaAsignacion ? (p.fechaAsignacion | date:'dd/MM/yyyy') : '—' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Respuesta Cliente (SLA)</p>
+                      <p class="font-bold" [ngClass]="p.fechaRespuestaCliente ? 'text-slate-700' : 'text-red-400'">
+                        {{ p.fechaRespuestaCliente ? (p.fechaRespuestaCliente | date:'dd/MM/yyyy') : 'Sin registrar' }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Inicio de Obra</p>
+                      <p class="font-bold" [ngClass]="p.fechaInicioActividades ? 'text-blue-600' : 'text-slate-400 italic'">
+                        {{ p.fechaInicioActividades ? (p.fechaInicioActividades | date:'dd/MM/yyyy') : 'No iniciado' }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Fecha Tentativa Fin</p>
+                      <p class="font-bold text-blue-600">
+                        {{ p.fechaTentativaFin ? (p.fechaTentativaFin | date:'dd/MM/yyyy') : '—' }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Finalización Real</p>
+                      <p class="font-bold" [ngClass]="p.fechaFinalizacionActividades ? 'text-emerald-600' : 'text-slate-400 italic'">
+                        {{ p.fechaFinalizacionActividades ? (p.fechaFinalizacionActividades | date:'dd/MM/yyyy') : 'Pendiente' }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Duración</p>
+                      <p class="font-bold text-slate-700">
+                        @if (p.fechaInicioActividades && p.fechaFinalizacionActividades) {
+                          {{ calcularDiasDiferencia(p.fechaInicioActividades, p.fechaFinalizacionActividades) }} días
+                        } @else if (p.fechaInicioActividades) {
+                          {{ calcularDiasDiferencia(p.fechaInicioActividades, hoy()) }} días en curso
+                        } @else { — }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Información contractual -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div class="px-5 py-3 border-b border-slate-100" [ngClass]="configVisual().bgClaro">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Información Contractual</p>
+                  </div>
+                  <div class="p-4 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">No. OC / PO Cliente</p>
+                      <p class="font-bold" [ngClass]="p.numeroOC ? 'text-slate-700' : 'text-amber-500'">
+                        {{ p.numeroOC || 'PENDIENTE' }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Valor OC</p>
+                      <p class="font-bold text-slate-700">{{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Pólizas</p>
+                      <p class="font-bold" [ngClass]="p.polizas === 'Requiere - Aprobada' || p.polizas === 'No Requiere' ? 'text-emerald-600' : 'text-amber-500'">
+                        {{ p.polizas || '—' }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 text-[9px] uppercase mb-0.5">Ejecutor de Obra</p>
+                      <p class="font-bold text-slate-700">{{ obtenerEjecutorDesdeOT(p) || '—' }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Financiero -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div class="px-5 py-3 border-b border-slate-100" [ngClass]="configVisual().bgClaro">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-600">Resumen Financiero</p>
+                  </div>
+                  <div class="p-4 space-y-2 text-xs">
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-50">
+                      <span class="text-slate-500">Presupuestado (OC)</span>
+                      <span class="font-bold text-slate-800">{{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-50">
+                      <span class="text-slate-500">Facturado</span>
+                      <span class="font-bold text-emerald-600">{{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-50">
+                      <span class="text-slate-500">Gasto Real</span>
+                      <span class="font-bold text-amber-600">{{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-50">
+                      <span class="text-slate-500">Utilidad</span>
+                      <span class="font-bold" [ngClass]="(p.utilidad || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                        {{ p.utilidad | currency:'COP':'symbol-narrow':'1.0-0' }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5">
+                      <span class="text-slate-500">Avance Financiero</span>
+                      <div class="flex items-center gap-2">
+                        <div class="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div class="h-full rounded-full transition-all"
+                               [ngClass]="configVisual().bgColor"
+                               [style.width]="(p.porcentajeAvanceFinanciero || 0) + '%'"></div>
+                        </div>
+                        <span class="font-bold text-slate-700">{{ (p.porcentajeAvanceFinanciero || 0).toFixed(1) }}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sub-flujos resumen -->
+                <div class="grid grid-cols-3 gap-3">
+                  <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">OTs</p>
+                    <p class="text-2xl font-black" [ngClass]="configVisual().textoColor">{{ p.ordenesTrabajo?.length || 0 }}</p>
+                    <p class="text-[9px] text-slate-400">emitidas</p>
+                  </div>
+                  <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">REQ</p>
+                    <p class="text-2xl font-black" [ngClass]="configVisual().textoColor">{{ p.requisiciones?.length || 0 }}</p>
+                    <p class="text-[9px] text-slate-400">solicitadas</p>
+                  </div>
+                  <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">ANT</p>
+                    <p class="text-2xl font-black" [ngClass]="configVisual().textoColor">{{ p.anticiposDirectos?.length || 0 }}</p>
+                    <p class="text-[9px] text-slate-400">registrados</p>
+                  </div>
+                </div>
+
+              </div>
+            }
+            @if (vistaPanel() === 'detalles') {
+              <div class="animate-fade-in bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+                <div class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
+                  <div>
+                    <h3 class="text-sm font-black text-white">Panel de Corrección y Detalles</h3>
+                    <p class="text-[10px] text-slate-400 font-medium">Usa esta vista para modificar datos de fases anteriores en modo administrador.</p>
+                  </div>
+                  <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                  </div>
+                </div>
+
+                <div class="bg-blue-50/50 p-3 border-b border-blue-100 text-[10px] text-blue-800 flex gap-2 items-start">
+                  <svg class="w-4 h-4 shrink-0 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <p><b>¿Necesitas retroceder de fase?</b> Simplemente borra la fecha que disparó la fase actual (ej: borra la fecha de inicio de obra) y guarda los cambios. El sistema ajustará el estado automáticamente.</p>
+                </div>
+
+                <div class="p-5 space-y-6">
+                  <div>
+                    <h4 class="text-[11px] font-medium text-slate-400 mb-3 border-b border-slate-100 pb-1">Línea de Tiempo Manual</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Respuesta Cliente (SLA)</label>
+                        <input type="date" formControlName="fechaRespuestaCliente" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-xs text-slate-700 bg-slate-50 focus:bg-white disabled:bg-slate-100">
+                      </div>
+                      <div>
+                        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Envío Presupuesto</label>
+                        <input type="date" formControlName="fechaEnvioPresupuesto" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-xs text-slate-700 bg-slate-50 focus:bg-white disabled:bg-slate-100">
+                      </div>
+                      <div>
+                        <label class="block text-[9px] font-bold text-blue-600 uppercase mb-1">Inicio de Obra</label>
+                        <input type="date" formControlName="fechaInicioActividades" class="w-full border border-blue-200 rounded-md px-2 py-1.5 text-xs text-blue-800 bg-blue-50 focus:bg-white disabled:bg-slate-100">
+                      </div>
+                      <div>
+                        <label class="block text-[9px] font-bold text-orange-600 uppercase mb-1">Fin de Obra</label>
+                        <input type="date" formControlName="fechaFinalizacionActividades" class="w-full border border-orange-200 rounded-md px-2 py-1.5 text-xs text-orange-800 bg-orange-50 focus:bg-white disabled:bg-slate-100">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-8 pt-6 border-t border-slate-200 flex items-center justify-end">
+                    @if (actualizarForm.enabled) {
+                      <button type="button" (click)="guardarActualizacion()" [disabled]="actualizarForm.invalid || actualizando()"
+                              class="bg-slate-800 hover:bg-slate-900 text-white px-8 py-3 rounded-xl font-black text-sm shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50">
+                        @if (actualizando()) {
+                          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Guardando Cambios...
+                        } @else {
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                          Forzar Guardado Manual
+                        }
+                      </button>
+                    } @else {
+                      <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center gap-4 w-full md:w-auto">
+                        <div class="bg-white p-2 rounded-lg shadow-sm">
+                          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        </div>
+                        <div>
+                          <p class="text-xs font-black text-amber-800 uppercase tracking-wide">Proyecto Cerrado</p>
+                          <p class="text-[10px] font-medium text-amber-700/80 mt-0.5">El expediente está en Solo Lectura.</p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+
+            @if (vistaPanel() === 'bitacora') {
+              <div class="flex-1 flex flex-col min-h-[400px] overflow-hidden bg-slate-50 animate-fade-in rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                  @for (obs of p.observaciones; track obs.id) {
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                      <div class="flex justify-between items-start mb-2">
+                        <p class="text-xs font-black text-slate-700">{{ obs.usuario?.nombre || 'Usuario' }}</p>
+                        <p class="text-[10px] font-semibold text-slate-400">{{ obs.fechaRegistro | date:'short' }}</p>
+                      </div>
+                      <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{{ obs.observacion }}</p>
+                    </div>
+                  } @empty {
+                    <div class="text-center text-slate-400 py-10">
+                      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                      <p class="text-sm font-medium">Aún no hay registros en la bitácora.</p>
+                    </div>
+                  }
+                </div>
+
+                <div class="p-4 bg-white border-t border-slate-200 shrink-0">
+                  @if (p.estado === 'FINALIZADO_TOTAL' || p.estado === 'Cancelado' || p.estado === 'Incumplimiento') {
+                    <div class="p-4 mb-1 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                      <svg class="w-6 h-6 mx-auto mb-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                      <p class="text-xs font-bold text-slate-500">Proyecto Cerrado</p>
+                      <p class="text-[10px] text-slate-400">No se admiten nuevas observaciones en la bitácora.</p>
+                    </div>
+                  }
+                  @else {
+                    <textarea [ngModel]="nuevaObservacion()" (ngModelChange)="nuevaObservacion.set($event)"
+                              [ngModelOptions]="{standalone: true}"
+                              rows="3" placeholder="Escribe un avance o novedad del proyecto..."
+                              class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:outline-none transition-colors resize-none mb-3"></textarea>
+
+                    <div class="flex justify-end items-center">
+                      <button type="button" (click)="enviarObservacion()" [disabled]="!nuevaObservacion().trim() || guardandoObs()"
+                              [ngClass]="configVisual().bgColor"
+                              class="px-5 py-2 rounded-lg text-xs font-bold text-white shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2">
+                        @if (guardandoObs()) { Enviando... } @else { Registrar Avance }
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <div class="w-full lg:w-[360px] bg-white border-l border-slate-200 overflow-y-auto shrink-0 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] z-20">
+          <div class="p-6 space-y-8">
+
+            <div>
+              <h4 class="text-[11px] font-medium text-slate-400 mb-3 border-b border-slate-100 pb-1">Ejecutor Designado</h4>
+              <div class="w-full border border-slate-200 rounded-xl p-3 text-xs bg-slate-50 font-bold text-slate-700 shadow-sm">
+                @if (actualizarForm.get('contratista')?.value?.trim() || actualizarForm.get('ejecutorInternoId')?.value) {
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded flex items-center justify-center shrink-0"
+                         [ngClass]="actualizarForm.get('ejecutorInternoId')?.value ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <div class="leading-tight">
+                      @if (actualizarForm.get('ejecutorInternoId')?.value) {
+                        <p>{{ p.ejecutorInterno?.nombre || 'Técnico interno' }}</p>
+                        <p class="text-[9px] text-blue-500 font-normal">Técnico interno ejecutor</p>
+                      } @else {
+                        <p>{{ actualizarForm.get('contratista')?.value }}</p>
+                        <p class="text-[9px] text-amber-600 font-normal">Contratista externo</p>
+                      }
+                    </div>
+                  </div>
+                } @else if (ordenesTrabajo().length > 0) {
+                  <div class="flex flex-col gap-2">
+                    @for (ot of ordenesTrabajo(); track ot.id) {
+                      <span class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded flex items-center justify-center shrink-0"
+                             [ngClass]="ot.tecnicoInterno ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div class="leading-tight">
+                          <p>{{ ot.contratistaNombre || ot.tecnicoInterno?.nombre }}</p>
+                          <p class="text-[9px] text-slate-400 font-normal">OT: {{ ot.consecutivo }}</p>
+                        </div>
+                      </span>
+                    }
+                  </div>
+                } @else {
+                  <span class="text-red-400 animate-pulse italic font-medium flex items-center gap-2">
+                    <div class="w-6 h-6 rounded bg-red-50 flex items-center justify-center shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+                    Pendiente asignación
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div>
+              <h4 class="text-[11px] font-medium text-slate-400 mb-3 border-b border-slate-100 pb-1">Info Contable</h4>
+              <div class="space-y-3">
+                <!-- Centro de Costos se gestiona en el Paso 1 del Flujo de Ejecución -->
+                @if (actualizarForm.get('centroDeCostos')?.value?.trim()) {
+                  <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                    <span class="text-[9px] font-bold text-emerald-600 uppercase">Centro de Costos</span>
+                    <span class="text-xs font-black text-emerald-800 uppercase">{{ actualizarForm.get('centroDeCostos')?.value }}</span>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                    <svg class="w-3 h-3 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-[9px] text-orange-600 font-medium">Centro de Costos pendiente — regístralo en el Paso 1</span>
+                  </div>
+                }
+                <div>
+                  <label class="block text-[9px] font-bold text-emerald-600 uppercase mb-1">Total Facturado a Cliente</label>
+                  <input type="text" appCurrencyMask formControlName="valorFacturado"
+                         class="w-full border border-emerald-200 bg-emerald-50 rounded-lg px-3 py-2 text-sm font-black text-emerald-800 focus:ring-2 focus:ring-emerald-100 shadow-inner text-right">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-3 border-b border-slate-200 pb-1 flex items-center gap-1">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Balance Financiero
+              </h4>
+
+              <div class="space-y-3">
+                <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Presupuestado al Cliente</span>
+                  <input type="text" appCurrencyMask formControlName="valorOC" class="w-24 bg-transparent border-none p-0 text-right text-xs font-black text-slate-800 focus:ring-0 disabled:text-slate-500">
+                </div>
+
+                <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 relative group">
+                  <span class="text-[10px] font-bold text-orange-500 uppercase flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg> Gastos Req.</span>
+                  <input type="text" appCurrencyMask formControlName="valorGasto" readonly class="w-24 bg-transparent border-none p-0 text-right text-xs font-bold text-orange-700 cursor-not-allowed">
+                </div>
+
+                <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 relative group">
+                  <span class="text-[10px] font-bold text-purple-500 uppercase flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Costos OTs</span>
+                  <input type="text" appCurrencyMask formControlName="costoRealTotal" readonly class="w-24 bg-transparent border-none p-0 text-right text-xs font-bold text-purple-700 cursor-not-allowed">
+                </div>
+
+                <div class="border-2 rounded-xl p-4 mt-4 relative overflow-hidden flex flex-col justify-center items-center shadow-lg"
+                     [ngClass]="utilidadBruta >= 0 ? 'bg-slate-900 border-slate-800' : 'bg-red-50 border-red-200'">
+                  <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-20"
+                       [ngClass]="utilidadBruta >= 0 ? 'bg-emerald-400' : 'bg-red-500'"></div>
+
+                  <label class="block text-[10px] font-bold uppercase tracking-widest mb-1 z-10"
+                         [ngClass]="utilidadBruta >= 0 ? 'text-slate-400' : 'text-red-500'">
+                    Utilidad Proyectada
+                  </label>
+
+                  <div class="flex flex-col items-center gap-1 z-10">
+                    <p class="text-2xl font-black tracking-tight" [ngClass]="utilidadBruta >= 0 ? 'text-white' : 'text-red-700'">
+                      {{ utilidadBruta | currency:'COP':'symbol-narrow':'1.0-0' }}
+                    </p>
+                    <span class="text-[10px] font-black px-2 py-0.5 rounded-full"
+                          [ngClass]="utilidadBruta >= 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-200 text-red-800 border border-red-300'">
+                      Margen: {{ margenUtilidad | number:'1.1-1' }}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-6 pt-4 border-t border-slate-100 flex justify-center">
+                 <button type="button" (click)="guardarActualizacion()" [disabled]="actualizando()" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors w-full text-center">
+                   Guardar Cambios Contables
+                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}
 
 @if (modalAbierto()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity animate-fade-in">
+  <form [formGroup]="proyectoForm" (ngSubmit)="guardarProyecto()" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity animate-fade-in">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all animate-slide-up">
       <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center" [ngClass]="configVisual().bgClaro">
         <div class="flex items-center gap-3">
@@ -234,12 +1332,12 @@
           </div>
           <h3 class="text-lg font-black text-slate-800">Registrar Nuevo Proyecto</h3>
         </div>
-        <button (click)="cerrarModal()" class="text-slate-400 hover:text-red-500 transition-colors">
+        <button type="button" (click)="cerrarModal()" class="text-slate-400 hover:text-red-500 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
 
-      <form [formGroup]="proyectoForm" (ngSubmit)="guardarProyecto()" class="p-6">
+      <div class="p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Código de Proyecto <span class="text-red-500">*</span></label>
@@ -248,15 +1346,10 @@
                    [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Valor OC Inicial</label>
-            <div class="relative">
-              <input type="text"
-                    appCurrencyMask
-                    formControlName="valorOC"
-                    placeholder="$ 0"
-                    class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:outline-none transition-colors"
-                    [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
-            </div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Valor Presupuestado al Cliente</label>
+            <input type="text" appCurrencyMask formControlName="valorOC" placeholder="$ 0"
+                   class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:outline-none transition-colors"
+                   [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
           </div>
           <div class="md:col-span-2">
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre de la Actividad / Proyecto <span class="text-red-500">*</span></label>
@@ -270,9 +1363,7 @@
                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:outline-none transition-colors cursor-pointer"
                     [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
               <option value="">Seleccione un cliente...</option>
-              @for (c of listasFormulario().clientes; track c.id) {
-                <option [value]="c.id">{{ c.razonSocial }}</option>
-              }
+              @for (c of listasFormulario().clientes; track c.id) { <option [value]="c.id">{{ c.razonSocial }}</option> }
             </select>
           </div>
           <div>
@@ -282,383 +1373,545 @@
                    [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Líder / Responsable</label>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Director / Gerente de Proyectos
+            </label>
             <select formControlName="responsableId"
                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:outline-none transition-colors cursor-pointer"
                     [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
               <option value="">Sin asignar por ahora</option>
-              @for (u of listasFormulario().usuarios; track u.id) {
-                <option [value]="u.id">{{ u.nombre }}</option>
-              }
+              @for (u of listasFormulario().usuarios; track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
             </select>
+            <p class="text-[9px] text-slate-400 mt-1">El técnico o contratista que ejecuta la obra se asigna en los Preliminares.</p>
           </div>
         </div>
 
-        <div class="mt-8 pt-5 border-t border-slate-100 flex justify-end gap-3">
+        <!-- Fechas clave -->
+        <div class="mt-5 pt-4 border-t border-slate-100">
+          <p class="text-[11px] font-medium text-slate-400 mb-3">Fechas de Configuración Inicial</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Fecha de Asignación <span class="text-red-500">*</span>
+              </label>
+              <input type="date" formControlName="fechaAsignacion"
+                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors">
+              <p class="text-[9px] text-slate-400 mt-1">Fecha en que el cliente asignó el proyecto.</p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Fecha Respuesta al Cliente
+              </label>
+              <input type="date" formControlName="fechaRespuestaCliente"
+                     class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors">
+              <p class="text-[9px] text-slate-400 mt-1">Si ya fue enviada, regístrala aquí para calcular el SLA.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-5 border-t border-slate-100 flex justify-end gap-3">
           <button type="button" (click)="cerrarModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">
             Cancelar
           </button>
           <button type="submit" [disabled]="proyectoForm.invalid || guardando()"
                   [ngClass]="configVisual().bgColor"
                   class="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-            @if (guardando()) {
-              <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              Guardando...
-            } @else {
-              Guardar Proyecto
-            }
+            @if (guardando()) { Guardando... } @else { Guardar Proyecto }
           </button>
         </div>
-      </form>
+      </div>
+    </div>
+  </form>
+}
+
+@if (modalOTAbierto()) {
+  <div class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity animate-fade-in p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden transform transition-all animate-slide-up flex flex-col max-h-[90vh]">
+
+      <div class="px-6 py-4 border-b border-emerald-100 flex justify-between items-center bg-emerald-50 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-white rounded-lg shadow-sm text-emerald-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-black text-emerald-900">Órdenes de Trabajo</h3>
+            <p class="text-xs font-bold text-emerald-600/70">Proyecto: {{ proyectoSeleccionado()?.codigo }} · {{ proyectoSeleccionado()?.nombre }}</p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarModalOT()" class="text-emerald-400 hover:text-emerald-700 transition-colors bg-white rounded-full p-1 shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-5 grid grid-cols-5 gap-5">
+
+          <!-- Columna izquierda: Formulario nueva OT -->
+          <form [formGroup]="otForm" (ngSubmit)="guardarOT()" class="col-span-2 space-y-4">
+            <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">Nueva OT</p>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Consecutivo <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="consecutivo" placeholder="Ej: OT-2024-05"
+                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor Total OT</label>
+              <input type="text" appCurrencyMask formControlName="valorTotal"
+                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-100">
+            </div>
+
+            <!-- Ejecutor: Técnico interno O Contratista -->
+            <div class="bg-emerald-50 rounded-xl border border-emerald-100 p-3 space-y-3">
+              <p class="text-[9px] font-black text-emerald-800 uppercase tracking-widest">Ejecutor (elige uno)</p>
+
+              <!-- Técnico interno -->
+              <div [ngClass]="otForm.get('contratistaId')?.value ? 'opacity-40 pointer-events-none' : ''">
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Técnico Interno</label>
+                <select formControlName="tecnicoInternoId" (change)="onTecnicoInternoChange($event)"
+                        class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white">
+                  <option value="">No aplica</option>
+                  @for (u of listasFormulario().usuarios; track u.id) {
+                    <option [value]="u.id">{{ u.nombre }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Contratista del módulo -->
+              <div [ngClass]="otForm.get('tecnicoInternoId')?.value ? 'opacity-40 pointer-events-none' : ''">
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Contratista Externo</label>
+                <select formControlName="contratistaId" (change)="onContratistaIdChange($event)"
+                        class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white">
+                  <option value="">Seleccionar contratista...</option>
+                  @for (c of listasFormulario().contratistas; track c.id) {
+                    <option [value]="c.id">{{ c.razonSocial || c.nombreCompleto }}</option>
+                  }
+                </select>
+                <!-- Datos del contratista seleccionado -->
+                @if (contratistaSeleccionadoOT()) {
+                  <div class="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 text-[10px]">
+                    <p class="font-bold text-amber-800">{{ contratistaSeleccionadoOT().razonSocial || contratistaSeleccionadoOT().nombreCompleto }}</p>
+                    <p class="text-amber-600">NIT/CC: {{ contratistaSeleccionadoOT().nit || contratistaSeleccionadoOT().numeroDocumento }}</p>
+                    @if (contratistaSeleccionadoOT().telefonoEmpresa || contratistaSeleccionadoOT().numeroContacto) {
+                      <p class="text-amber-600">Tel: {{ contratistaSeleccionadoOT().telefonoEmpresa || contratistaSeleccionadoOT().numeroContacto }}</p>
+                    }
+                    @if (contratistaSeleccionadoOT().emailEmpresa || contratistaSeleccionadoOT().correoElectronico) {
+                      <p class="text-amber-600 truncate">{{ contratistaSeleccionadoOT().emailEmpresa || contratistaSeleccionadoOT().correoElectronico }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alcance del Servicio <span class="text-red-500">*</span></label>
+              <textarea formControlName="alcanceServicio" rows="3"
+                        placeholder="Describe el trabajo a realizar..."
+                        class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-100 resize-none"></textarea>
+            </div>
+
+            <button type="submit" [disabled]="otForm.invalid || guardandoOT()"
+                    class="w-full py-2.5 rounded-xl text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              @if (guardandoOT()) { Procesando... } @else { Emitir OT }
+            </button>
+          </form>
+
+          <!-- Columna derecha: Listado de OTs existentes -->
+          <div class="col-span-3 space-y-3">
+            <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">
+              OTs del Proyecto
+              <span class="ml-2 text-slate-400 font-normal normal-case">{{ ordenesTrabajo().length }} registros</span>
+            </p>
+
+            @if (cargandoSubFlujos()) {
+              <div class="flex justify-center py-8 text-slate-400">
+                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              </div>
+            } @else if (ordenesTrabajo().length === 0) {
+              <div class="text-center py-10 text-slate-400">
+                <p class="text-xs">No hay OTs emitidas para este proyecto.</p>
+              </div>
+            } @else {
+              <div class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                @for (ot of ordenesTrabajo(); track ot.id) {
+                  <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="font-black text-slate-800 text-xs">{{ ot.consecutivo }}</span>
+                          <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase"
+                                [ngClass]="ot.estado === 'PAGADA' ? 'bg-emerald-100 text-emerald-700' :
+                                           ot.estado === 'EMITIDA' ? 'bg-blue-100 text-blue-700' :
+                                           ot.estado === 'CERRADA' ? 'bg-slate-100 text-slate-600' :
+                                           'bg-amber-100 text-amber-700'">
+                            {{ ot.estado }}
+                          </span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-0.5">
+                          {{ ot.contratistaNombre || ot.tecnicoInterno?.nombre || 'Sin ejecutor' }}
+                          @if (ot.valorTotal > 0) { · {{ ot.valorTotal | currency:'COP':'symbol-narrow':'1.0-0' }} }
+                        </p>
+                        @if (ot.alcanceServicio) {
+                          <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">{{ ot.alcanceServicio }}</p>
+                        }
+                      </div>
+                      @if (proyectoSeleccionado()?.estado !== 'FINALIZADO_TOTAL' && proyectoSeleccionado()?.estado !== 'Cancelado') {
+                        <button type="button" (click)="eliminarOT(ot)"
+                                class="text-red-400 hover:text-red-600 transition-colors shrink-0 p-1"
+                                title="Eliminar OT">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                      }
+                    </div>
+
+
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end">
+        <button type="button" (click)="cerrarModalOT()" class="px-5 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors">
+          Cerrar
+        </button>
+      </div>
     </div>
   </div>
 }
 
-@if (panelAbierto()) {
-  <div class="fixed inset-0 z-[60] bg-slate-900/20 backdrop-blur-sm transition-opacity" (click)="cerrarPanel()"></div>
-}
+@if (modalAnticipoAbierto()) {
+  <form [formGroup]="anticipoForm" (ngSubmit)="guardarAnticipo()" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity animate-fade-in p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all animate-slide-up">
 
-<div class="fixed inset-y-0 right-0 z-[70] w-full md:w-[550px] bg-white shadow-2xl border-l border-slate-100 transform transition-transform duration-300 ease-in-out flex flex-col"
-     [class.translate-x-full]="!panelAbierto()"
-     [class.translate-x-0]="panelAbierto()">
-
-  @if (proyectoSeleccionado(); as p) {
-
-    <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-start shrink-0" [ngClass]="configVisual().bgClaro">
-      <div>
-        <div class="flex items-center gap-3 mb-1">
-          <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-white shadow-sm" [ngClass]="configVisual().textoColor">
-            {{ p.codigo }}
-          </span>
-          <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border"
-                [ngClass]="obtenerClaseEstado(p.estado)">
-            {{ p.estado }}
-          </span>
+      <div class="px-6 py-4 border-b border-blue-100 flex justify-between items-center bg-blue-50">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-white rounded-lg shadow-sm text-blue-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-blue-900">Solicitar Anticipo</h3>
+            <p class="text-[10px] font-bold text-blue-600/70">Para: {{ otSeleccionadaParaAnticipo()?.consecutivo }}</p>
+          </div>
         </div>
-        <h2 class="text-xl font-black text-slate-800 leading-tight">{{ p.nombre }}</h2>
-        <p class="text-xs text-slate-500 font-medium mt-1">Cliente: <span class="text-slate-700 font-bold">{{ p.cliente?.razonSocial || 'No asignado' }}</span></p>
       </div>
 
-      <button (click)="cerrarPanel()" class="p-2 bg-white rounded-full text-slate-400 hover:text-red-500 shadow-sm transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
-    </div>
-
-    @if (vistaPanel() === 'resumen') {
-      <div class="flex-1 overflow-y-auto p-6 space-y-8 animate-fade-in">
-
-        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Supervisor</p>
-            <p class="text-sm font-semibold text-slate-700">{{ p.supervisorCliente || 'No Registrado' }}</p>
-          </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Contratista</p>
-            <p class="text-sm font-semibold text-slate-700">{{ p.contratista || 'Sin Asignar' }}</p>
-          </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Pólizas</p>
-            <p class="text-sm font-semibold text-slate-700">{{ p.polizas || 'N/A' }}</p>
-          </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Centro de Costos</p>
-            <p class="text-sm font-semibold text-slate-700">{{ p.centroDeCostos || 'N/A' }}</p>
-          </div>
+      <div class="p-6 space-y-5">
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
+          <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Tope Máximo (Valor OT)</p>
+          <p class="text-sm font-black text-slate-800">{{ otSeleccionadaParaAnticipo()?.valorTotal | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
         </div>
-
-        @if (esAdminFase()) {
-          <div>
-            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Resumen Financiero
-            </h3>
-            <div class="grid grid-cols-3 gap-3">
-              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Orden de Compra</p>
-                <p class="text-sm font-black text-slate-800 mt-1">{{ p.valorOC | currency:'USD':'symbol':'1.0-0' }}</p>
-              </div>
-              <div class="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                <p class="text-[10px] font-bold text-emerald-600/70 uppercase">Facturado</p>
-                <p class="text-sm font-black text-emerald-700 mt-1">{{ p.valorFacturado | currency:'USD':'symbol':'1.0-0' }}</p>
-              </div>
-              <div class="bg-red-50 rounded-xl p-3 border border-red-100">
-                <p class="text-[10px] font-bold text-red-500/70 uppercase">Gasto Interno</p>
-                <p class="text-sm font-black text-red-600 mt-1">{{ p.valorGasto | currency:'USD':'symbol':'1.0-0' }}</p>
-              </div>
-            </div>
-            <div class="mt-3">
-              <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
-                <span>Avance de Facturación</span>
-                <span [ngClass]="configVisual().textoColor">{{ (p.porcentajeAvanceFinanciero || 0) | number:'1.0-0' }}%</span>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                <div class="h-1.5 rounded-full transition-all duration-1000" [ngClass]="configVisual().bgColor" [style.width.%]="p.porcentajeAvanceFinanciero || 0"></div>
-              </div>
-            </div>
-          </div>
-        }
 
         <div>
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-              Flujo y Trazabilidad
-            </h3>
-            <button (click)="abrirModalActualizar()" class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-700 shadow-sm transition-all flex items-center gap-1">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-              Gestionar Tracker
-            </button>
-          </div>
-
-          <div class="relative border-l-2 border-slate-100 ml-3 space-y-5 pb-4">
-            <div class="relative pl-6">
-              <div class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-4 border-white" [ngClass]="configVisual().bgColor"></div>
-              <p class="text-xs font-bold text-slate-800">1. Proyecto Asignado</p>
-              <p class="text-[10px] font-semibold text-slate-400">{{ p.fechaAsignacion | date:'mediumDate' }}</p>
-            </div>
-            <div class="relative pl-6">
-              <div class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-4 border-white" [ngClass]="p.fechaAprobacionPermisos ? configVisual().bgColor : 'bg-slate-200'"></div>
-              <p class="text-xs font-bold" [ngClass]="p.fechaAprobacionPermisos ? 'text-slate-800' : 'text-slate-400'">2. Permisos y Presupuesto</p>
-              <p class="text-[10px] font-semibold text-slate-400">{{ p.fechaAprobacionPermisos ? (p.fechaAprobacionPermisos | date:'mediumDate') : 'Pendiente' }}</p>
-            </div>
-            <div class="relative pl-6">
-              <div class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-4 border-white" [ngClass]="p.fechaInicioActividades ? configVisual().bgColor : 'bg-slate-200'"></div>
-              <p class="text-xs font-bold" [ngClass]="p.fechaInicioActividades ? 'text-slate-800' : 'text-slate-400'">3. Inicio en Terreno</p>
-              <p class="text-[10px] font-semibold text-slate-400">{{ p.fechaInicioActividades ? (p.fechaInicioActividades | date:'mediumDate') : 'Pendiente' }}</p>
-            </div>
-            <div class="relative pl-6">
-              <div class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-4 border-white" [ngClass]="p.fechaFinalizacionActividades ? 'bg-orange-400' : 'bg-slate-200'"></div>
-              <p class="text-xs font-bold" [ngClass]="p.fechaFinalizacionActividades ? 'text-orange-600' : 'text-slate-400'">4. Fin en Terreno</p>
-              <p class="text-[10px] font-semibold text-slate-400">{{ p.fechaFinalizacionActividades ? (p.fechaFinalizacionActividades | date:'mediumDate') : 'Pendiente' }}</p>
-            </div>
-            <div class="relative pl-6">
-              <div class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-4 border-white" [ngClass]="p.estado === 'Finalizado' ? 'bg-emerald-500' : 'bg-slate-200'"></div>
-              <p class="text-xs font-bold" [ngClass]="p.estado === 'Finalizado' ? 'text-emerald-700' : 'text-slate-400'">5. Cierre Administrativo</p>
-              <p class="text-[10px] font-semibold text-slate-400">{{ p.estado === 'Finalizado' ? 'Completado' : 'Pendiente Dossier/Facturación' }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2 shrink-0">
-        <button (click)="vistaPanel.set('bitacora')" class="flex-1 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-          Ver Bitácora Diaria ({{ p.observaciones?.length || 0 }})
-        </button>
-      </div>
-    }
-
-    @if (vistaPanel() === 'bitacora') {
-      <div class="flex-1 flex flex-col overflow-hidden bg-slate-50 animate-fade-in">
-        <div class="flex-1 overflow-y-auto p-6 space-y-4">
-          @for (obs of p.observaciones; track obs.id) {
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <div class="flex justify-between items-start mb-2">
-                <p class="text-xs font-black text-slate-700">{{ obs.usuario?.nombre || 'Usuario' }}</p>
-                <p class="text-[10px] font-semibold text-slate-400">{{ obs.fechaRegistro | date:'short' }}</p>
-              </div>
-              <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{{ obs.observacion }}</p>
-            </div>
-          } @empty {
-            <div class="text-center text-slate-400 py-10">
-              <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-              <p class="text-sm font-medium">Aún no hay registros en la bitácora.</p>
-            </div>
-          }
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Monto a Solicitar <span class="text-red-500">*</span></label>
+          <input type="text" appCurrencyMask formControlName="valorAnticipo" class="w-full border border-slate-200 rounded-lg px-4 py-3 text-lg font-black text-blue-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-colors text-center shadow-inner">
         </div>
 
-        <div class="p-4 bg-white border-t border-slate-200 shrink-0">
-          @if (p.estado === 'Finalizado' || p.estado === 'Cancelado' || p.estado === 'Incumplimiento') {
-            <div class="p-4 mb-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
-              <svg class="w-6 h-6 mx-auto mb-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-              <p class="text-xs font-bold text-slate-500">Proyecto Cerrado</p>
-              <p class="text-[10px] text-slate-400">No se admiten nuevas observaciones en la bitácora.</p>
-            </div>
-            <div class="flex justify-center">
-              <button (click)="vistaPanel.set('resumen')" class="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                Volver al Resumen
-              </button>
-            </div>
-          }
-          @else {
-            <textarea [ngModel]="nuevaObservacion()" (ngModelChange)="nuevaObservacion.set($event)" rows="3" placeholder="Escribe un avance o novedad del proyecto..."
-                      class="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:outline-none transition-colors resize-none mb-3"
-                      [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')"></textarea>
-
-            <div class="flex justify-between items-center">
-              <button (click)="vistaPanel.set('resumen')" class="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                Volver al Resumen
-              </button>
-              <button (click)="enviarObservacion()" [disabled]="!nuevaObservacion().trim() || guardandoObs()"
-                      [ngClass]="configVisual().bgColor"
-                      class="px-5 py-2 rounded-lg text-xs font-bold text-white shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2">
-                @if (guardandoObs()) {
-                  Enviando...
-                } @else {
-                  Registrar Avance
-                }
-              </button>
-            </div>
-          }
+        <div class="pt-2 flex justify-end gap-3">
+          <button type="button" (click)="cerrarModalAnticipo()" class="w-full px-5 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="anticipoForm.invalid || guardandoAnticipo()" class="w-full px-6 py-3 rounded-xl text-sm font-black text-white bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all disabled:opacity-50">
+            @if (guardandoAnticipo()) { Procesando... } @else { Solicitar }
+          </button>
         </div>
       </div>
-    }
+    </div>
+  </form>
+}
 
-  }
-</div>
+@if (modalPagoAbierto()) {
+  <form [formGroup]="pagoForm" (ngSubmit)="guardarPago()" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity animate-fade-in p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all animate-slide-up">
 
-@if (modalActualizarAbierto()) {
-  <div class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity animate-fade-in p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden transform transition-all animate-slide-up flex flex-col max-h-[90vh]">
-
-      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0" [ngClass]="configVisual().bgClaro">
+      <div class="px-6 py-4 border-b border-emerald-100 flex justify-between items-center bg-emerald-50">
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-white rounded-lg shadow-sm" [ngClass]="configVisual().textoColor">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+          <div class="p-2 bg-white rounded-lg shadow-sm text-emerald-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
           <div>
-            <h3 class="text-lg font-black text-slate-800">Actualizar Tracker Administrativo</h3>
-            <p class="text-xs font-bold text-slate-500">Proyecto: {{ proyectoSeleccionado()?.codigo }}</p>
+            <h3 class="text-sm font-black text-emerald-900">Registrar Pago (ERP)</h3>
+            <p class="text-[10px] font-bold text-emerald-600/70">Monto: {{ anticipoSeleccionado()?.valorAnticipo | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
           </div>
         </div>
-        <button (click)="cerrarModalActualizar()" class="text-slate-400 hover:text-red-500 transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID / Consecutivo WorldOffice <span class="text-red-500">*</span></label>
+          <input type="text" formControlName="idEgresoWorldOffice" placeholder="Ej: EG-001024" class="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm font-black text-slate-700 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 transition-colors shadow-inner bg-slate-50 focus:bg-white text-center uppercase">
+          <p class="text-[9px] text-slate-400 mt-1 text-center">Este código es vital para la auditoría contable cruzada.</p>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-3">
+          <button type="button" (click)="cerrarModalPago()" class="w-full px-5 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="pagoForm.invalid || guardandoPago()" class="w-full px-6 py-3 rounded-xl text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex justify-center items-center gap-2">
+            @if (guardandoPago()) { Procesando... } @else { Confirmar Pago }
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+}
+
+@if (modalReqAbierto()) {
+  <div class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity animate-fade-in p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden transform transition-all animate-slide-up flex flex-col max-h-[90vh]">
+
+      <div class="px-6 py-4 border-b border-blue-100 flex justify-between items-center bg-blue-50 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-white rounded-lg shadow-sm text-blue-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-black text-blue-900">Requisiciones Internas</h3>
+            <p class="text-xs font-bold text-blue-600/70">Proyecto: {{ proyectoSeleccionado()?.codigo }} · {{ proyectoSeleccionado()?.nombre }}</p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarModalReq()" class="text-blue-400 hover:text-blue-700 transition-colors bg-white rounded-full p-1 shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
 
-      <form [formGroup]="actualizarForm" (ngSubmit)="guardarActualizacion()" class="overflow-y-auto p-6 space-y-8">
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-5 grid grid-cols-5 gap-5">
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Formulario nueva REQ -->
+          <form [formGroup]="reqForm" (ngSubmit)="guardarReq()" class="col-span-2 space-y-4">
+            <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">Nueva Requisición</p>
 
-          <div class="space-y-6">
             <div>
-              <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Hitos y Fechas</h4>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Respuesta a Cliente (SLA)</label>
-                  <input type="date" formControlName="fechaRespuestaCliente" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Solicitud Permisos</label>
-                  <input type="date" formControlName="fechaSolicitudPermisos" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Envío Permisos</label>
-                  <input type="date" formControlName="fechaEnvioPermiso" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Aprobación Permisos</label>
-                  <input type="date" formControlName="fechaAprobacionPermisos" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Inicio Actividades</label>
-                  <input type="date" formControlName="fechaInicioActividades" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm text-blue-800 bg-blue-50 focus:bg-white">
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-orange-600 uppercase mb-1">Fin Actividades</label>
-                  <input type="date" formControlName="fechaFinalizacionActividades" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-sm text-orange-800 bg-orange-50 focus:bg-white">
-                </div>
-              </div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Consecutivo <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="consecutivo" placeholder="Ej: REQ-001"
+                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-100">
             </div>
 
-            @if (esAdminFase()) {
-              <div>
-                <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Control Financiero</h4>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">No. Orden de Compra</label>
-                    <input type="text" formControlName="numeroOC" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
+
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Detalle / Observaciones <span class="text-red-500">*</span></label>
+              <textarea formControlName="observaciones" rows="4"
+                        placeholder="Describe los materiales o insumos..."
+                        class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-100 resize-none"></textarea>
+            </div>
+
+            <button type="submit" [disabled]="reqForm.invalid || guardandoReq()"
+                    class="w-full py-2.5 rounded-xl text-sm font-black text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              @if (guardandoReq()) { Procesando... } @else { Solicitar Materiales }
+            </button>
+          </form>
+
+          <!-- Listado de REQs existentes -->
+          <div class="col-span-3 space-y-3">
+            <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">
+              Requisiciones del Proyecto
+              <span class="ml-2 text-slate-400 font-normal normal-case">{{ requisiciones().length }} registros</span>
+            </p>
+
+            @if (cargandoSubFlujos()) {
+              <div class="flex justify-center py-8 text-slate-400">
+                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              </div>
+            } @else if (requisiciones().length === 0) {
+              <div class="text-center py-10 text-slate-400">
+                <p class="text-xs">No hay requisiciones para este proyecto.</p>
+              </div>
+            } @else {
+              <div class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                @for (req of requisiciones(); track req.id) {
+                  <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="font-black text-slate-800 text-xs">{{ req.consecutivo }}</span>
+                          <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase"
+                                [ngClass]="req.estado === 'CERRADA' ? 'bg-emerald-100 text-emerald-700' :
+                                           req.estado === 'Por Entregar' ? 'bg-blue-100 text-blue-700' :
+                                           req.estado === 'En Compras' ? 'bg-indigo-100 text-indigo-700' :
+                                           req.estado === 'Por Aprobar Gerencia' ? 'bg-purple-100 text-purple-700' :
+                                           req.estado === 'Rechazado' ? 'bg-red-100 text-red-600' :
+                                           'bg-amber-100 text-amber-700'">
+                            {{ req.estado }}
+                          </span>
+
+                        </div>
+                        @if (req.observaciones) {
+                          <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">{{ req.observaciones }}</p>
+                        }
+                      </div>
+
+                      <!-- Acciones según estado -->
+                      <div class="flex flex-col gap-1 shrink-0">
+                        @if (proyectoSeleccionado()?.estado !== 'FINALIZADO_TOTAL' && proyectoSeleccionado()?.estado !== 'Cancelado') {
+                          <button type="button" (click)="eliminarReq(req)"
+                                  class="text-red-400 hover:text-red-600 transition-colors p-1 self-end" title="Eliminar">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          </button>
+                        }
+                        @if (req.estado === 'Por Aprobar Supervisor' || req.estado === 'Por Aprobar Gerencia') {
+                          <button type="button" (click)="aprobarReq(req)"
+                                  class="text-[9px] font-bold px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700">
+                            Aprobar
+                          </button>
+                          <button type="button" (click)="despachoInterno(req)"
+                                  title="Material disponible en inventario propio"
+                                  class="text-[9px] font-bold px-2 py-1 rounded bg-slate-600 text-white hover:bg-slate-700">
+                            Despacho Interno
+                          </button>
+                        }
+                        @if (req.estado === 'En Compras') {
+                          <button type="button" (click)="comprarReq(req)"
+                                  class="text-[9px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">
+                            Registrar OC
+                          </button>
+                        }
+                        @if (req.estado === 'Por Entregar') {
+                          <button type="button" (click)="recibirReq(req)"
+                                  class="text-[9px] font-bold px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700">
+                            Confirmar Recibo
+                          </button>
+                        }
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor OC Total</label>
-                    <input type="text" appCurrencyMask formControlName="valorOC" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800">
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-emerald-600 uppercase mb-1">Total Facturado</label>
-                    <input type="text" appCurrencyMask formControlName="valorFacturado" class="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold text-emerald-800 bg-emerald-50 focus:bg-white">
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-red-600 uppercase mb-1">Gasto / Costo Interno</label>
-                    <input type="text" appCurrencyMask formControlName="valorGasto" class="w-full border border-red-200 rounded-lg px-3 py-2 text-sm font-bold text-red-800 bg-red-50 focus:bg-white">
-                  </div>
-                </div>
+                }
               </div>
             }
           </div>
-
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Datos Administrativos</h4>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-2">
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Contratista Asignado</label>
-                  <input type="text" formControlName="contratista" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Estado de Pólizas</label>
-                  <select formControlName="polizas" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    <option value="">Seleccionar...</option>
-                    <option value="Requiere - Aprobada">Requiere - Aprobada</option>
-                    <option value="Requiere - Pendiente">Requiere - Pendiente</option>
-                    <option value="No Requiere">No Requiere</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Centro de Costos</label>
-                  <input type="text" formControlName="centroDeCostos" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700">
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
-              <h4 class="text-xs font-black text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                Checklist de Cierre (Para Estado Finalizado)
-              </h4>
-              <p class="text-[10px] text-slate-500 mb-4">El proyecto solo pasará a estado Verde (Finalizado) si estos 3 items están marcados, junto con la fecha de fin de actividades.</p>
-
-              <div class="space-y-3">
-                <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                  <input type="checkbox" formControlName="dossierEntregado" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                  <span class="text-sm font-bold text-slate-700">Dossier / Informe Entregado</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                  <input type="checkbox" formControlName="liquidacionTerminada" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                  <span class="text-sm font-bold text-slate-700">Liquidación a Contratista Terminada</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                  <input type="checkbox" formControlName="facturacionCompletada" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                  <span class="text-sm font-bold text-slate-700">Proceso de Facturación Completado</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
         </div>
+      </div>
 
-        <input type="hidden" formControlName="nombre">
-        <input type="hidden" formControlName="responsableId">
-        <input type="hidden" formControlName="supervisorCliente">
-      </form>
-
-      <div class="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-        <button type="button" (click)="cerrarModalActualizar()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors">
-          Cancelar
+      <div class="px-5 py-3 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end">
+        <button type="button" (click)="cerrarModalReq()" class="px-5 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors">
+          Cerrar
         </button>
-        <button (click)="guardarActualizacion()" [disabled]="actualizarForm.invalid || actualizando()"
-                [ngClass]="configVisual().bgColor"
-                class="px-8 py-2.5 rounded-xl text-sm font-black text-white shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2">
-          @if (actualizando()) {
-            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            Guardando...
-          } @else {
-            Guardar Cambios
-          }
+      </div>
+    </div>
+  </div>
+}
+
+@if (modalAnticipoDirectoAbierto() && proyectoParaAnticipo(); as p) {
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100" [ngClass]="configVisual().bgClaro">
+        <div>
+          <h3 class="text-sm font-black text-slate-800">Anticipos del Proyecto</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">{{ p.codigo }} · {{ p.nombre }}</p>
+        </div>
+        <button type="button" (click)="cerrarModalAnticipoDirecto()" class="text-slate-400 hover:text-red-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
+      <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+
+        <!-- Formulario nuevo anticipo -->
+        <div class="bg-slate-50 rounded-xl border border-slate-200 p-4" [formGroup]="anticipoDirectoForm">
+          <p class="text-[10px] font-medium text-slate-400 mb-3">Solicitar Anticipo</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor <span class="text-red-500">*</span></label>
+              <input type="number" formControlName="valorAnticipo" min="1" placeholder="$ 0"
+                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Beneficiario</label>
+              <input type="text" formControlName="beneficiario" placeholder="A quién se le paga..."
+                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="concepto" placeholder="Descripción del anticipo..."
+                     class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Observaciones</label>
+              <textarea formControlName="observaciones" rows="2" placeholder="Observaciones adicionales..."
+                        class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+            </div>
+          </div>
+          <div class="mt-3 flex justify-end">
+            <button type="button" (click)="guardarAnticipoDirecto()"
+                    [disabled]="anticipoDirectoForm.invalid"
+                    class="text-xs font-bold px-5 py-2 rounded-lg text-white transition-colors disabled:opacity-50"
+                    [ngClass]="configVisual().bgColor">
+              Solicitar Anticipo
+            </button>
+          </div>
+        </div>
+
+        <!-- Listado de anticipos existentes -->
+        @if (anticiposDirectos().length > 0) {
+          <div>
+            <p class="text-[10px] font-medium text-slate-400 mb-3">Historial de Anticipos</p>
+            <div class="space-y-2">
+              @for (a of anticiposDirectos(); track a.id) {
+                <div class="flex items-center gap-3 p-3 rounded-xl border"
+                     [ngClass]="a.estado === 'PAGADO' ? 'bg-emerald-50 border-emerald-200' :
+                                 a.estado === 'APROBADO' ? 'bg-blue-50 border-blue-200' :
+                                 a.estado === 'RECHAZADO' ? 'bg-red-50 border-red-100 opacity-60' :
+                                 'bg-amber-50 border-amber-200'">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                      <p class="font-bold text-slate-800 text-xs">{{ a.concepto }}</p>
+                      <span class="text-[9px] font-black px-2 py-0.5 rounded uppercase"
+                            [ngClass]="a.estado === 'PAGADO' ? 'bg-emerald-100 text-emerald-700' :
+                                       a.estado === 'APROBADO' ? 'bg-blue-100 text-blue-700' :
+                                       a.estado === 'RECHAZADO' ? 'bg-red-100 text-red-700' :
+                                       'bg-amber-100 text-amber-700'">
+                        {{ a.estado }}
+                      </span>
+                    </div>
+                    <p class="text-[10px] text-slate-500">
+                      {{ a.valorAnticipo | currency:'COP':'symbol-narrow':'1.0-0' }}
+                      @if (a.beneficiario) { · {{ a.beneficiario }} }
+                      · Solicitado por {{ a.solicitante?.nombre }}
+                    </p>
+                    @if (a.idEgresoWorldOffice) {
+                      <p class="text-[10px] text-emerald-600 font-bold">WO: {{ a.idEgresoWorldOffice }}</p>
+                    }
+                  </div>
+                  <!-- Acciones según estado -->
+                  <div class="flex gap-1 shrink-0 items-center">
+                    @if (a.estado !== 'PAGADO') {
+                      <button type="button" (click)="eliminarAnticipoDirectoConfirm(a)"
+                              class="text-red-400 hover:text-red-600 transition-colors p-1" title="Eliminar">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    }
+                    @if (a.estado === 'SOLICITADO') {
+                      <button type="button" (click)="aprobarAnticipoDirecto(a)"
+                              class="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                        Aprobar
+                      </button>
+                      <button type="button" (click)="rechazarAnticipoDirecto(a)"
+                              class="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors">
+                        Rechazar
+                      </button>
+                    }
+                    @if (a.estado === 'APROBADO') {
+                      <button type="button" (click)="pagarAnticipoDirecto(a)"
+                              class="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+                        Registrar Pago
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="text-xs text-slate-400 text-center py-4 italic">No hay anticipos registrados para este proyecto.</p>
+        }
+
+      </div>
     </div>
   </div>
 }
