@@ -15,7 +15,9 @@ import { AdministracionComponent } from './features/administracion/administracio
 import { ClientesComponent } from './features/clientes/clientes';
 import { UsuariosComponent } from './features/administracion/usuarios/usuarios';
 import { Diccionario } from './features/administracion/diccionario/diccionario';
+import { ContratistasComponent } from './features/contratistas/contratistas';
 import { TrackerListComponent } from './features/proyectos/tracker-list/tracker-list';
+import { GerencialComponent } from './features/proyectos/gerencial/gerencial';
 
 export const routes: Routes = [
   // --- ZONA PÚBLICA ---
@@ -67,10 +69,21 @@ export const routes: Routes = [
         data: { permiso: 'admin.clientes.leer' }
       },
       {
+        path: 'contratistas',
+        component: ContratistasComponent,
+        canActivate: [permissionGuard],
+        data: { permiso: 'admin.contratistas.leer' }
+      },
+      {
         path: 'proyectos',
         component: ProyectosComponent,
         canActivate: [permissionGuard],
         data: { permiso: 'proyectos' }
+      },
+      {
+        path: 'proyectos/todas',
+        component: GerencialComponent,
+        data: { permiso: 'proyectos.gerente' }
       },
       {
         path: 'proyectos/:linea',
