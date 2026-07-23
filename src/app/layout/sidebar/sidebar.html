@@ -6,21 +6,34 @@
     <p class="text-[10px] text-[#ffb31c] uppercase tracking-widest font-bold">Diseño y Construcción</p>
   </div>
 
-  <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-2">
+  <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
     @for (item of menuItems(); track item.id) {
+
+      <!-- Ítem principal -->
       <a [routerLink]="item.ruta"
          routerLinkActive="bg-[#ffb31c] text-[#1e3a8a] shadow-lg font-bold translate-x-2"
-         [routerLinkActiveOptions]="{exact: false}"
+         [routerLinkActiveOptions]="{ exact: item.ruta === '/tareas' }"
          class="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all group cursor-pointer text-sm font-medium">
-
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icono"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icono"/>
         </svg>
-
         <span class="tracking-wide">{{ item.nombre }}</span>
       </a>
+
+      <!-- Sub-ítem Reportes (solo bajo el módulo de Tareas) -->
+      @if (item.ruta === '/tareas' && auth.hasPermission('tareas.reportes')) {
+        <a routerLink="/tareas/reportes"
+           routerLinkActive="bg-[#ffb31c] text-[#1e3a8a] font-bold"
+           class="flex items-center gap-3 pl-11 pr-4 py-2 rounded-xl text-gray-500 hover:text-white hover:bg-gray-800 transition-all text-xs font-medium ml-1">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Reportes de cumplimiento
+        </a>
+      }
+
     }
   </nav>
-
 
 </aside>

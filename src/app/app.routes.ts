@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, publicGuard, permissionGuard } from './core/auth/auth.guard'; // <-- Cambiado rolGuard por permissionGuard
+import { authGuard, publicGuard, permissionGuard } from './core/auth/auth.guard';
 
 // Componentes
 import { LoginComponent } from './features/login/login';
@@ -8,6 +8,7 @@ import { DashboardComponent } from './features/dashboard/dashboard';
 import { TicketsComponent } from './features/tickets/tickets';
 import { ProyectosComponent } from './features/proyectos/proyectos';
 import { TareasComponent } from './features/tareas/tareas';
+import { TareasReportesComponent } from './features/tareas/tareas-reportes/tareas-reportes'; // ← NUEVO
 import { FinanzasComponent } from './features/finanzas/finanzas';
 import { GestionHumanaComponent } from './features/gestion-humana/gestion-humana';
 import { LandingComponent } from './features/landing/landing';
@@ -34,22 +35,18 @@ export const routes: Routes = [
   },
 
   // --- ZONA PRIVADA (ERP RMS) ---
-    {
+  {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      {
-        path: 'panel',
-        component: DashboardComponent
-      },
+      { path: 'panel', component: DashboardComponent },
       {
         path: 'administracion',
         component: AdministracionComponent,
         canActivate: [permissionGuard],
         data: { permiso: 'admin' }
       },
-      // NUEVA RUTA: Diccionario de Permisos
       {
         path: 'diccionario',
         component: Diccionario,
@@ -103,20 +100,24 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permiso: 'gestionhumana' }
       },
-      {
-        path: 'tickets',
-        component: TicketsComponent
-      },
+      { path: 'tickets', component: TicketsComponent },
       {
         path: 'tareas',
-        component: TareasComponent
+        component: TareasComponent,
+        canActivate: [permissionGuard],
+        data: { permiso: 'tareas.ver' }
+      },
+      // ── NUEVO ───────────────────────────────────────────────
+      {
+        path: 'tareas/reportes',
+        component: TareasReportesComponent,
+        canActivate: [permissionGuard],
+        data: { permiso: 'tareas.reportes' }
       }
+      // ────────────────────────────────────────────────────────
     ]
   },
 
   // --- COMODÍN ---
-  {
-    path: '**',
-    redirectTo: ''
-  }
+  { path: '**', redirectTo: '' }
 ];
