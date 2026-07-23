@@ -1,7 +1,10 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { interval } from 'rxjs';
+import { skip, filter } from 'rxjs/operators';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import {
   ApexAxisChartSeries, ApexChart, ApexXAxis, ApexYAxis,
@@ -85,6 +88,7 @@ function addWeeks(d: Date, n: number): Date {
 export class TareasReportesComponent implements OnInit {
   private tareaService = inject(TareaService);
   public  authService  = inject(AuthService);
+  private destroyRef   = inject(DestroyRef);
 
   // ── Tab activo ────────────────────────────────────────────
   public tab = signal<'personas' | 'mensual' | 'detalle'>('personas');
@@ -386,6 +390,36 @@ export class TareasReportesComponent implements OnInit {
   });
 
   // ── Lifecycle ─────────────────────────────────────────────
+
+  constructor() {
+    // Reacciona a cualquier mutación de tareas (kanban u otra ruta)
+    // skip(1) evita el disparo inicial del signal en valor 0
+    toObservable(this.tareaService.ultimoCambio)
+      .pipe(
+        skip(1),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        const t = this.tab();
+        if (t === 'personas' && this.data().length > 0)       this.cargar();
+        if (t === 'mensual'  && this.dataMensual().length > 0) this.cargarMensual();
+        if (t === 'detalle'  && this.dataDetalle().length > 0) this.cargarDetalle();
+      });
+
+    // Red de seguridad: refresca cada 2 minutos si la pestaña del navegador está visible
+    interval(120_000)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        filter(() => !document.hidden)
+      )
+      .subscribe(() => {
+        const t = this.tab();
+        if (t === 'personas') this.cargar();
+        if (t === 'mensual')  this.cargarMensual();
+        if (t === 'detalle')  this.cargarDetalle();
+      });
+  }
+
   ngOnInit(): void {
     this.cargar();
   }

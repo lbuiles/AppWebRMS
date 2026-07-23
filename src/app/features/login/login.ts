@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { GoogleSigninButtonModule, SocialAuthService } from '@abacritt/angularx-social-login';
+import { GoogleSigninButtonModule, SocialAuthService, GoogleLoginProvider } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
@@ -15,20 +15,33 @@ export class LoginComponent implements OnInit {
   private rmsAuth = inject(AuthService);
 
   ngOnInit() {
-    // Escuchamos cuando el usuario hace clic en el botón de Google
     this.googleAuth.authState.subscribe(async (user) => {
-      if (user) {
-        // 1. Enviamos el token al servidor para validar contra SQL Server
-        const exito = await this.rmsAuth.autenticarConServidor(user.idToken);
+      if (!user) return;
 
-        if (exito) {
-          // 2. Si el servidor respondió con un usuario válido, entramos
-          this.router.navigate(['/panel']);
-        } else {
-          // 3. Si no existe en la DB o hay error, limpiamos y avisamos
-          alert('Acceso denegado. Tu cuenta no está registrada en el sistema RMS.');
-          this.rmsAuth.cerrarSesion();
+      // El JWT de Google Workspace no incluye el claim "picture".
+      // Obtenemos un access token para llamar al endpoint userinfo de Google,
+      // que sí devuelve la foto aunque el JWT no la traiga.
+      let fotoUrl: string | undefined;
+      try {
+        const accessToken = await this.googleAuth.getAccessToken(GoogleLoginProvider.PROVIDER_ID);
+        if (accessToken) {
+          const res  = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          const info = await res.json();
+          fotoUrl = info.picture ?? undefined;
         }
+      } catch {
+        // Si falla (permisos, red, etc.) se usará el avatar de iniciales
+      }
+
+      const exito = await this.rmsAuth.autenticarConServidor(user.idToken, fotoUrl);
+
+      if (exito) {
+        this.router.navigate(['/panel']);
+      } else {
+        alert('Acceso denegado. Tu cuenta no está registrada en el sistema RMS.');
+        this.rmsAuth.cerrarSesion();
       }
     });
   }

@@ -1,9 +1,15 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { skip } from 'rxjs/operators';
+import { interval } from 'rxjs';
+import { filter } from 'rxjs/operators';
+// Drag & Drop: API nativa HTML5 — sin dependencia de @angular/cdk
 import { TareaService, Tarea, EstadoTarea, TareaComentario, ReporteSemanalDto, CumplimientoPersonaDto } from '../../core/services/tarea';
 import { AuthService } from '../../core/auth/auth.service';
 import { UsuarioService } from '../../core/services/usuario';
+import { NotificacionService, NotificacionDto } from '../../core/services/notificacion';
 import Swal from 'sweetalert2';
 
 // ─────────────────────────────────────────────────────────
@@ -57,10 +63,40 @@ function addWeeks(d: Date, n: number): Date {
   templateUrl: './tareas.html'
 })
 export class TareasComponent implements OnInit {
-  private tareaService = inject(TareaService);
-  public authService   = inject(AuthService);
-  private usuarioService = inject(UsuarioService);
-  private fb = inject(FormBuilder);
+  private tareaService        = inject(TareaService);
+  public  authService         = inject(AuthService);
+  private usuarioService      = inject(UsuarioService);
+  private notificacionService = inject(NotificacionService);
+  private fb                  = inject(FormBuilder);
+  private destroyRef          = inject(DestroyRef);
+
+  /** IDs vistos en el último poll; vacío = primera carga (no dispara recarga del kanban) */
+  private notifIdsAnteriores = new Set<number>();
+
+  constructor() {
+    // Cuando cualquier mutación ocurre Y el usuario está viendo la vista 'reporte',
+    // refrescar el cumplimiento automáticamente sin recargar la página.
+    toObservable(this.tareaService.ultimoCambio)
+      .pipe(
+        skip(1),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        if (this.vista() === 'reporte') {
+          this.cargarCumplimiento();
+        }
+      });
+
+    // Cargar notificaciones al inicio y hacer polling cada 30 segundos
+    // (solo cuando la pestaña está activa para no desperdiciar recursos)
+    this.cargarNotificaciones();
+    interval(60_000)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        filter(() => !document.hidden)
+      )
+      .subscribe(() => this.cargarNotificaciones());
+  }
 
   // ── Vista activa ──────────────────────────────────────────
   public vista = signal<'kanban' | 'reporte' | 'estados'>('kanban');
@@ -105,8 +141,8 @@ export class TareasComponent implements OnInit {
   });
 
   public resumenCumplimiento = computed(() => {
-    const data       = this.cumplimientoFiltrado();
-    const total      = data.reduce((s, p) => s + p.total, 0);
+    const data        = this.cumplimientoFiltrado();
+    const total       = data.reduce((s, p) => s + p.total, 0);
     const completadas = data.reduce((s, p) => s + p.completadas, 0);
     return {
       total,
@@ -119,13 +155,61 @@ export class TareasComponent implements OnInit {
     };
   });
 
+  // ── Kanban: filtros ──────────────────────────────────────
+  public filtroResponsableId = signal<string>('');
+  public hayFiltrosActivos   = computed(() => !!this.filtroResponsableId());
+
+  // ── Kanban: "Ver más" ─────────────────────────────────────
+  public  readonly LIMIT_TARJETAS  = 5;
+  private columnasExpandidas       = signal<Set<number>>(new Set());
+
   // ── Kanban: columnas ─────────────────────────────────────
-  public columnas = computed(() =>
-    this.estados().map(e => ({
-      estado: e,
-      items: this.tareas().filter(t => t.estadoId === e.id)
-    }))
-  );
+  public columnas = computed(() => {
+    const respId     = this.filtroResponsableId();
+    const expandidas = this.columnasExpandidas();
+
+    return this.estados().map(e => {
+      const todas     = this.tareas().filter(t => t.estadoId === e.id);
+      const filtradas = respId
+        ? todas.filter(t => t.asignados.some(a => a.usuarioId === respId))
+        : todas;
+
+      const expandida = expandidas.has(e.id);
+      const visibles  = expandida ? filtradas : filtradas.slice(0, this.LIMIT_TARJETAS);
+
+      return {
+        estado:         e,
+        items:          visibles,
+        total:          todas.length,
+        totalFiltradas: filtradas.length,
+        ocultas:        Math.max(0, filtradas.length - visibles.length),
+        expandida
+      };
+    });
+  });
+
+  toggleExpandirColumna(estadoId: number): void {
+    this.columnasExpandidas.update(set => {
+      const nuevo = new Set(set);
+      if (nuevo.has(estadoId)) nuevo.delete(estadoId); else nuevo.add(estadoId);
+      return nuevo;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.filtroResponsableId.set('');
+  }
+
+  // ── Drag & Drop nativo ────────────────────────────────────
+  public draggingTarea        = signal<Tarea | null>(null);
+  public draggingOverEstadoId = signal<number | null>(null);
+
+  // ── Notificaciones ────────────────────────────────────────
+  public notificaciones  = signal<NotificacionDto[]>([]);
+  public cargandoNotifs  = signal<boolean>(false);
+  public notifAbiertas   = signal<boolean>(false);
+  public notifNoLeidas       = computed(() => this.notificaciones().filter(n => !n.leida).length);
+  public tieneNotifLeidas    = computed(() => this.notificaciones().some(n => n.leida));
 
   // ── Modales ───────────────────────────────────────────────
   // -- Nueva / Editar tarea --
@@ -268,9 +352,8 @@ export class TareasComponent implements OnInit {
 
   cambiarVista(v: 'kanban' | 'reporte' | 'estados'): void {
     this.vista.set(v);
-    if (v === 'reporte' && this.cumplimientoData().length === 0) {
-      this.cargarCumplimiento();
-    }
+    // Siempre refrescar al entrar a 'reporte' para mostrar datos actualizados
+    if (v === 'reporte') this.cargarCumplimiento();
     if (v === 'estados') this.cargarTodosEstados();
   }
 
@@ -309,6 +392,81 @@ export class TareasComponent implements OnInit {
     const b = parseInt(c.substring(4, 6), 16);
     const lum = 0.299 * r + 0.587 * g + 0.114 * b;
     return lum > 128 ? '#1e293b' : '#ffffff';
+  }
+
+  // ── Drag & Drop ───────────────────────────────────────────
+
+  // ── Drag & Drop — API nativa HTML5 ───────────────────────
+
+  onDragStart(event: DragEvent, t: Tarea): void {
+    this.draggingTarea.set(t);
+    event.dataTransfer?.setData('text/plain', String(t.id));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  onDragEnd(): void {
+    this.draggingTarea.set(null);
+    this.draggingOverEstadoId.set(null);
+  }
+
+  onDragOver(event: DragEvent, estadoId: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.draggingOverEstadoId.set(estadoId);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    // Solo limpiar si el puntero sale realmente del contenedor
+    const el = event.currentTarget as HTMLElement;
+    if (!el.contains(event.relatedTarget as Node)) {
+      this.draggingOverEstadoId.set(null);
+    }
+  }
+
+  onDropNative(event: DragEvent, estadoDestino: EstadoTarea): void {
+    event.preventDefault();
+    this.draggingOverEstadoId.set(null);
+    const tarea = this.draggingTarea();
+    this.draggingTarea.set(null);
+
+    if (!tarea || tarea.estadoId === estadoDestino.id) return;
+
+    if (estadoDestino.esEstadoFinal && !this.puedeFinalizar()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso insuficiente',
+        text: 'Solo un supervisor puede marcar tareas como completadas.',
+        timer: 2500,
+        showConfirmButton: false
+      });
+      return;
+    }
+
+    if (estadoDestino.esEstadoFinal) {
+      const hoy = new Date().toISOString().split('T')[0];
+      Swal.fire({
+        title: '¿Cuándo se completó esta tarea?',
+        input: 'date',
+        inputValue: hoy,
+        inputAttributes: { max: hoy },
+        showCancelButton: true,
+        confirmButtonColor: '#1e3a8a',
+        confirmButtonText: 'Confirmar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => (!value ? 'Debes seleccionar una fecha' : null)
+      }).then(result => {
+        if (!result.isConfirmed) return;
+        this.tareas.update(arr => arr.map(x =>
+          x.id === tarea.id ? { ...x, estadoId: estadoDestino.id, estado: estadoDestino } : x
+        ));
+        this._ejecutarCambioEstado(tarea, estadoDestino.id, toIso(result.value));
+      });
+    } else {
+      this.tareas.update(arr => arr.map(x =>
+        x.id === tarea.id ? { ...x, estadoId: estadoDestino.id, estado: estadoDestino } : x
+      ));
+      this._ejecutarCambioEstado(tarea, estadoDestino.id, undefined);
+    }
   }
 
   // ── Modal Nueva / Editar Tarea ────────────────────────────
@@ -503,7 +661,7 @@ export class TareasComponent implements OnInit {
     }
   }
 
-  private _ejecutarCambioEstado(t: Tarea, nuevoEstadoId: number, fechaRealFinalizacion?: string): void {
+  _ejecutarCambioEstado(t: Tarea, nuevoEstadoId: number, fechaRealFinalizacion?: string): void {
     this.cambiandoEstado.set(true);
     this.tareaService.cambiarEstado(t.id, nuevoEstadoId, this.usuarioId, fechaRealFinalizacion).subscribe({
       next: updated => {
@@ -520,6 +678,10 @@ export class TareasComponent implements OnInit {
         this.cambiandoEstado.set(false);
       },
       error: err => {
+        // En drag & drop revertir el cambio optimista
+        this.tareas.update(arr => arr.map(x =>
+          x.id === t.id ? { ...x, estadoId: t.estadoId, estado: t.estado } : x
+        ));
         this.cambiandoEstado.set(false);
         Swal.fire({ icon: 'error', title: 'Error', text: err?.message });
       }
@@ -623,6 +785,109 @@ export class TareasComponent implements OnInit {
         this.moviendoTarea.set(false);
         Swal.fire({ icon: 'error', title: 'Error', text: err?.message });
       }
+    });
+  }
+
+  // ── Notificaciones ────────────────────────────────────────
+
+  cargarNotificaciones(): void {
+    this.cargandoNotifs.set(true);
+    this.notificacionService.getMisNotificaciones().subscribe({
+      next: list => {
+        this.cargandoNotifs.set(false);
+
+        // Detectar si llegaron notificaciones nuevas desde el último poll
+        const esPrimeraCarga = this.notifIdsAnteriores.size === 0;
+        const hayNuevas = !esPrimeraCarga && list.some(n => !this.notifIdsAnteriores.has(n.id));
+
+        this.notificaciones.set(list);
+        this.notifIdsAnteriores = new Set(list.map(n => n.id));
+
+        // Si hay notificaciones nuevas (creación o eliminación de tarea),
+        // refrescar el kanban automáticamente para que refleje el estado real.
+        if (hayNuevas) {
+          this.cargarTareas();
+        }
+      },
+      error: () => { this.cargandoNotifs.set(false); }
+    });
+  }
+
+  toggleNotificaciones(): void {
+    const abrir = !this.notifAbiertas();
+    this.notifAbiertas.set(abrir);
+    if (abrir) this.cargarNotificaciones();
+  }
+
+  marcarLeida(n: NotificacionDto, event: Event): void {
+    event.stopPropagation();
+    if (n.leida) return;
+    this.notificacionService.marcarLeida(n.id).subscribe({
+      next: () => {
+        this.notificaciones.update(arr =>
+          arr.map(x => x.id === n.id ? { ...x, leida: true } : x)
+        );
+      },
+      error: () => {}
+    });
+  }
+
+  marcarTodasLeidas(): void {
+    this.notificacionService.marcarTodasLeidas().subscribe({
+      next: () => {
+        this.notificaciones.update(arr => arr.map(x => ({ ...x, leida: true })));
+      },
+      error: () => {}
+    });
+  }
+
+  abrirTareaDesdNotif(n: NotificacionDto): void {
+    this.notifAbiertas.set(false);
+
+    // Marcar como leída siempre (incluso notificaciones de eliminación sin entidadId)
+    if (!n.leida) {
+      this.notificacionService.marcarLeida(n.id).subscribe();
+      this.notificaciones.update(arr =>
+        arr.map(x => x.id === n.id ? { ...x, leida: true } : x)
+      );
+    }
+
+    // Notificaciones de eliminación no tienen tarea asociada → sólo marcar leída
+    if (!n.entidadId) return;
+
+    this.tareaService.getTarea(String(n.entidadId)).subscribe({
+      next: t => {
+        if (t) {
+          // Recargar el tablero de la semana actualmente visible
+          // (semanaActual NO se modifica, así se evita cargar la semana incorrecta)
+          this.cargarTareas();
+          // Abrir panel de detalle
+          this.tareaDetalle.set(null);
+          this.tabDetalle.set('info');
+          this.panelAbierto.set(true);
+          this.tareaDetalle.set(t);
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  eliminarNotificacion(n: NotificacionDto, event: Event): void {
+    event.stopPropagation();
+    this.notificacionService.eliminarNotificacion(n.id).subscribe({
+      next: ok => {
+        if (ok) this.notificaciones.update(arr => arr.filter(x => x.id !== n.id));
+      },
+      error: () => {}
+    });
+  }
+
+  eliminarTodasLeidas(): void {
+    this.notificacionService.eliminarNotificacionesLeidas().subscribe({
+      next: ok => {
+        if (ok) this.notificaciones.update(arr => arr.filter(x => !x.leida));
+      },
+      error: () => {}
     });
   }
 

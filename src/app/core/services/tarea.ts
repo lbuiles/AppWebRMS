@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
-import { Observable, map } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 
 // ============================================================
 // INTERFACES
@@ -258,8 +258,8 @@ const GET_REPORTE_SEMANAL = gql`
 `;
 
 const GET_MIS_TAREAS = gql`
-  query GetMisTareas($usuarioId: UUID!) {
-    misTareas(usuarioId: $usuarioId) { ${TAREA_CARD_FIELDS} }
+  query GetMisTareas {
+    misTareas { ${TAREA_CARD_FIELDS} }
   }
 `;
 
@@ -387,6 +387,13 @@ const TOGGLE_ESTADO_TAREA = gql`
 export class TareaService {
   private apollo = inject(Apollo);
 
+  /** Timestamp del último cambio en tareas. Permite que reportes detecten mutaciones cross-route. */
+  public readonly ultimoCambio = signal<number>(0);
+
+  private notificarCambio(): void {
+    this.ultimoCambio.set(Date.now());
+  }
+
   // ── Queries ──────────────────────────────────────────────
 
   getTareasSemana(semana: Date): Observable<Tarea[]> {
@@ -427,10 +434,9 @@ export class TareaService {
     }).pipe(map(r => r.data?.reporteSemanal));
   }
 
-  getMisTareas(usuarioId: string): Observable<Tarea[]> {
+  getMisTareas(): Observable<Tarea[]> {
     return this.apollo.query<any>({
       query: GET_MIS_TAREAS,
-      variables: { usuarioId },
       fetchPolicy: 'network-only'
     }).pipe(map(r => r.data?.misTareas ?? []));
   }
@@ -474,7 +480,7 @@ export class TareaService {
     return this.apollo.mutate<any>({
       mutation: ADD_TAREA,
       variables: { input }
-    }).pipe(map(r => r.data?.addTarea));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.addTarea));
   }
 
   updateTarea(id: string, input: {
@@ -487,49 +493,49 @@ export class TareaService {
     return this.apollo.mutate<any>({
       mutation: UPDATE_TAREA,
       variables: { id, input }
-    }).pipe(map(r => r.data?.updateTarea));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.updateTarea));
   }
 
   cambiarEstado(tareaId: string, nuevoEstadoId: number, cambiadoPorId: string, fechaRealFinalizacion?: string): Observable<any> {
     return this.apollo.mutate<any>({
       mutation: CAMBIAR_ESTADO_TAREA,
       variables: { input: { tareaId, nuevoEstadoId, cambiadoPorId, fechaRealFinalizacion } }
-    }).pipe(map(r => r.data?.cambiarEstadoTarea));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.cambiarEstadoTarea));
   }
 
   moverSemana(tareaId: string, nuevaSemana: string, movidoPorId: string, motivo?: string): Observable<any> {
     return this.apollo.mutate<any>({
       mutation: MOVER_TAREA_SEMANA,
       variables: { input: { tareaId, nuevaSemana, movidoPorId, motivo } }
-    }).pipe(map(r => r.data?.moverTareaSemana));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.moverTareaSemana));
   }
 
   addComentario(tareaId: string, usuarioId: string, comentario: string): Observable<TareaComentario> {
     return this.apollo.mutate<any>({
       mutation: ADD_COMENTARIO,
       variables: { input: { tareaId, usuarioId, comentario } }
-    }).pipe(map(r => r.data?.addComentarioTarea));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.addComentarioTarea));
   }
 
   asignarUsuario(tareaId: string, usuarioId: string, asignadoPorId: string): Observable<any> {
     return this.apollo.mutate<any>({
       mutation: ASIGNAR_USUARIO,
       variables: { input: { tareaId, usuarioId, asignadoPorId } }
-    }).pipe(map(r => r.data?.asignarUsuarioTarea));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.asignarUsuarioTarea));
   }
 
   desasignarUsuario(tareaId: string, usuarioId: string): Observable<boolean> {
     return this.apollo.mutate<any>({
       mutation: DESASIGNAR_USUARIO,
       variables: { tareaId, usuarioId }
-    }).pipe(map(r => r.data?.desasignarUsuarioTarea ?? false));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.desasignarUsuarioTarea ?? false));
   }
 
   deleteTarea(id: string): Observable<boolean> {
     return this.apollo.mutate<any>({
       mutation: DELETE_TAREA,
       variables: { id }
-    }).pipe(map(r => r.data?.deleteTarea ?? false));
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.deleteTarea ?? false));
   }
 
   // ── Admin Estados ─────────────────────────────────────────
