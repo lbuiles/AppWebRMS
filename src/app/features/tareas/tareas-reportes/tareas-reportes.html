@@ -1,0 +1,1270 @@
+<!-- ================================================================
+     REPORTES DE CUMPLIMIENTO DE TAREAS
+     Ruta: /tareas/reportes
+     ================================================================ -->
+<div class="min-h-screen bg-gray-50">
+
+  <!-- ── HEADER ──────────────────────────────────────────────────── -->
+  <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <a routerLink="/tareas"
+           class="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">Cumplimiento de tareas</h1>
+          <p class="text-xs text-gray-500">Comparativo por persona y período</p>
+        </div>
+      </div>
+      @if (tab() === 'detalle') {
+        <button (click)="exportarCSVDetalle()"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+          </svg>
+          Exportar CSV
+        </button>
+      } @else {
+        <button (click)="exportarCSV()"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+          </svg>
+          Exportar CSV
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── TABS ────────────────────────────────────────────────────── -->
+  <div class="bg-white border-b border-gray-200 px-6">
+    <div class="max-w-7xl mx-auto flex gap-1">
+      @for (t of [
+        {id:'personas', label:'Por persona'},
+        {id:'mensual',  label:'Tendencia mensual'},
+        {id:'detalle',  label:'Detalle de tareas'}
+      ]; track t.id) {
+        <button (click)="cambiarTab($any(t.id))"
+                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+                [class.border-[#1e3a8a]]="tab() === t.id"
+                [class.text-[#1e3a8a]]="tab() === t.id"
+                [class.border-transparent]="tab() !== t.id"
+                [class.text-gray-500]="tab() !== t.id"
+                [class.hover:text-gray-700]="tab() !== t.id">
+          {{ t.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── FILTROS (tab personas y detalle) ────────────────────────── -->
+  @if (tab() === 'personas' || tab() === 'detalle') {
+  <div class="bg-white border-b border-gray-100 px-6 py-3">
+    <div class="max-w-7xl mx-auto flex items-center gap-3 flex-wrap">
+
+      <!-- Botones de período rápido -->
+      <div class="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        @for (opt of [
+          {id:'semana',    label:'Esta semana'},
+          {id:'semana_ant',label:'Semana ant.'},
+          {id:'mes',       label:'Este mes'},
+          {id:'personalizado', label:'Personalizado'}
+        ]; track opt.id) {
+          <button (click)="setPeriodo($any(opt.id))"
+                  class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+                  [class.bg-white]="periodo() === opt.id"
+                  [class.shadow-sm]="periodo() === opt.id"
+                  [class.text-[#1e3a8a]]="periodo() === opt.id"
+                  [class.text-gray-600]="periodo() !== opt.id">
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+
+      <!-- Rango personalizado -->
+      @if (periodo() === 'personalizado') {
+        <div class="flex items-center gap-2">
+          <input type="date" [value]="filtroDesde()"
+                 (change)="filtroDesde.set($any($event.target).value)"
+                 class="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <span class="text-xs text-gray-400">—</span>
+          <input type="date" [value]="filtroHasta()"
+                 (change)="filtroHasta.set($any($event.target).value)"
+                 class="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <button (click)="tab() === 'detalle' ? cargarDetalle() : cargar()"
+                  class="px-3 py-1.5 text-xs font-medium bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-800 transition-colors">
+            Aplicar
+          </button>
+        </div>
+      }
+
+      <!-- Spinner de carga -->
+      @if (cargando() || cargandoDetalle()) {
+        <div class="flex items-center gap-2 text-xs text-gray-500 ml-2">
+          <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          Cargando...
+        </div>
+      }
+    </div>
+  </div>
+
+  } <!-- end @if tab personas/detalle filtros -->
+
+  <!-- ── FILTROS (tab mensual) ────────────────────────────────────── -->
+  @if (tab() === 'mensual') {
+  <div class="bg-white border-b border-gray-100 px-6 py-3">
+    <div class="max-w-7xl mx-auto flex items-center gap-3 flex-wrap">
+      <span class="text-sm text-gray-500 font-medium">Año:</span>
+      <div class="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        @for (anio of aniosDisponibles(); track anio) {
+          <button (click)="cambiarAnio(anio)"
+                  class="px-4 py-1.5 text-xs font-medium rounded-md transition-colors"
+                  [class.bg-white]="anioSeleccionado() === anio"
+                  [class.shadow-sm]="anioSeleccionado() === anio"
+                  [class.text-[#1e3a8a]]="anioSeleccionado() === anio"
+                  [class.text-gray-600]="anioSeleccionado() !== anio">
+            {{ anio }}
+          </button>
+        }
+      </div>
+      @if (cargandoMensual()) {
+        <div class="flex items-center gap-2 text-xs text-gray-500 ml-2">
+          <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          Cargando...
+        </div>
+      }
+    </div>
+  </div>
+  } <!-- end @if tab mensual filtros -->
+
+  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TAB: TENDENCIA MENSUAL
+         ══════════════════════════════════════════════════════════════ -->
+    @if (tab() === 'mensual') {
+
+      @if (cargandoMensual()) {
+        <div class="grid grid-cols-1 gap-6 animate-pulse">
+          <div class="h-96 bg-gray-200 rounded-2xl"></div>
+          <div class="h-64 bg-gray-200 rounded-2xl"></div>
+        </div>
+      }
+
+      @if (!cargandoMensual() && dataMensual().length > 0) {
+
+        <!-- KPIs del año -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          @for (kpi of kpisMensuales(); track kpi.label) {
+            <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" [class]="kpi.bg">
+                <svg class="w-5 h-5" [class]="kpi.color" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="kpi.icon"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xl font-black text-gray-900">{{ kpi.valor }}</p>
+                <p class="text-xs text-gray-500">{{ kpi.label }}</p>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Gráfico de líneas: tendencia % por persona -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div>
+              <h2 class="text-sm font-bold text-gray-700">Tendencia de cumplimiento {{ anioSeleccionado() }}</h2>
+              <p class="text-xs text-gray-400 mt-0.5">% de tareas completadas por mes — consolidado y por persona</p>
+            </div>
+            <!-- Selector de modo -->
+            <div class="flex gap-1 bg-gray-100 p-1 rounded-lg">
+              @for (opt of [
+                { id: 'consolidado', label: 'Consolidado' },
+                { id: 'desglose',    label: 'A tiempo / Tarde' },
+                { id: 'personas',    label: 'Por persona' }
+              ]; track opt.id) {
+                <button (click)="setModoLinea($any(opt.id))"
+                        class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap"
+                        [class.bg-white]="modoLinea() === opt.id"
+                        [class.shadow-sm]="modoLinea() === opt.id"
+                        [class.text-[#1e3a8a]]="modoLinea() === opt.id"
+                        [class.text-gray-600]="modoLinea() !== opt.id">
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          </div>
+          <apx-chart
+            [series]="chartLinea().series"
+            [chart]="chartLinea().chart"
+            [xaxis]="chartLinea().xaxis"
+            [yaxis]="chartLinea().yaxis"
+            [dataLabels]="chartLinea().dataLabels"
+            [fill]="chartLinea().fill"
+            [stroke]="chartLinea().stroke"
+            [markers]="chartLinea().markers"
+            [legend]="chartLinea().legend"
+            [tooltip]="chartLinea().tooltip"
+            [grid]="chartLinea().grid"
+            [colors]="chartLinea().colors">
+          </apx-chart>
+        </div>
+
+        <!-- Gráfico de barras apiladas: volumen por mes -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 class="text-sm font-bold text-gray-700 mb-4">Volumen de tareas por mes {{ anioSeleccionado() }}</h2>
+          <apx-chart
+            [series]="chartBarrasMensual().series"
+            [chart]="chartBarrasMensual().chart"
+            [plotOptions]="chartBarrasMensual().plotOptions"
+            [dataLabels]="chartBarrasMensual().dataLabels"
+            [xaxis]="chartBarrasMensual().xaxis"
+            [yaxis]="chartBarrasMensual().yaxis"
+            [fill]="chartBarrasMensual().fill"
+            [colors]="chartBarrasMensual().colors"
+            [legend]="chartBarrasMensual().legend"
+            [tooltip]="chartBarrasMensual().tooltip"
+            [grid]="chartBarrasMensual().grid">
+          </apx-chart>
+        </div>
+
+        <!-- Tabla resumen por mes -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-bold text-gray-700">Resumen mes a mes</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                <tr>
+                  <th class="px-5 py-3 text-left font-semibold">Mes</th>
+                  <th class="px-4 py-3 text-center font-semibold">Total</th>
+                  <th class="px-4 py-3 text-center font-semibold">Completadas</th>
+                  <th class="px-4 py-3 text-center font-semibold text-green-600">A tiempo</th>
+                  <th class="px-4 py-3 text-center font-semibold text-orange-500">Con retraso</th>
+                  <th class="px-4 py-3 text-center font-semibold">Vencidas</th>
+                  <th class="px-4 py-3 text-center font-semibold">% Cumplimiento</th>
+                  <th class="px-4 py-3 text-center font-semibold text-green-600">% A tiempo</th>
+                  <th class="px-4 py-3 text-center font-semibold text-orange-500">% Con retraso</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                @for (m of dataMensual(); track m.mes) {
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-5 py-3 font-medium text-gray-800">{{ m.nombreMes }}</td>
+                    <td class="px-4 py-3 text-center text-gray-600">{{ m.total }}</td>
+                    <td class="px-4 py-3 text-center text-green-600 font-semibold">{{ m.completadas }}</td>
+
+                    <!-- A tiempo -->
+                    <td class="px-4 py-3 text-center">
+                      @if (m.total > 0) {
+                        <span class="text-green-600 font-semibold">{{ m.completadasATiempo }}</span>
+                      } @else {
+                        <span class="text-gray-300">—</span>
+                      }
+                    </td>
+
+                    <!-- Con retraso -->
+                    <td class="px-4 py-3 text-center">
+                      @if (m.completadasTarde > 0) {
+                        <span class="inline-flex items-center gap-1 text-orange-500 font-semibold">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                          {{ m.completadasTarde }}
+                        </span>
+                      } @else {
+                        <span class="text-gray-300">—</span>
+                      }
+                    </td>
+
+                    <td class="px-4 py-3 text-center text-red-500">{{ m.vencidas }}</td>
+
+                    <!-- % Cumplimiento -->
+                    <td class="px-4 py-3 text-center">
+                      @if (m.total > 0) {
+                        <span class="inline-flex items-center gap-1.5">
+                          <span class="font-bold" [class]="colorPorcentaje(m.porcentajeCumplimiento)">
+                            {{ m.porcentajeCumplimiento }}%
+                          </span>
+                          <span class="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden inline-block">
+                            <span class="h-1.5 rounded-full block transition-all"
+                                  [style.width.%]="m.porcentajeCumplimiento"
+                                  [style.backgroundColor]="barColor(m.porcentajeCumplimiento)">
+                            </span>
+                          </span>
+                        </span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">Sin tareas</span>
+                      }
+                    </td>
+
+                    <!-- % A tiempo -->
+                    <td class="px-4 py-3 text-center">
+                      @if (m.total > 0) {
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                              [class]="colorATiempo(m.porcentajeATiempo)">
+                          {{ m.porcentajeATiempo }}%
+                        </span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                    <!-- % Con retraso -->
+                    <td class="px-4 py-3 text-center">
+                      @if (m.total > 0) {
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                              [class]="colorTarde(m.porcentajeTarde)">
+                          {{ m.porcentajeTarde }}%
+                        </span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── RESUMEN MES A MES POR PERSONA ─────────────────── -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+          <!-- Encabezado + selector -->
+          <div class="px-5 py-4 border-b border-gray-100">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 class="text-sm font-bold text-gray-700">Resumen mes a mes por persona</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Selecciona una persona para ver su desempeño mensual detallado</p>
+              </div>
+
+              <!-- Botones de persona -->
+              <div class="flex gap-2 flex-wrap">
+                @for (p of personasMensuales(); track p.id) {
+                  <button (click)="seleccionarPersonaMensual(p)"
+                          class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all"
+                          [class.bg-[#1e3a8a]]="personaMensualSel()?.id === p.id"
+                          [class.text-white]="personaMensualSel()?.id === p.id"
+                          [class.border-[#1e3a8a]]="personaMensualSel()?.id === p.id"
+                          [class.shadow-sm]="personaMensualSel()?.id === p.id"
+                          [class.bg-white]="personaMensualSel()?.id !== p.id"
+                          [class.text-gray-600]="personaMensualSel()?.id !== p.id"
+                          [class.border-gray-200]="personaMensualSel()?.id !== p.id">
+                    <!-- Avatar initials -->
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0"
+                          [class.bg-white]="personaMensualSel()?.id === p.id"
+                          [class.text-[#1e3a8a]]="personaMensualSel()?.id === p.id"
+                          [class.bg-[#1e3a8a]]="personaMensualSel()?.id !== p.id"
+                          [class.text-white]="personaMensualSel()?.id !== p.id">
+                      {{ iniciales(p.nombre) }}
+                    </span>
+                    {{ p.nombre.split(' ').slice(0, 2).join(' ') }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado vacío: ninguna persona seleccionada -->
+          @if (!personaMensualSel()) {
+            <div class="flex flex-col items-center justify-center py-12 text-center text-gray-400">
+              <svg class="w-10 h-10 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+              <p class="text-sm font-medium">Selecciona una persona arriba</p>
+              <p class="text-xs mt-1">para ver su detalle mes a mes</p>
+            </div>
+          }
+
+          <!-- Tabla por persona seleccionada -->
+          @if (personaMensualSel()) {
+
+            <!-- Mini KPIs anuales de la persona -->
+            @if (kpisPersonaMensual(); as kpi) {
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-5 py-4 bg-gray-50 border-b border-gray-100">
+
+                <div class="bg-white rounded-xl p-3 border border-gray-100 flex items-center gap-2 shadow-sm">
+                  <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-lg font-black text-gray-900">{{ kpi.total }}</p>
+                    <p class="text-[10px] text-gray-500 leading-tight">Total tareas año</p>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-3 border border-gray-100 flex items-center gap-2 shadow-sm">
+                  <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-lg font-black" [class]="colorPorcentaje(+kpi.pctCumplimiento)">{{ kpi.pctCumplimiento }}%</p>
+                    <p class="text-[10px] text-gray-500 leading-tight">% Cumplimiento año</p>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-3 border border-gray-100 flex items-center gap-2 shadow-sm">
+                  <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-lg font-black text-green-600">{{ kpi.aTiempo }}
+                      <span class="text-xs font-semibold">({{ kpi.pctATiempo }}%)</span>
+                    </p>
+                    <p class="text-[10px] text-gray-500 leading-tight">A tiempo</p>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-3 border border-gray-100 flex items-center gap-2 shadow-sm">
+                  <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-lg font-black text-red-500">{{ kpi.vencidas }}</p>
+                    <p class="text-[10px] text-gray-500 leading-tight">Vencidas año</p>
+                  </div>
+                </div>
+
+              </div>
+            }
+
+            <!-- Tabla mensual de la persona -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                  <tr>
+                    <th class="px-5 py-3 text-left font-semibold">Mes</th>
+                    <th class="px-4 py-3 text-center font-semibold">Total</th>
+                    <th class="px-4 py-3 text-center font-semibold">Completadas</th>
+                    <th class="px-4 py-3 text-center font-semibold text-green-600">A tiempo</th>
+                    <th class="px-4 py-3 text-center font-semibold text-orange-500">Con retraso</th>
+                    <th class="px-4 py-3 text-center font-semibold">Vencidas</th>
+                    <th class="px-4 py-3 text-center font-semibold">% Cumplimiento</th>
+                    <th class="px-4 py-3 text-center font-semibold text-green-600">% A tiempo</th>
+                    <th class="px-4 py-3 text-center font-semibold text-orange-500">% Con retraso</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                  @for (m of dataMensual(); track m.mes) {
+                    @let persona = personaEnMes(m, personaMensualSel()!.id);
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-5 py-3 font-medium text-gray-800">{{ m.nombreMes }}</td>
+
+                      @if (persona && persona.total > 0) {
+                        <!-- Total -->
+                        <td class="px-4 py-3 text-center text-gray-600">{{ persona.total }}</td>
+
+                        <!-- Completadas -->
+                        <td class="px-4 py-3 text-center text-green-600 font-semibold">{{ persona.completadas }}</td>
+
+                        <!-- A tiempo -->
+                        <td class="px-4 py-3 text-center">
+                          <span class="text-green-600 font-semibold">{{ persona.completadasATiempo }}</span>
+                        </td>
+
+                        <!-- Con retraso -->
+                        <td class="px-4 py-3 text-center">
+                          @if (persona.completadasTarde > 0) {
+                            <span class="inline-flex items-center gap-1 text-orange-500 font-semibold">
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                              </svg>
+                              {{ persona.completadasTarde }}
+                            </span>
+                          } @else {
+                            <span class="text-gray-300">—</span>
+                          }
+                        </td>
+
+                        <!-- Vencidas -->
+                        <td class="px-4 py-3 text-center text-red-500">{{ persona.vencidas }}</td>
+
+                        <!-- % Cumplimiento -->
+                        <td class="px-4 py-3 text-center">
+                          <span class="inline-flex items-center gap-1.5">
+                            <span class="font-bold" [class]="colorPorcentaje(persona.porcentajeCumplimiento)">
+                              {{ persona.porcentajeCumplimiento }}%
+                            </span>
+                            <span class="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden inline-block">
+                              <span class="h-1.5 rounded-full block transition-all"
+                                    [style.width.%]="persona.porcentajeCumplimiento"
+                                    [style.backgroundColor]="barColor(persona.porcentajeCumplimiento)">
+                              </span>
+                            </span>
+                          </span>
+                        </td>
+
+                        <!-- % A tiempo -->
+                        <td class="px-4 py-3 text-center">
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                                [class]="colorATiempo(persona.porcentajeATiempo)">
+                            {{ persona.porcentajeATiempo }}%
+                          </span>
+                        </td>
+
+                        <!-- % Con retraso -->
+                        <td class="px-4 py-3 text-center">
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                                [class]="colorTarde(persona.porcentajeTarde)">
+                            {{ persona.porcentajeTarde }}%
+                          </span>
+                        </td>
+
+                      } @else {
+                        <!-- Mes sin tareas para esta persona -->
+                        <td colspan="8" class="px-4 py-3 text-center text-xs text-gray-300">Sin tareas asignadas</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } <!-- end personaMensualSel -->
+
+        </div>
+        <!-- ── FIN RESUMEN POR PERSONA ─────────────────────────── -->
+
+      } <!-- end dataMensual -->
+
+      @if (!cargandoMensual() && sinDatosMensual()) {
+        <div class="flex flex-col items-center justify-center py-20 text-center">
+          <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          <h3 class="text-base font-semibold text-gray-500">Sin tareas en {{ anioSeleccionado() }}</h3>
+          <p class="text-sm text-gray-400 mt-1">No hay tareas registradas para este año.</p>
+        </div>
+      }
+
+    } <!-- end @if tab mensual -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TAB: DETALLE DE TAREAS
+         ══════════════════════════════════════════════════════════════ -->
+    @if (tab() === 'detalle') {
+
+      <!-- Skeleton -->
+      @if (cargandoDetalle()) {
+        <div class="space-y-3 animate-pulse">
+          <div class="h-10 bg-gray-200 rounded-xl w-80"></div>
+          <div class="h-96 bg-gray-200 rounded-2xl"></div>
+        </div>
+      }
+
+      @if (!cargandoDetalle() && tareasDetalleFiltradas().length === 0 && dataDetalle().length === 0) {
+        <div class="flex flex-col items-center justify-center py-20 text-center">
+          <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M3 10h18M3 14h18M10 3v18M14 3v18"/>
+          </svg>
+          <h3 class="text-base font-semibold text-gray-500">Sin tareas en este período</h3>
+          <p class="text-sm text-gray-400 mt-1">Selecciona otro rango de fechas.</p>
+        </div>
+      }
+
+      @if (!cargandoDetalle() && dataDetalle().length > 0) {
+
+        <!-- Barra de búsqueda + contador -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="relative flex-1 max-w-sm">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text"
+                   placeholder="Buscar por título, responsable, estado…"
+                   [value]="busquedaDetalle()"
+                   (input)="busquedaDetalle.set($any($event.target).value)"
+                   class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <span class="text-xs text-gray-500">
+            {{ tareasDetalleFiltradas().length }} tarea{{ tareasDetalleFiltradas().length !== 1 ? 's' : '' }}
+          </span>
+          @if (busquedaDetalle()) {
+            <button (click)="busquedaDetalle.set('')"
+                    class="text-xs text-blue-600 hover:underline">Limpiar</button>
+          }
+        </div>
+
+        <!-- Tabla completa -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[1100px]">
+
+              <!-- Encabezado -->
+              <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide sticky top-0 z-10">
+                <tr>
+
+                  <!-- Semana -->
+                  <th class="px-4 py-3 text-left font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('semana')">
+                    <span class="flex items-center gap-1">
+                      Semana
+                      @if (ordenDetalleCol() === 'semana') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- Título -->
+                  <th class="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('titulo')">
+                    <span class="flex items-center gap-1">
+                      Tarea
+                      @if (ordenDetalleCol() === 'titulo') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- Responsables -->
+                  <th class="px-4 py-3 text-left font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('responsable')">
+                    <span class="flex items-center gap-1">
+                      Responsable
+                      @if (ordenDetalleCol() === 'responsable') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- Estado -->
+                  <th class="px-4 py-3 text-left font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('estado')">
+                    <span class="flex items-center gap-1">
+                      Estado
+                      @if (ordenDetalleCol() === 'estado') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- F. Presup. Fin -->
+                  <th class="px-4 py-3 text-center font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('fechaFin')">
+                    <span class="flex items-center justify-center gap-1">
+                      Presup. fin
+                      @if (ordenDetalleCol() === 'fechaFin') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- F. Real Fin -->
+                  <th class="px-4 py-3 text-center font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('fechaReal')">
+                    <span class="flex items-center justify-center gap-1">
+                      Fin real
+                      @if (ordenDetalleCol() === 'fechaReal') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- Vs. Presupuesto -->
+                  <th class="px-4 py-3 text-center font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('diasVsP')">
+                    <span class="flex items-center justify-center gap-1">
+                      Vs. presup.
+                      @if (ordenDetalleCol() === 'diasVsP') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- Movida -->
+                  <th class="px-4 py-3 text-center font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('movida')">
+                    <span class="flex items-center justify-center gap-1">
+                      Movida
+                      @if (ordenDetalleCol() === 'movida') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                  <!-- Comentarios -->
+                  <th class="px-4 py-3 text-center font-semibold whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      (click)="ordenarDetalle('comentarios')">
+                    <span class="flex items-center justify-center gap-1">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      @if (ordenDetalleCol() === 'comentarios') {
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                [attr.d]="ordenDetalleDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                        </svg>
+                      }
+                    </span>
+                  </th>
+
+                </tr>
+              </thead>
+
+              <!-- Cuerpo -->
+              <tbody class="divide-y divide-gray-50">
+                @for (t of tareasDetalleFiltradas(); track t.id) {
+                  <tr class="hover:bg-gray-50 transition-colors group">
+
+                    <!-- Semana -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                        {{ t.semanaProgramada | date:'dd/MM/yy' }}
+                      </span>
+                    </td>
+
+                    <!-- Título + descripción -->
+                    <td class="px-4 py-3 max-w-xs">
+                      <p class="text-sm font-semibold text-gray-800 leading-tight">{{ t.titulo }}</p>
+                      @if (t.descripcion) {
+                        <p class="text-xs text-gray-400 mt-0.5 line-clamp-2">{{ t.descripcion }}</p>
+                      }
+                    </td>
+
+                    <!-- Responsables -->
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap gap-1">
+                        @for (r of t.responsables; track r) {
+                          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#1e3a8a] text-white text-[10px] font-bold shrink-0"
+                                [title]="r">
+                            {{ iniciales(r) }}
+                          </span>
+                        } @empty {
+                          <span class="text-xs text-gray-300">—</span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Estado -->
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
+                            [style.backgroundColor]="t.estadoColor">
+                        {{ t.estadoNombre }}
+                      </span>
+                      @if (t.esVencida) {
+                        <span class="block text-[10px] text-red-500 font-semibold mt-0.5">Vencida</span>
+                      }
+                    </td>
+
+                    <!-- Presup. fin -->
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                      @if (t.fechaPresupuestoFin) {
+                        <span class="text-xs text-gray-600">
+                          {{ t.fechaPresupuestoFin | date:'dd/MM/yy' }}
+                        </span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                    <!-- Fin real -->
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                      @if (t.fechaRealFinalizacion) {
+                        <span class="text-xs font-medium"
+                              [class.text-green-600]="!t.completadaTarde && (t.diasVsPresupuesto ?? 0) <= 0"
+                              [class.text-orange-500]="t.completadaTarde || (t.diasVsPresupuesto ?? 0) > 0">
+                          {{ t.fechaRealFinalizacion | date:'dd/MM/yy' }}
+                        </span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                    <!-- Vs. Presupuesto (comparación directa) -->
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                      @if (t.diasVsPresupuesto != null) {
+                        @if (t.diasVsPresupuesto <= 0) {
+                          <!-- A tiempo o adelantado -->
+                          <span class="inline-flex items-center gap-0.5 text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            @if (t.diasVsPresupuesto < 0) {
+                              {{ t.diasVsPresupuesto }}d
+                            } @else {
+                              A tiempo
+                            }
+                          </span>
+                        } @else {
+                          <!-- Tarde vs presupuesto -->
+                          <span class="inline-flex items-center gap-0.5 text-xs font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            +{{ t.diasVsPresupuesto }}d
+                          </span>
+                        }
+                      } @else if (!t.esEstadoFinal && t.esVencida) {
+                        <span class="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Vencida</span>
+                      } @else if (!t.esEstadoFinal) {
+                        <span class="text-xs text-gray-400">Pendiente</span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                    <!-- Movida -->
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                      @if (t.vecesMovida > 0) {
+                        <span class="inline-flex items-center gap-0.5 text-xs font-semibold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                          </svg>
+                          {{ t.vecesMovida }}×
+                        </span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                    <!-- Comentarios -->
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                      @if (t.comentariosCount > 0) {
+                        <button (click)="abrirComentarios(t, $event)"
+                                class="inline-flex items-center gap-0.5 text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                          </svg>
+                          {{ t.comentariosCount }}
+                        </button>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="9" class="px-4 py-12 text-center text-sm text-gray-400">
+                      Ninguna tarea coincide con la búsqueda.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+
+            </table>
+          </div>
+        </div>
+
+      } <!-- end dataDetalle.length > 0 -->
+
+      <!-- ── MODAL COMENTARIOS ──────────────────────────────────────── -->
+      @if (tareaComentariosAbierta()) {
+        <!-- Overlay -->
+        <div class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
+             (click)="cerrarComentarios()">
+        </div>
+
+        <!-- Panel lateral derecho -->
+        <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
+
+          <!-- Header -->
+          <div class="flex items-start justify-between px-5 py-4 border-b border-gray-100">
+            <div class="flex-1 min-w-0 pr-4">
+              <p class="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-0.5">Comentarios</p>
+              <h3 class="text-sm font-bold text-gray-900 leading-snug">
+                {{ tareaComentariosAbierta()!.titulo }}
+              </h3>
+              <div class="flex items-center gap-2 mt-1.5">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                      [style.backgroundColor]="tareaComentariosAbierta()!.estadoColor">
+                  {{ tareaComentariosAbierta()!.estadoNombre }}
+                </span>
+                <span class="text-[10px] text-gray-400">
+                  Semana {{ tareaComentariosAbierta()!.semanaProgramada | date:'dd/MM/yy' }}
+                </span>
+              </div>
+            </div>
+            <button (click)="cerrarComentarios()"
+                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Cuerpo -->
+          <div class="flex-1 overflow-y-auto px-5 py-4">
+
+            <!-- Spinner -->
+            @if (cargandoComentarios()) {
+              <div class="flex items-center justify-center py-16 gap-3 text-gray-400">
+                <svg class="w-5 h-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span class="text-sm">Cargando comentarios…</span>
+              </div>
+            }
+
+            <!-- Lista -->
+            @if (!cargandoComentarios() && comentariosModal().length > 0) {
+              <div class="space-y-4">
+                @for (c of comentariosModal(); track c.id) {
+                  <div class="flex gap-3">
+                    <!-- Avatar -->
+                    <div class="w-8 h-8 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                      {{ iniciales(c.usuario.nombre) }}
+                    </div>
+                    <!-- Burbuja -->
+                    <div class="flex-1 min-w-0">
+                      <div class="bg-gray-50 rounded-xl rounded-tl-none px-4 py-3">
+                        <div class="flex items-baseline justify-between gap-2 mb-1.5">
+                          <span class="text-xs font-bold text-gray-800">{{ c.usuario.nombre }}</span>
+                          <span class="text-[10px] text-gray-400 whitespace-nowrap shrink-0">
+                            {{ c.fechaRegistro | date:'dd/MM/yy HH:mm' }}
+                          </span>
+                        </div>
+                        <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ c.comentario }}</p>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Vacío -->
+            @if (!cargandoComentarios() && comentariosModal().length === 0) {
+              <div class="flex flex-col items-center justify-center py-16 text-center text-gray-400">
+                <svg class="w-10 h-10 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <p class="text-sm">Sin comentarios aún</p>
+              </div>
+            }
+
+          </div>
+
+          <!-- Footer con contador -->
+          @if (!cargandoComentarios() && comentariosModal().length > 0) {
+            <div class="px-5 py-3 border-t border-gray-100 bg-gray-50">
+              <p class="text-xs text-gray-500 text-center">
+                {{ comentariosModal().length }} comentario{{ comentariosModal().length !== 1 ? 's' : '' }}
+                — ordenados del más reciente al más antiguo
+              </p>
+            </div>
+          }
+
+        </div>
+      } <!-- end modal comentarios -->
+
+    } <!-- end @if tab detalle -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         TAB: POR PERSONA
+         ══════════════════════════════════════════════════════════════ -->
+    @if (tab() === 'personas') {
+
+    <!-- ── KPI CARDS ──────────────────────────────────────────────── -->
+    @if (!cargando() && data().length > 0) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+
+        <!-- % Global -->
+        <div class="col-span-2 sm:col-span-1 bg-white rounded-2xl border p-4 flex flex-col items-center justify-center gap-1 shadow-sm"
+             [class]="bgPorcentaje(resumen().porcentaje)">
+          <span class="text-3xl font-black" [class]="colorPorcentaje(resumen().porcentaje)">
+            {{ resumen().porcentaje }}%
+          </span>
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cumplimiento global</span>
+        </div>
+
+        @for (kpi of [
+          { valor: resumen().total,            label: 'Total tareas',      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', color: 'text-blue-600',   bg: 'bg-blue-50' },
+          { valor: resumen().completadas,      label: 'Completadas',       icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',                                                                                        color: 'text-green-600',  bg: 'bg-green-50' },
+          { valor: resumen().completadasTarde, label: 'Completadas tarde', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',                                                                                        color: 'text-orange-500', bg: 'bg-orange-50' },
+          { valor: resumen().vencidas,         label: 'Vencidas',          icon: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',                                                            color: 'text-red-600',    bg: 'bg-red-50' },
+          { valor: resumen().movidas,          label: 'Movidas',           icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',                                                                                  color: 'text-yellow-600', bg: 'bg-yellow-50' },
+          { valor: resumen().personas,         label: 'Personas',          icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'text-purple-600', bg: 'bg-purple-50' }
+        ]; track kpi.label) {
+          <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" [class]="kpi.bg">
+              <svg class="w-5 h-5" [class]="kpi.color" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="kpi.icon"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xl font-black text-gray-900">{{ kpi.valor }}</p>
+              <p class="text-xs text-gray-500">{{ kpi.label }}</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ── GRÁFICOS ──────────────────────────────────────────────── -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+        <!-- Gráfico 1: % Cumplimiento por persona -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 class="text-sm font-bold text-gray-700 mb-4">% Cumplimiento por persona</h2>
+          <apx-chart
+            [series]="chartCumplimiento().series"
+            [chart]="chartCumplimiento().chart"
+            [plotOptions]="chartCumplimiento().plotOptions"
+            [dataLabels]="chartCumplimiento().dataLabels"
+            [xaxis]="chartCumplimiento().xaxis"
+            [yaxis]="chartCumplimiento().yaxis"
+            [fill]="chartCumplimiento().fill"
+            [colors]="chartCumplimiento().colors"
+            [legend]="chartCumplimiento().legend"
+            [tooltip]="chartCumplimiento().tooltip"
+            [grid]="chartCumplimiento().grid">
+          </apx-chart>
+        </div>
+
+        <!-- Gráfico 2: Distribución apilada -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 class="text-sm font-bold text-gray-700 mb-4">Distribución de tareas por persona</h2>
+          <apx-chart
+            [series]="chartDistribucion().series"
+            [chart]="chartDistribucion().chart"
+            [plotOptions]="chartDistribucion().plotOptions"
+            [dataLabels]="chartDistribucion().dataLabels"
+            [xaxis]="chartDistribucion().xaxis"
+            [yaxis]="chartDistribucion().yaxis"
+            [fill]="chartDistribucion().fill"
+            [colors]="chartDistribucion().colors"
+            [legend]="chartDistribucion().legend"
+            [tooltip]="chartDistribucion().tooltip"
+            [grid]="chartDistribucion().grid">
+          </apx-chart>
+        </div>
+      </div>
+
+      <!-- ── TABLA DE PERSONAS (clic para drill-down) ──────────────── -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+          <h2 class="text-sm font-bold text-gray-700">Detalle por persona</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Haz clic en una fila para ver el detalle individual</p>
+        </div>
+
+        <div class="divide-y divide-gray-50">
+          @for (p of data(); track p.usuarioId) {
+            <div class="cursor-pointer hover:bg-gray-50 transition-colors"
+                 (click)="seleccionarPersona(p)">
+
+              <!-- Fila principal -->
+              <div class="px-5 py-3 flex items-center gap-4">
+
+                <!-- Avatar -->
+                <div class="w-9 h-9 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {{ iniciales(p.nombre) }}
+                </div>
+
+                <!-- Nombre + barra -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-semibold text-gray-800 truncate">{{ p.nombre }}</span>
+                    <span class="text-sm font-black ml-4 shrink-0" [class]="colorPorcentaje(p.porcentajeCumplimiento)">
+                      {{ p.porcentajeCumplimiento }}%
+                    </span>
+                  </div>
+                  <!-- Barra de progreso -->
+                  <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-2 rounded-full transition-all duration-500"
+                         [style.width.%]="p.porcentajeCumplimiento"
+                         [style.backgroundColor]="barColor(p.porcentajeCumplimiento)">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Stats rápidas -->
+                <div class="hidden sm:flex items-center gap-3 text-xs text-gray-500 shrink-0 flex-wrap">
+                  <span class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>{{ p.completadas }} completadas
+                  </span>
+                  <!-- % A tiempo -->
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                        [class]="colorATiempo(p.porcentajeATiempo)"
+                        [title]="p.completadasATiempo + ' a tiempo'">
+                    ✓ {{ p.porcentajeATiempo }}%
+                  </span>
+                  <!-- % Con retraso -->
+                  @if (p.completadasTarde > 0) {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                          [class]="colorTarde(p.porcentajeTarde)"
+                          [title]="p.completadasTarde + ' con retraso'">
+                      ⏱ {{ p.porcentajeTarde }}%
+                    </span>
+                  }
+                  <span class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>{{ p.vencidas }} vencidas
+                  </span>
+                  <span class="text-gray-400">{{ p.total }} total</span>
+                </div>
+
+                <!-- Chevron -->
+                <svg class="w-4 h-4 text-gray-400 transition-transform shrink-0"
+                     [class.rotate-90]="personaSel()?.usuarioId === p.usuarioId"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </div>
+
+              <!-- ── DRILL-DOWN INDIVIDUAL ────────────────────────────── -->
+              @if (personaSel()?.usuarioId === p.usuarioId) {
+                <div class="bg-gray-50 border-t border-gray-100 px-5 py-4">
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <!-- Donut chart -->
+                    @if (chartDonut()) {
+                      <div class="bg-white rounded-xl p-4 border border-gray-100">
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Distribución</h3>
+                        <apx-chart
+                          [series]="chartDonut()!.series"
+                          [chart]="chartDonut()!.chart"
+                          [labels]="chartDonut()!.labels"
+                          [colors]="chartDonut()!.colors"
+                          [legend]="chartDonut()!.legend"
+                          [tooltip]="chartDonut()!.tooltip"
+                          [responsive]="chartDonut()!.responsive"
+                          [plotOptions]="chartDonut()!.plotOptions"
+                          [dataLabels]="chartDonut()!.dataLabels">
+                        </apx-chart>
+                      </div>
+                    }
+
+                    <!-- Lista de tareas -->
+                    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 overflow-hidden">
+                      <div class="px-4 py-3 border-b border-gray-50">
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tareas del período</h3>
+                      </div>
+                      <div class="divide-y divide-gray-50 max-h-72 overflow-y-auto">
+                        @for (t of tareasDePersona(p); track t.id) {
+                          <div class="px-4 py-2.5 flex items-start gap-3">
+                            <!-- Indicador estado -->
+                            <span class="w-2 h-2 rounded-full shrink-0 mt-1.5"
+                                  [style.backgroundColor]="'#' + t.estadoColor.replace('#','')"
+                                  [style.backgroundColor]="t.estadoColor">
+                            </span>
+                            <div class="flex-1 min-w-0">
+                              <p class="text-xs font-medium text-gray-800 truncate">{{ t.titulo }}</p>
+                              <div class="flex items-center gap-2 mt-0.5 text-xs text-gray-400 flex-wrap">
+                                <span>{{ t.estadoNombre }}</span>
+                                @if (t.esVencida) {
+                                  <span class="text-red-500 font-semibold">· Vencida</span>
+                                }
+                                @if (t.completadaTarde) {
+                                  <span class="inline-flex items-center gap-0.5 text-orange-500 font-semibold">
+                                    · Tarde +{{ t.diasRetraso }}d
+                                  </span>
+                                }
+                                @if (t.vecesMovida > 0) {
+                                  <span class="text-yellow-500">· Movida {{ t.vecesMovida }}×</span>
+                                }
+                              </div>
+                            </div>
+                            <!-- Ícono de estado final -->
+                            @if (t.esEstadoFinal && !t.completadaTarde) {
+                              <svg class="w-4 h-4 text-green-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                              </svg>
+                            }
+                            @if (t.esEstadoFinal && t.completadaTarde) {
+                              <!-- Check naranja para completadas tarde -->
+                              <svg class="w-4 h-4 text-orange-400 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                              </svg>
+                            }
+                          </div>
+                        } @empty {
+                          <p class="text-xs text-gray-400 text-center py-6">Sin tareas en este período</p>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── ESTADO VACÍO ────────────────────────────────────────────── -->
+    @if (!cargando() && data().length === 0) {
+      <div class="flex flex-col items-center justify-center py-20 text-center">
+        <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <h3 class="text-base font-semibold text-gray-500">Sin datos para este período</h3>
+        <p class="text-sm text-gray-400 mt-1">Selecciona otro rango de fechas o verifica que haya tareas asignadas.</p>
+      </div>
+    }
+
+    <!-- ── SKELETON LOADING ────────────────────────────────────────── -->
+    @if (cargando()) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="h-20 bg-gray-200 rounded-2xl"></div>
+        }
+      </div>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-pulse">
+        <div class="h-72 bg-gray-200 rounded-2xl"></div>
+        <div class="h-72 bg-gray-200 rounded-2xl"></div>
+      </div>
+      <div class="h-48 bg-gray-200 rounded-2xl animate-pulse"></div>
+    }
+
+    } <!-- end @if tab personas -->
+
+  </div>
+</div>

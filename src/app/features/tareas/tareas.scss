@@ -1,0 +1,29 @@
+// Animación del panel lateral
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Scrollbar minimalista en columnas kanban
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 9999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+// Impresión (PDF via Ctrl+P / window.print())
+@media print {
+  // Ocultar chrome de la aplicación
+  app-sidebar, app-header, .print\:hidden { display: none !important; }
+
+  // Forzar colores en print
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .print-area {
+    display: block !important;
+    overflow: visible !important;
+  }
+}
