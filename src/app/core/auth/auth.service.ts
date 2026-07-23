@@ -43,7 +43,17 @@ export class AuthService {
    * Método principal de autenticación
    * @param googleToken Token JWT recibido desde Google
    */
-  public async autenticarConServidor(googleToken: string): Promise<boolean> {
+  /** Decodifica el payload de un JWT sin verificar la firma (solo lectura de claims) */
+  private decodeJwtPayload(token: string): Record<string, any> {
+    try {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(base64));
+    } catch {
+      return {};
+    }
+  }
+
+  public async autenticarConServidor(googleToken: string, googleFotoUrl?: string): Promise<boolean> {
     Swal.fire({
       title: 'Iniciando sesión',
       text: 'Validando permisos en RMS...',
@@ -87,11 +97,17 @@ export class AuthService {
         (up: any) => up.permiso.slug
       );
 
+      // Extraer foto del ID token (claim "picture") — más fiable que user.photoUrl
+      // que la librería no siempre llena en cuentas de Google Workspace
+      const jwtPayload  = this.decodeJwtPayload(googleToken);
+      const fotoGoogle  = googleFotoUrl || jwtPayload['picture'] || null;
+
       const usuarioProcesado: UsuarioRMS = {
         id: perfil.id,
         nombre: perfil.nombre,
         email: perfil.email,
-        fotoUrl: perfil.avatarUrl || `https://ui-avatars.com/api/?name=${perfil.nombre}&background=1e3a8a&color=fff`,
+        // Prioridad: picture del JWT → photoUrl del OAuth → avatarUrl del servidor → avatar generado
+        fotoUrl: fotoGoogle || perfil.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(perfil.nombre)}&background=1e3a8a&color=fff`,
         permisos: listaPermisos
       };
 
