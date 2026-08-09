@@ -180,7 +180,7 @@ export class TareasReportesComponent implements OnInit {
       { label: 'Completadas a tiempo', valor: `${totalATiempo} (${pctATiempo})`,  color: 'text-green-600',  bg: 'bg-green-50',  icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
       { label: 'Completadas con retraso', valor: `${totalTarde} (${pctTarde})`, color: 'text-orange-500', bg: 'bg-orange-50', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
       { label: 'Vencidas',             valor: totalVencidas,    color: 'text-red-600',    bg: 'bg-red-50',    icon: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' },
-      { label: '% Cumplimiento año',   valor: pctCumplimiento,  color: 'text-purple-600', bg: 'bg-purple-50', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+      { label: '% A tiempo año',       valor: pctATiempo,       color: 'text-purple-600', bg: 'bg-purple-50', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
     ];
   });
 
@@ -211,18 +211,18 @@ export class TareasReportesComponent implements OnInit {
 
   // ── Gráfico 1: % cumplimiento por persona (barras horizontales) ───────────
   public chartCumplimiento = computed<ChartBarOptions>(() => {
-    const d = [...this.data()].sort((a, b) => b.porcentajeCumplimiento - a.porcentajeCumplimiento);
+    const d = [...this.data()].sort((a, b) => b.porcentajeATiempo - a.porcentajeATiempo);
     return {
       series: [{
-        name: '% Cumplimiento',
-        data: d.map(p => Math.round(p.porcentajeCumplimiento))
+        name: '% A tiempo',
+        data: d.map(p => Math.round(p.porcentajeATiempo))
       }],
       chart: { type: 'bar', height: Math.max(200, d.length * 52 + 60), toolbar: { show: false }, fontFamily: 'inherit' },
       plotOptions: { bar: { horizontal: true, borderRadius: 6, dataLabels: { position: 'right' } } },
       dataLabels: { enabled: true, formatter: (val: number) => `${val}%`, offsetX: 8, style: { fontSize: '12px', fontWeight: 600, colors: ['#374151'] } },
       xaxis: { categories: d.map(p => p.nombre.split(' ').slice(0, 2).join(' ')), max: 100, labels: { formatter: (val: string) => `${val}%` } },
       yaxis: { labels: { style: { fontSize: '12px', fontWeight: 500 } } },
-      fill: { colors: d.map(p => p.porcentajeCumplimiento >= 80 ? '#16a34a' : p.porcentajeCumplimiento >= 50 ? '#f59e0b' : '#ef4444') },
+      fill: { colors: d.map(p => p.porcentajeATiempo >= 80 ? '#16a34a' : p.porcentajeATiempo >= 50 ? '#f59e0b' : '#ef4444') },
       colors: ['#1e3a8a'],
       legend: { show: false },
       tooltip: { y: { formatter: (val: number) => `${val}%` } },
@@ -232,10 +232,11 @@ export class TareasReportesComponent implements OnInit {
 
   // ── Gráfico 2: Distribución apilada por persona ───────────────────────────
   public chartDistribucion = computed<ChartBarOptions>(() => {
-    const d = [...this.data()].sort((a, b) => b.porcentajeCumplimiento - a.porcentajeCumplimiento);
+    const d = [...this.data()].sort((a, b) => b.porcentajeATiempo - a.porcentajeATiempo);
     return {
       series: [
-        { name: 'Completadas', data: d.map(p => p.completadas) },
+        { name: 'A tiempo',    data: d.map(p => p.completadasATiempo) },
+        { name: 'Con retraso', data: d.map(p => p.completadasTarde) },
         { name: 'Pendientes',  data: d.map(p => p.pendientes - p.vencidas) },
         { name: 'Vencidas',    data: d.map(p => p.vencidas) },
       ],
@@ -245,7 +246,7 @@ export class TareasReportesComponent implements OnInit {
       xaxis: { categories: d.map(p => p.nombre.split(' ').slice(0, 2).join(' ')), labels: { formatter: (val: string) => `${val}` } },
       yaxis: { labels: { style: { fontSize: '12px', fontWeight: 500 } } },
       fill: { opacity: 1 },
-      colors: ['#16a34a', '#93c5fd', '#ef4444'],
+      colors: ['#16a34a', '#f59e0b', '#93c5fd', '#ef4444'],
       legend: { position: 'top', horizontalAlign: 'left', fontSize: '13px' },
       tooltip: { shared: true, intersect: false },
       grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } }
@@ -283,10 +284,10 @@ export class TareasReportesComponent implements OnInit {
     let series: { name: string; data: (number | null)[] }[];
 
     if (modo === 'consolidado') {
-      // Solo el % general de cumplimiento consolidado
+      // Solo el % a tiempo consolidado
       series = [{
-        name: '% Cumplimiento',
-        data: meses.map(m => m.total > 0 ? Math.round(m.porcentajeCumplimiento) : null)
+        name: '% A tiempo',
+        data: meses.map(m => m.total > 0 ? Math.round(m.porcentajeATiempo) : null)
       }];
     } else if (modo === 'desglose') {
       // 3 series: total cumplido, a tiempo y con retraso
@@ -305,12 +306,12 @@ export class TareasReportesComponent implements OnInit {
         },
       ];
     } else {
-      // Una serie de % cumplimiento por persona
+      // Una serie de % a tiempo por persona
       series = personas.map(p => ({
         name: p.nombre.split(' ').slice(0, 2).join(' '),
         data: meses.map(m => {
           const per = m.personas.find(x => x.usuarioId === p.id);
-          return per && per.total > 0 ? Math.round(per.porcentajeCumplimiento) : null;
+          return per && per.total > 0 ? Math.round(per.porcentajeATiempo) : null;
         })
       }));
     }
