@@ -144,14 +144,21 @@ export class TareasComponent implements OnInit {
     const data        = this.cumplimientoFiltrado();
     const total       = data.reduce((s, p) => s + p.total, 0);
     const completadas = data.reduce((s, p) => s + p.completadas, 0);
+    const aTiempo     = data.reduce((s, p) => s + p.completadasATiempo, 0);
+    const tarde       = data.reduce((s, p) => s + p.completadasTarde, 0);
     return {
       total,
       completadas,
-      vencidas:     data.reduce((s, p) => s + p.vencidas, 0),
-      movidas:      data.reduce((s, p) => s + p.movidas, 0),
-      porcentaje:   total > 0 ? Math.round(completadas / total * 100) : 0,
-      personasCien: data.filter(p => p.porcentajeCumplimiento === 100).length,
-      personas:     data.length,
+      aTiempo,
+      tarde,
+      vencidas:        data.reduce((s, p) => s + p.vencidas, 0),
+      movidas:         data.reduce((s, p) => s + p.movidas, 0),
+      // Cumplimiento real = solo las entregadas A TIEMPO
+      porcentaje:      total > 0 ? Math.round(aTiempo / total * 100) : 0,
+      porcentajeTarde: total > 0 ? Math.round(tarde  / total * 100) : 0,
+      // "Al 100%" solo si TODAS sus tareas fueron entregadas a tiempo
+      personasCien:    data.filter(p => p.porcentajeATiempo === 100).length,
+      personas:        data.length,
     };
   });
 

@@ -348,8 +348,22 @@
                       {{ t.titulo }}
                     </h4>
 
-                    <!-- Fecha límite -->
-                    @if (t.fechaPresupuestoFin) {
+                    <!-- Fecha límite / finalización -->
+                    @if (t.estado.esEstadoFinal) {
+                      @if (t.fechaRealFinalizacion) {
+                        <p class="text-[10px] font-semibold mb-3"
+                          [class.text-green-600]="diasRetraso(t) === 0"
+                          [class.text-orange-500]="diasRetraso(t) > 0">
+                          <svg class="w-3 h-3 inline mr-0.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                          {{ t.fechaRealFinalizacion | date:'dd/MM/yyyy' }}
+                          @if (diasRetraso(t) > 0) {
+                            <span class="text-orange-400"> · +{{ diasRetraso(t) }}d</span>
+                          }
+                        </p>
+                      }
+                    } @else if (t.fechaPresupuestoFin) {
                       <p class="text-[10px] font-semibold mb-3"
                         [class.text-red-500]="esVencida(t)"
                         [class.text-gray-400]="!esVencida(t)">
@@ -624,7 +638,17 @@
           <div class="bg-white rounded-2xl p-5 shadow-sm border border-blue-100 flex flex-col items-center justify-center">
             <div class="relative w-20 h-20">
               <svg class="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                <!-- Fondo gris -->
                 <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" stroke-width="3"/>
+                <!-- Porción tarde (naranja) — va debajo del verde -->
+                @if (resumenCumplimiento().porcentajeTarde > 0) {
+                  <circle cx="18" cy="18" r="15.9" fill="none"
+                    stroke="#f97316"
+                    stroke-width="3"
+                    [attr.stroke-dasharray]="(resumenCumplimiento().porcentaje + resumenCumplimiento().porcentajeTarde) + ' 100'"
+                    stroke-dashoffset="0" stroke-linecap="round"/>
+                }
+                <!-- Porción a tiempo (verde/azul) — encima -->
                 <circle cx="18" cy="18" r="15.9" fill="none"
                   [attr.stroke]="colorCumplimiento(resumenCumplimiento().porcentaje)"
                   stroke-width="3" stroke-linecap="round"
@@ -635,7 +659,10 @@
                 {{ resumenCumplimiento().porcentaje }}%
               </span>
             </div>
-            <p class="text-xs font-semibold text-gray-500 mt-2">Cumplimiento Global</p>
+            <p class="text-xs font-semibold text-gray-500 mt-2">Cumplimiento a Tiempo</p>
+            @if (resumenCumplimiento().porcentajeTarde > 0) {
+              <p class="text-[10px] text-orange-500 font-semibold mt-0.5">+{{ resumenCumplimiento().porcentajeTarde }}% tarde</p>
+            }
           </div>
 
           <!-- Personas al 100% -->
@@ -712,19 +739,32 @@
                               ↕ {{ persona.movidas }}
                             </span>
                           }
-                          <!-- Porcentaje destacado -->
+                          @if (persona.completadasTarde > 0) {
+                            <span class="text-[10px] font-black bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded-full"
+                              [title]="persona.completadasTarde + ' tarea(s) entregada(s) fuera de la semana programada'">
+                              ↻ {{ persona.completadasTarde }} tarde
+                            </span>
+                          }
+                          <!-- Porcentaje destacado (solo a tiempo) -->
                           <span class="text-base font-black w-12 text-right"
-                            [style.color]="colorCumplimiento(persona.porcentajeCumplimiento)">
-                            {{ persona.porcentajeCumplimiento }}%
+                            [style.color]="colorCumplimiento(persona.porcentajeATiempo)">
+                            {{ persona.porcentajeATiempo }}%
                           </span>
                         </div>
                       </div>
 
-                      <!-- Barra CSS animada -->
-                      <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-700 ease-out"
-                          [style.width.%]="persona.porcentajeCumplimiento"
-                          [style.backgroundColor]="colorCumplimiento(persona.porcentajeCumplimiento)">
+                      <!-- Barra apilada: verde (a tiempo) + naranja (tarde) -->
+                      <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden relative">
+                        <!-- Porción tarde (naranja) — ancho total completado -->
+                        @if (persona.porcentajeTarde > 0) {
+                          <div class="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out bg-orange-400"
+                            [style.width.%]="persona.porcentajeCumplimiento">
+                          </div>
+                        }
+                        <!-- Porción a tiempo (verde/azul) — encima -->
+                        <div class="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out"
+                          [style.width.%]="persona.porcentajeATiempo"
+                          [style.backgroundColor]="colorCumplimiento(persona.porcentajeATiempo)">
                         </div>
                       </div>
                     </div>
@@ -747,7 +787,7 @@
                           <th class="pb-2 text-left">Tarea</th>
                           <th class="pb-2 text-left pl-3">Estado</th>
                           <th class="pb-2 text-left pl-3">Semana</th>
-                          <th class="pb-2 text-left pl-3">Vence</th>
+                          <th class="pb-2 text-left pl-3">Vence / Finalizó</th>
                           <th class="pb-2 text-center pl-3">Mov.</th>
                         </tr>
                       </thead>
@@ -775,11 +815,28 @@
                             <td class="py-2.5 pl-3 pr-3 text-gray-500 whitespace-nowrap">
                               {{ t.semanaProgramada | date:'dd/MM/yy' }}
                             </td>
-                            <td class="py-2.5 pl-3 pr-3 whitespace-nowrap"
-                              [class.text-red-600]="t.esVencida"
-                              [class.font-bold]="t.esVencida"
-                              [class.text-gray-500]="!t.esVencida">
-                              {{ t.fechaPresupuestoFin ? (t.fechaPresupuestoFin | date:'dd/MM/yy') : '—' }}
+                            <td class="py-2.5 pl-3 pr-3 whitespace-nowrap">
+                              @if (t.esEstadoFinal) {
+                                @if (t.fechaRealFinalizacion) {
+                                  <span class="font-semibold"
+                                    [class.text-green-600]="!t.completadaTarde"
+                                    [class.text-orange-500]="t.completadaTarde">
+                                    {{ t.fechaRealFinalizacion | date:'dd/MM/yy' }}
+                                    @if (t.completadaTarde) {
+                                      <span class="text-[9px] text-orange-400"> +{{ t.diasRetraso }}d</span>
+                                    }
+                                  </span>
+                                } @else {
+                                  <span class="text-green-500 font-bold">✓</span>
+                                }
+                              } @else {
+                                <span
+                                  [class.text-red-600]="t.esVencida"
+                                  [class.font-bold]="t.esVencida"
+                                  [class.text-gray-500]="!t.esVencida">
+                                  {{ t.fechaPresupuestoFin ? (t.fechaPresupuestoFin | date:'dd/MM/yy') : '—' }}
+                                </span>
+                              }
                             </td>
                             <td class="py-2.5 pl-3 text-center">
                               @if (t.vecesMovida > 0) {
