@@ -1266,11 +1266,9 @@ export class TrackerListComponent implements OnInit {
     return this.itemsAuditoriaCierre.filter(i => i.ok).length;
   }
   get puedeIniciarObra(): boolean {
-    if (!this.actualizarForm) return false;
-    const polizas = this.actualizarForm.get('polizas')?.value;
-    const polizasOk = polizas && polizas !== 'Requiere - Pendiente';
-    // Ejecutor ahora viene de la OT — solo validamos pólizas
-    return !!polizasOk;
+    // Las pólizas son informativas: se muestra advertencia si están pendientes
+    // pero NO bloquean el inicio de obra (decisión de negocio — Bug #4).
+    return !!this.actualizarForm;
   }
 
   // Advertencia de OC sin registrar (no bloquea pero avisa)
@@ -1284,9 +1282,10 @@ export class TrackerListComponent implements OnInit {
   get razonesBloqueoInicio(): string[] {
     if (!this.actualizarForm) return [];
     const razones: string[] = [];
+    // Las pólizas ya no bloquean el inicio, solo se muestran como advertencia
     const polizas = this.actualizarForm.get('polizas')?.value;
     if (!polizas || polizas === 'Requiere - Pendiente')
-      razones.push('Las pólizas deben estar aprobadas o marcadas como "No Requiere".');
+      razones.push('Advertencia: Las pólizas aún están pendientes. Recuerda actualizarlas.');
     return razones;
   }
 

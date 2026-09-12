@@ -30,9 +30,28 @@ export class AuthService {
   constructor() {
     // Recuperar sesión persistente
     const usuarioGuardado = localStorage.getItem('rms_user');
+    const tokenGuardado   = localStorage.getItem('rms_token');
+
     if (usuarioGuardado) {
       try {
-        this.usuarioActual.set(JSON.parse(usuarioGuardado));
+        // Verificar si el token de Google ya expiró antes de restaurar la sesión.
+        // Los ID tokens de Google duran ~1 hora; si expiró, el primer llamado al
+        // API falla con AUTH_NOT_AUTHENTICATED y la UX se ve como "error intermitente".
+        // Detectarlo aquí permite redirigir al login de inmediato.
+        if (tokenGuardado) {
+          const payload = this.decodeJwtPayload(tokenGuardado);
+          const exp     = payload['exp'] as number | undefined;
+          const ahora   = Math.floor(Date.now() / 1000);
+          if (exp && ahora >= exp) {
+            // Token expirado → limpiar sesión silenciosamente
+            this.cerrarSesion();
+          } else {
+            this.usuarioActual.set(JSON.parse(usuarioGuardado));
+          }
+        } else {
+          // Sin token almacenado → sesión incompleta, limpiar
+          this.cerrarSesion();
+        }
       } catch {
         this.cerrarSesion();
       }
