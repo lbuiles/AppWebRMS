@@ -63,7 +63,7 @@ export class TrackerListComponent implements OnInit {
   public actualizando = signal<boolean>(false);
   public actualizarForm!: FormGroup;
 
-  public vistaPanel = signal<'resumen' | 'resumen_general' | 'detalles' | 'bitacora' | 'compras'>('resumen');
+  public vistaPanel = signal<'resumen' | 'resumen_general' | 'detalles' | 'bitacora' | 'compras' | 'control'>('resumen');
   public nuevaObservacion = signal<string>('');
   public guardandoObs = signal<boolean>(false);
   public esAdminFase = signal<boolean>(false);
@@ -287,12 +287,31 @@ export class TrackerListComponent implements OnInit {
     return `${dias} días ✗`;
   }
 
+  /**
+   * Calcula cuántos días han pasado desde la fecha tentativa de fin hasta hoy.
+   * Positivo = retraso, Negativo = adelanto, 0 = en fecha.
+   */
+  calcularDiasDesviacion(fechaTentativa: string | null): number {
+    if (!fechaTentativa) return 0;
+    const tentativa = new Date(fechaTentativa + 'T00:00:00').setHours(0, 0, 0, 0);
+    const hoy = new Date().setHours(0, 0, 0, 0);
+    return Math.floor((hoy - tentativa) / (1000 * 60 * 60 * 24));
+  }
+
   calcularDiasDiferencia(fechaInicial: string | null, fechaFinal: string | null): number | null {
     if (!fechaInicial || !fechaFinal) return null;
     const f1 = new Date(fechaInicial).setHours(0,0,0,0);
     const f2 = new Date(fechaFinal).setHours(0,0,0,0);
     const diffTime = Math.abs(f2 - f1);
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  /** Diferencia con signo: positivo = real fue después de tentativa (retraso), negativo = adelanto */
+  calcularDesviacionFecha(fechaTentativa: string | null, fechaReal: string | null): number {
+    if (!fechaTentativa || !fechaReal) return 0;
+    const t = new Date(fechaTentativa).setHours(0,0,0,0);
+    const r = new Date(fechaReal).setHours(0,0,0,0);
+    return Math.floor((r - t) / (1000 * 60 * 60 * 24));
   }
 
   obtenerEstadoSLA(p: any) {
@@ -446,12 +465,32 @@ export class TrackerListComponent implements OnInit {
     });
   }
 
+  // Signal para alternar entre selector de clientes y texto libre
+  public clienteLibre = signal<boolean>(true); // Default: texto libre (sin dropdown)
+
+  toggleClienteLibre() {
+    const nuevo = !this.clienteLibre();
+    this.clienteLibre.set(nuevo);
+    const ctrl = this.proyectoForm.get('clienteId');
+    const ctrlNombre = this.proyectoForm.get('clienteNombre');
+    if (nuevo) {
+      // Texto libre: quitar validación obligatoria del select
+      ctrl?.clearValidators(); ctrl?.setValue(''); ctrl?.updateValueAndValidity();
+      ctrlNombre?.setValidators(Validators.required); ctrlNombre?.updateValueAndValidity();
+    } else {
+      // Selector: restaurar validación
+      ctrlNombre?.clearValidators(); ctrlNombre?.setValue(''); ctrlNombre?.updateValueAndValidity();
+      ctrl?.setValidators(Validators.required); ctrl?.updateValueAndValidity();
+    }
+  }
+
   // --- MÉTODOS DEL MODAL ---
   inicializarFormulario() {
     this.proyectoForm = this.fb.group({
       codigo: ['', Validators.required],
       nombre: ['', Validators.required],
       clienteId: ['', Validators.required],
+      clienteNombre: [''],
       supervisorCliente: [''],
       responsableId: [''],
       valorOC: [0, [Validators.required, Validators.min(0)]],
@@ -492,6 +531,12 @@ export class TrackerListComponent implements OnInit {
   }
 
   abrirModal() {
+    this.clienteLibre.set(true); // Default: texto libre, sin dropdown
+    // Con texto libre, clienteNombre es requerido; clienteId no
+    const ctrl = this.proyectoForm.get('clienteId');
+    const ctrlNombre = this.proyectoForm.get('clienteNombre');
+    ctrl?.clearValidators();
+    ctrlNombre?.setValidators(Validators.required);
     this.proyectoForm.reset({ valorOC: 0 });
     this.modalAbierto.set(true);
   }
@@ -508,8 +553,17 @@ export class TrackerListComponent implements OnInit {
 
     this.guardando.set(true);
 
+    const rawForm = { ...this.proyectoForm.value };
+
+    // Limpiar el campo no usado según el modo del selector de cliente
+    if (this.clienteLibre()) {
+      delete rawForm['clienteId'];
+    } else {
+      delete rawForm['clienteNombre'];
+    }
+
     const inputData = {
-      ...this.proyectoForm.value,
+      ...rawForm,
       fechaAsignacion: this.proyectoForm.get('fechaAsignacion')?.value
         ? new Date(this.proyectoForm.get('fechaAsignacion')?.value + 'T00:00:00Z').toISOString()
         : new Date().toISOString(),
@@ -574,6 +628,7 @@ export class TrackerListComponent implements OnInit {
       fechaEnvioPresupuesto: [this.formatToDateInput(p.fechaEnvioPresupuesto)],
       fechaAprobacionPresupuesto: [this.formatToDateInput(p.fechaAprobacionPresupuesto)],
       fechaInicioActividades: [this.formatToDateInput(p.fechaInicioActividades)],
+      fechaInicioObra: [this.formatToDateInput((p as any).fechaInicioObra)],
       fechaTentativaFin: [this.formatToDateInput(p.fechaTentativaFin)],
       fechaFinalizacionActividades: [this.formatToDateInput(p.fechaFinalizacionActividades)],
       cierreTecnicoAprobado: [p.cierreTecnicoAprobado || false],
@@ -609,19 +664,36 @@ export class TrackerListComponent implements OnInit {
         const camposOperativos = [
           'fechaRespuestaCliente', 'fechaSolicitudPermisos', 'fechaVisitaTecnica', 'fechaEnvioPermiso',
           'fechaAprobacionPermisos', 'fechaEnvioPresupuesto', 'fechaAprobacionPresupuesto',
-          'fechaInicioActividades', 'fechaTentativaFin', 'fechaFinalizacionActividades'
+          'fechaInicioActividades', 'fechaInicioObra', 'fechaTentativaFin', 'fechaFinalizacionActividades'
         ];
         camposOperativos.forEach(c => this.actualizarForm.get(c)?.disable());
       }
-
-      // IMPORTANTE: Estos dos SIEMPRE se bloquean en edición porque los calcula el backend
-      this.actualizarForm.get('valorGasto')?.disable();
-      this.actualizarForm.get('costoRealTotal')?.disable();
+      // valorGasto y costoRealTotal ahora son editables manualmente
     }
   }
 
   cerrarModalActualizar() {
     this.modalActualizarAbierto.set(false);
+  }
+
+  /** Cambia el modo del campo OC/PO: normal (número), pendiente (sin OC aún), noAplica */
+  setModoOC(modo: 'normal' | 'pendiente' | 'noAplica') {
+    const ctrlNumero = this.actualizarForm.get('numeroOC');
+    const ctrlSinOc  = this.actualizarForm.get('sinOcAun');
+    if (!ctrlNumero || !ctrlSinOc) return;
+
+    if (modo === 'normal') {
+      ctrlSinOc.setValue(false);
+      // Limpia el valor si era un marcador especial
+      const val = (ctrlNumero.value || '').toString().toUpperCase();
+      if (val === 'PENDIENTE' || val === 'NO_APLICA') ctrlNumero.setValue('');
+    } else if (modo === 'pendiente') {
+      ctrlSinOc.setValue(true);
+      ctrlNumero.setValue('PENDIENTE');
+    } else {
+      ctrlSinOc.setValue(false);
+      ctrlNumero.setValue('NO_APLICA');
+    }
   }
 
   guardarActualizacion() {
@@ -711,6 +783,63 @@ export class TrackerListComponent implements OnInit {
         }
       }
     });
+  }
+
+  // ==========================================
+  // REVERSIÓN DE CIERRE DE OBRA
+  // ==========================================
+  async revertirCierreObra() {
+    const result = await Swal.fire({
+      title: '¿Revertir el cierre de obra?',
+      html: `Se borrará la <b>fecha de finalización de actividades</b>.<br>
+             El proyecto volverá a estado <b>En Ejecución</b> y podrás corregir la información.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, revertir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d97706',
+      cancelButtonColor: '#64748b'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Re-habilitar el formulario en caso de que esté deshabilitado (FINALIZADO_TOTAL)
+    this.actualizarForm.enable();
+
+    // Limpiar solo la fecha de finalización de actividades
+    this.actualizarForm.patchValue({ fechaFinalizacionActividades: '' });
+
+    this.guardarActualizacion();
+  }
+
+  async revertirCierreCompleto() {
+    const result = await Swal.fire({
+      title: '¿Revertir cierre completo?',
+      html: `Se borrarán la <b>fecha de finalización</b> y todos los <b>ítems documentales</b> marcados.<br>
+             El proyecto quedará pendiente de cierre nuevamente.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, revertir todo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Re-habilitar el formulario (FINALIZADO_TOTAL lo deshabilita por completo)
+    this.actualizarForm.enable();
+
+    // Limpiar fecha de fin + todos los ítems de cierre
+    this.actualizarForm.patchValue({
+      fechaFinalizacionActividades: '',
+      cierreTecnicoAprobado: false,
+      dossierEntregado: false,
+      liquidacionTerminada: false,
+      facturacionCompletada: false
+    });
+
+    this.guardarActualizacion();
   }
 
   // ==========================================
@@ -1159,6 +1288,34 @@ export class TrackerListComponent implements OnInit {
   }
 
   // ==========================================
+  // BACKLOG #6 — Panel de Control PO
+  // ==========================================
+
+  /** Porcentaje del PO (valorOC) ya facturado */
+  get porcentajeFacturacion(): number {
+    if (!this.actualizarForm) return 0;
+    const po = this.actualizarForm.get('valorOC')?.value || 0;
+    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
+    if (po === 0) return 0;
+    return Math.min((facturado / po) * 100, 100);
+  }
+
+  /** Saldo pendiente de facturar contra el PO */
+  get saldoPorFacturar(): number {
+    if (!this.actualizarForm) return 0;
+    const po = this.actualizarForm.get('valorOC')?.value || 0;
+    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
+    return Math.max(po - facturado, 0);
+  }
+
+  /** Costo total acumulado (REQ + OTs) */
+  get costoTotalAcumulado(): number {
+    if (!this.actualizarForm) return 0;
+    return (this.actualizarForm.get('valorGasto')?.value || 0)
+         + (this.actualizarForm.get('costoRealTotal')?.value || 0);
+  }
+
+  // ==========================================
   // VALIDACIÓN PRE-CIERRE (Paso 4 - FINALIZADO_TOTAL)
   // Espeja los 8 candados del backend para auditoría final
   // ==========================================
@@ -1269,6 +1426,18 @@ export class TrackerListComponent implements OnInit {
     // Las pólizas son informativas: se muestra advertencia si están pendientes
     // pero NO bloquean el inicio de obra (decisión de negocio — Bug #4).
     return !!this.actualizarForm;
+  }
+
+  /**
+   * Backlog #3 — Fecha de inicio manual.
+   * Si el campo está vacío usa la fecha de hoy, luego guarda.
+   */
+  async iniciarObra() {
+    const ctrl = this.actualizarForm.get('fechaInicioActividades');
+    if (!ctrl?.value) {
+      ctrl?.setValue(this.hoy());
+    }
+    await this.guardarActualizacion();
   }
 
   // Advertencia de OC sin registrar (no bloquea pero avisa)

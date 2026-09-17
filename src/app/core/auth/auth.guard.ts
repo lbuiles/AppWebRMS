@@ -54,14 +54,26 @@ export const permissionGuard: CanActivateFn = (route) => {
 
 /**
  * NIVEL 0: Rutas Públicas
- * Evita que un usuario ya logueado vuelva al Login.
+ * - Si el usuario YA está autenticado → redirige al panel ERP.
+ * - Si el usuario llega a la ruta raíz '' sin sesión → redirige al login
+ *   (evita que vea la landing de marketing del sitio público).
  */
-export const publicGuard: CanActivateFn = () => {
+export const publicGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (!authService.usuarioActual()) return true;
+  // Usuario autenticado → siempre al panel
+  if (authService.usuarioActual()) {
+    router.navigate(['/panel']);
+    return false;
+  }
 
-  router.navigate(['/panel']);
-  return false;
+  // Ruta raíz vacía ('') sin sesión → redirigir al login
+  // La landing de marketing está en '' pero el ERP debe iniciar en /login
+  if (route.routeConfig?.path === '') {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  return true;
 };

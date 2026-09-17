@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { GoogleSigninButtonModule, SocialAuthService, GoogleLoginProvider } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -9,14 +10,21 @@ import { AuthService } from '../../core/auth/auth.service';
   imports: [GoogleSigninButtonModule, RouterLink],
   templateUrl: './login.html'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   private googleAuth = inject(SocialAuthService);
   private router = inject(Router);
   private rmsAuth = inject(AuthService);
 
+  // Evita llamadas concurrentes si authState dispara más de una vez
+  private autenticando = false;
+  private authSub?: Subscription;
+
   ngOnInit() {
-    this.googleAuth.authState.subscribe(async (user) => {
-      if (!user) return;
+    this.authSub = this.googleAuth.authState.subscribe(async (user) => {
+      // Si ya hay una autenticación en curso, ignorar emisiones adicionales
+      if (!user || this.autenticando) return;
+
+      this.autenticando = true;
 
       // El JWT de Google Workspace no incluye el claim "picture".
       // Obtenemos un access token para llamar al endpoint userinfo de Google,
@@ -40,9 +48,13 @@ export class LoginComponent implements OnInit {
       if (exito) {
         this.router.navigate(['/panel']);
       } else {
-        alert('Acceso denegado. Tu cuenta no está registrada en el sistema RMS.');
+        this.autenticando = false; // Permite reintentar si el usuario intenta de nuevo
         this.rmsAuth.cerrarSesion();
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.authSub?.unsubscribe();
   }
 }

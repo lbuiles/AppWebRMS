@@ -119,5 +119,7 @@ export const routes: Routes = [
   },
 
   // --- COMODÍN ---
-  { path: '**', redirectTo: '' }
+  // Redirige a /login en vez de '' (landing de marketing) para que rutas rotas
+  // lleven al usuario al punto de entrada del ERP, no al sitio público.
+  { path: '**', redirectTo: 'login' }
 ];
