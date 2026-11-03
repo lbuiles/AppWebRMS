@@ -55,23 +55,21 @@ export const permissionGuard: CanActivateFn = (route) => {
 /**
  * NIVEL 0: Rutas Públicas
  * - Si el usuario YA está autenticado → redirige al panel ERP.
- * - Si el usuario llega a la ruta raíz '' sin sesión → redirige al login
- *   (evita que vea la landing de marketing del sitio público).
+ * - Sin sesión → deja pasar (permite ver la landing pública en '' y el login).
+ *
+ * Nota: el bloqueo de '' para usuarios sin sesión se eliminó — la landing en ''
+ * es contenido público legítimo (LandingComponent) y el botón "Volver al inicio"
+ * del login apunta ahí. El problema original de "login aterriza en página
+ * equivocada" ya se resolvió en login.ts (condición de carrera del authState
+ * de Google) y con el wildcard '**' -> 'login'.
  */
 export const publicGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Usuario autenticado → siempre al panel
+  // Usuario autenticado -> siempre al panel
   if (authService.usuarioActual()) {
     router.navigate(['/panel']);
-    return false;
-  }
-
-  // Ruta raíz vacía ('') sin sesión → redirigir al login
-  // La landing de marketing está en '' pero el ERP debe iniciar en /login
-  if (route.routeConfig?.path === '') {
-    router.navigate(['/login']);
     return false;
   }
 

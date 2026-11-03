@@ -24,11 +24,125 @@ export class TrackerListComponent implements OnInit {
   // Señales de la tabla
   public lineaActiva = signal<string>('');
   public mostrarFinalizados = signal<boolean>(false);
+  public filtroEstado = signal<string>('todos');
+  public filtroResponsable = signal<string>('todos');
+  public filtroCliente = signal<string>('todos');
+
+  // --- Archivar / Eliminar proyectos (punto 17) ---
+  public viendoArchivados   = signal<boolean>(false);
+  public proyectosArchivados = signal<any[]>([]);
+  public cargandoArchivados  = signal<boolean>(false);
+
+  toggleVerArchivados() {
+    const nuevo = !this.viendoArchivados();
+    this.viendoArchivados.set(nuevo);
+    if (nuevo) this.cargarProyectosArchivados();
+  }
+
+  cargarProyectosArchivados() {
+    this.cargandoArchivados.set(true);
+    this.trackerService.getProyectosArchivadosPorLinea(this.lineaActiva()).subscribe({
+      next: (data) => { this.proyectosArchivados.set(data); this.cargandoArchivados.set(false); },
+      error: () => this.cargandoArchivados.set(false)
+    });
+  }
+
+  confirmarArchivarProyecto(p: any) {
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Archivar este proyecto?',
+      html: `El proyecto <b>${p.codigo}</b> se ocultará del listado activo, pero conserva todo su historial. Podrás reactivarlo después desde "Ver archivados".`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, archivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      const usuario = this.authService.usuarioActual();
+      if (!usuario?.id) return;
+
+      this.trackerService.archivarProyecto(p.id, usuario.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Proyecto archivado', timer: 1500, showConfirmButton: false });
+          this.cerrarPanel();
+          this.cargarProyectos(this.lineaActiva());
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo archivar el proyecto.' });
+          console.error(err);
+        }
+      });
+    });
+  }
+
+  confirmarReactivarProyecto(p: any) {
+    Swal.fire({
+      icon: 'question',
+      title: '¿Reactivar este proyecto?',
+      html: `El proyecto <b>${p.codigo}</b> volverá a aparecer en el listado activo.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reactivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#1e3a8a'
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      this.trackerService.reactivarProyecto(p.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Proyecto reactivado', timer: 1500, showConfirmButton: false });
+          this.cargarProyectosArchivados();
+          this.cargarProyectos(this.lineaActiva());
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo reactivar el proyecto.' });
+          console.error(err);
+        }
+      });
+    });
+  }
+
+  confirmarEliminarDefinitivo(p: any) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Eliminar definitivamente',
+      html: `Esta acción <b>no se puede deshacer</b>. Se eliminará por completo el proyecto <b>${p.codigo} — ${p.nombre}</b>.<br><br>Solo es posible si el proyecto no tiene OTs, requisiciones, anticipos ni valores financieros registrados.<br><br>Escribe <b>ELIMINAR</b> para confirmar.`,
+      input: 'text',
+      inputPlaceholder: 'ELIMINAR',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar definitivamente',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+      preConfirm: (valor) => {
+        if (valor !== 'ELIMINAR') {
+          Swal.showValidationMessage('Debes escribir ELIMINAR exactamente para confirmar.');
+          return false;
+        }
+        return true;
+      }
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      this.trackerService.eliminarProyectoDefinitivo(p.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Proyecto eliminado', timer: 1500, showConfirmButton: false });
+          this.cerrarPanel();
+          this.cargarProyectos(this.lineaActiva());
+          if (this.viendoArchivados()) this.cargarProyectosArchivados();
+        },
+        error: (err) => {
+          const mensaje = err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar el proyecto.';
+          Swal.fire({ icon: 'error', title: 'No se puede eliminar', text: mensaje });
+        }
+      });
+    });
+  }
   public modalAnticipoDirectoAbierto = signal<boolean>(false);
   public contratistaSeleccionadoOT = signal<any | null>(null);
   public proyectoParaAnticipo = signal<any | null>(null);
   public anticipoDirectoForm!: FormGroup;
   public anticiposDirectos = signal<any[]>([]);
+  public modalCorteFacturacionAbierto = signal<boolean>(false);
+  public proyectoParaCorte = signal<any | null>(null);
+  public corteFacturacionForm!: FormGroup;
+  public cortesFacturacion = signal<any[]>([]);
   public configVisual = signal<any>({});
   public proyectos = signal<any[]>([]);
   public cargando = signal<boolean>(true);
@@ -374,7 +488,30 @@ export class TrackerListComponent implements OnInit {
 
   // --- MÉTODOS DE DATOS ---
   get esGerente(): boolean {
-    return this.authService.hasPermission('proyectos.editar');
+    // Punto 8 (semana 39, revisión final): la visibilidad de TODOS los proyectos
+    // de la división (en vez de solo los propios, ver proyectosFiltrados abajo)
+    // depende exclusivamente de 'proyectos.gerente'. 'proyectos.editar' es un
+    // permiso distinto (habilita editar campos) y NO debe dar acceso a ver los
+    // proyectos de otros usuarios.
+    return this.authService.hasPermission('proyectos.gerente');
+  }
+
+  get responsablesDisponibles() {
+    const mapa = new Map<string, string>();
+    for (const p of this.proyectos()) {
+      if (p.responsable?.id && p.responsable?.nombre) {
+        mapa.set(p.responsable.id, p.responsable.nombre);
+      }
+    }
+    return Array.from(mapa.entries()).map(([id, nombre]) => ({ id, nombre }));
+  }
+
+  get clientesDisponibles(): string[] {
+    const set = new Set<string>();
+    for (const p of this.proyectos()) {
+      if (p.cliente?.razonSocial) set.add(p.cliente.razonSocial);
+    }
+    return Array.from(set).sort();
   }
 
   get proyectosFiltrados() {
@@ -390,6 +527,26 @@ export class TrackerListComponent implements OnInit {
     if (!this.mostrarFinalizados()) {
       lista = lista.filter(p => p.estado !== 'FINALIZADO_TOTAL');
     }
+
+    // Filtro por estado
+    if (this.filtroEstado() !== 'todos') {
+      lista = lista.filter(p => p.estado === this.filtroEstado());
+    }
+
+    // Filtro por responsable
+    if (this.filtroResponsable() !== 'todos') {
+      lista = lista.filter(p => p.responsable?.id === this.filtroResponsable());
+    }
+
+    // Filtro por cliente
+    if (this.filtroCliente() !== 'todos') {
+      lista = lista.filter(p => p.cliente?.razonSocial === this.filtroCliente());
+    }
+
+    // Más reciente primero por Fecha de Asignación
+    lista = [...lista].sort((a, b) =>
+      new Date(b.fechaAsignacion).getTime() - new Date(a.fechaAsignacion).getTime()
+    );
 
     return lista;
   }
@@ -468,6 +625,19 @@ export class TrackerListComponent implements OnInit {
   // Signal para alternar entre selector de clientes y texto libre
   public clienteLibre = signal<boolean>(true); // Default: texto libre (sin dropdown)
 
+  // Contratista en el flujo de proyecto: false = seleccionar de los ya registrados, true = texto libre
+  public contratistaModoLibre = signal<boolean>(false);
+
+  onSeleccionarContratistaProyecto(event: Event) {
+    const val = (event.target as HTMLSelectElement).value;
+    if (val === '__OTRO__') {
+      this.contratistaModoLibre.set(true);
+      this.actualizarForm.get('contratista')?.setValue('');
+      return;
+    }
+    this.actualizarForm.get('contratista')?.setValue(val);
+  }
+
   toggleClienteLibre() {
     const nuevo = !this.clienteLibre();
     this.clienteLibre.set(nuevo);
@@ -520,6 +690,12 @@ export class TrackerListComponent implements OnInit {
       valorAnticipo: [0, [Validators.required, Validators.min(1)]],
       concepto:      ['', Validators.required],
       beneficiario:  [''],
+      observaciones: ['']
+    });
+
+    this.corteFacturacionForm = this.fb.group({
+      valorCorte:    [0, [Validators.required, Validators.min(1)]],
+      numeroFactura: [''],
       observaciones: ['']
     });
 
@@ -605,6 +781,13 @@ export class TrackerListComponent implements OnInit {
     const p = this.proyectoSeleccionado();
     if (!p) return;
 
+    const contratistasRegistrados = this.listasFormulario().contratistas || [];
+    const nombreContratistaActual = (p.contratista || '').trim();
+    const coincideConRegistrado = !nombreContratistaActual || contratistasRegistrados.some(
+      (c: any) => (c.razonSocial || c.nombreCompleto || '').trim() === nombreContratistaActual
+    );
+    this.contratistaModoLibre.set(!coincideConRegistrado);
+
     this.actualizarForm = this.fb.group({
       nombre: [p.nombre, Validators.required],
       responsableId: [p.responsable?.id || ''],
@@ -628,7 +811,7 @@ export class TrackerListComponent implements OnInit {
       fechaEnvioPresupuesto: [this.formatToDateInput(p.fechaEnvioPresupuesto)],
       fechaAprobacionPresupuesto: [this.formatToDateInput(p.fechaAprobacionPresupuesto)],
       fechaInicioActividades: [this.formatToDateInput(p.fechaInicioActividades)],
-      fechaInicioObra: [this.formatToDateInput((p as any).fechaInicioObra)],
+      fechaInicioObra: [this.formatToDateInput(p.fechaInicioObra)],
       fechaTentativaFin: [this.formatToDateInput(p.fechaTentativaFin)],
       fechaFinalizacionActividades: [this.formatToDateInput(p.fechaFinalizacionActividades)],
       cierreTecnicoAprobado: [p.cierreTecnicoAprobado || false],
@@ -694,6 +877,40 @@ export class TrackerListComponent implements OnInit {
       ctrlSinOc.setValue(false);
       ctrlNumero.setValue('NO_APLICA');
     }
+  }
+
+  /**
+   * Guarda solo el Nombre del Proyecto, sin depender de la validez del resto
+   * del formulario gigante de actualización (que tiene muchos otros campos
+   * requeridos en otras secciones/pestañas). Antes, el botón "Guardar" junto
+   * al nombre llamaba a guardarActualizacion(), que fallaba silenciosamente
+   * si cualquier otro campo del formulario estaba incompleto.
+   */
+  guardarNombreProyecto() {
+    const ctrlNombre = this.actualizarForm.get('nombre');
+    if (!ctrlNombre || !ctrlNombre.value?.trim()) {
+      ctrlNombre?.markAsTouched();
+      Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'El nombre del proyecto no puede quedar vacío.' });
+      return;
+    }
+
+    const p = this.proyectoSeleccionado();
+    if (!p) return;
+
+    this.actualizando.set(true);
+    this.trackerService.actualizarNombreProyecto(p.id, ctrlNombre.value.trim()).subscribe({
+      next: () => {
+        this.actualizando.set(false);
+        Swal.fire({ icon: 'success', title: 'Nombre actualizado', timer: 1500, showConfirmButton: false });
+        this.proyectoSeleccionado.set({ ...p, nombre: ctrlNombre.value.trim() });
+        this.cargarProyectos(this.lineaActiva());
+      },
+      error: (err) => {
+        this.actualizando.set(false);
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar el nombre del proyecto.' });
+        console.error(err);
+      }
+    });
   }
 
   guardarActualizacion() {
@@ -1552,6 +1769,133 @@ export class TrackerListComponent implements OnInit {
         const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo crear el anticipo.';
         Swal.fire('Error', msg, 'error');
       }
+    });
+  }
+
+  // ── Cortes de Facturación ──
+  abrirModalCorteFacturacion(p: any) {
+    this.proyectoParaCorte.set(p);
+    this.cortesFacturacion.set(p.cortesFacturacion || []);
+    this.corteFacturacionForm.reset({ valorCorte: 0 });
+    this.modalCorteFacturacionAbierto.set(true);
+  }
+
+  cerrarModalCorteFacturacion() {
+    this.modalCorteFacturacionAbierto.set(false);
+    this.proyectoParaCorte.set(null);
+  }
+
+  descargandoExcel = signal<boolean>(false);
+
+  descargarExcel() {
+    this.descargandoExcel.set(true);
+    this.trackerService.descargarExcelProyectos(this.lineaActiva()).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `RMS_Tracker_${this.lineaActiva()}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        this.descargandoExcel.set(false);
+      },
+      error: (err) => {
+        this.descargandoExcel.set(false);
+        if (err?.status === 401) {
+          Swal.fire('Sesión expirada', 'Tu sesión expiró. Vuelve a iniciar sesión e intenta de nuevo.', 'warning');
+        } else {
+          Swal.fire('Error', 'No se pudo generar el archivo Excel.', 'error');
+        }
+      }
+    });
+  }
+
+  get totalCortesActivos(): number {
+    return this.cortesFacturacion()
+      .filter((c: any) => c.estado !== 'ANULADO')
+      .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0);
+  }
+
+  guardarCorteFacturacion() {
+    if (this.corteFacturacionForm.invalid) {
+      this.corteFacturacionForm.markAllAsTouched();
+      return;
+    }
+    const p = this.proyectoParaCorte();
+    const usuario = this.authService.usuarioActual();
+    const raw = this.corteFacturacionForm.value;
+    this.trackerService.addCorteFacturacion({
+      proyectoId:      p.id,
+      registradoPorId: usuario?.id,
+      valorCorte:      raw.valorCorte,
+      numeroFactura:   raw.numeroFactura || null,
+      observaciones:   raw.observaciones || null
+    }).subscribe({
+      next: (res) => {
+        this.cortesFacturacion.update(a => [res, ...a]);
+        this.corteFacturacionForm.reset({ valorCorte: 0 });
+        const pCorte = this.proyectoParaCorte();
+        if (pCorte) {
+          this.proyectos.update(ps => ps.map(proj =>
+            proj.id === pCorte.id
+              ? {
+                  ...proj,
+                  cortesFacturacion: [res, ...(proj.cortesFacturacion || [])],
+                  valorFacturado: [res, ...(proj.cortesFacturacion || [])]
+                    .filter((c: any) => c.estado !== 'ANULADO')
+                    .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0)
+                }
+              : proj
+          ));
+        }
+        Swal.fire({ icon: 'success', title: 'Corte de facturación registrado', timer: 2000, showConfirmButton: false });
+      },
+      error: (err) => {
+        const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo registrar el corte de facturación.';
+        Swal.fire('Error', msg, 'error');
+      }
+    });
+  }
+
+  anularCorteFacturacionConfirm(corte: any) {
+    Swal.fire({
+      title: '¿Anular corte de facturación?',
+      text: `El corte de ${corte.valorCorte?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} se marcará como anulado y se descontará del total facturado.`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sí, anular', confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.trackerService.anularCorteFacturacion(corte.id).subscribe({
+        next: () => {
+          this.cortesFacturacion.update(a => a.map((x: any) => x.id === corte.id ? { ...x, estado: 'ANULADO' } : x));
+          this.cargarProyectos(this.lineaActiva());
+          Swal.fire({ icon: 'success', title: 'Corte anulado', timer: 1500, showConfirmButton: false });
+        },
+        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo anular.', 'error')
+      });
+    });
+  }
+
+  eliminarCorteFacturacionConfirm(corte: any) {
+    Swal.fire({
+      title: '¿Eliminar corte de facturación?',
+      text: `El corte de ${corte.valorCorte?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} será eliminado permanentemente.`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar', confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.trackerService.eliminarCorteFacturacion(corte.id).subscribe({
+        next: () => {
+          this.cortesFacturacion.update(a => a.filter((x: any) => x.id !== corte.id));
+          this.cargarProyectos(this.lineaActiva());
+          Swal.fire({ icon: 'success', title: 'Corte eliminado', timer: 1500, showConfirmButton: false });
+        },
+        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
+      });
     });
   }
 

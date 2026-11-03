@@ -128,8 +128,8 @@
       <table class="w-full text-left whitespace-nowrap">
         <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100">
           <tr>
-            <th class="px-4 py-3">Código</th>
-            <th class="px-4 py-3">Proyecto</th>
+            <th class="px-4 py-3">Código y/o Proyecto</th>
+            <th class="px-4 py-3">Actividad</th>
             <th class="px-4 py-3">División</th>
             <th class="px-4 py-3">Cliente</th>
             <th class="px-4 py-3 text-center">Estado</th>
@@ -139,6 +139,7 @@
             <th class="px-4 py-3 text-right">Gasto</th>
             <th class="px-4 py-3 text-right">Margen</th>
             <th class="px-4 py-3">Responsable</th>
+            <th class="px-4 py-3 text-center">Fecha de Asignación</th>
           </tr>
         </thead>
         <tbody class="text-sm text-slate-700 divide-y divide-slate-50">
@@ -165,14 +166,15 @@
                 {{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}
               </td>
               <td class="px-4 py-3 text-right text-xs font-bold"
-                  [ngClass]="(p.utilidad || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'">
-                {{ p.valorOC > 0 ? (((p.valorFacturado - p.valorGasto) / p.valorOC) * 100).toFixed(0) + '%' : '—' }}
+                  [ngClass]="(p.utilidad ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                {{ p.valorFacturado > 0 ? (((p.utilidad ?? 0) / p.valorFacturado) * 100).toFixed(0) + '%' : '—' }}
               </td>
               <td class="px-4 py-3 text-xs text-slate-500">{{ p.responsable?.nombre || '—' }}</td>
+              <td class="px-4 py-3 text-center text-xs text-slate-500">{{ p.fechaAsignacion ? (p.fechaAsignacion | date:'dd/MM/yyyy') : '—' }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="11" class="px-5 py-10 text-center text-slate-400 text-xs">
+              <td colspan="12" class="px-5 py-10 text-center text-slate-400 text-xs">
                 No hay proyectos para mostrar con los filtros actuales.
               </td>
             </tr>
