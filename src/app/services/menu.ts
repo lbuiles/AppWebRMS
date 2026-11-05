@@ -56,6 +56,10 @@ export class MenuService {
     this.menuOpen.next(!this.menuOpen.value);
   }
 
+  close() {
+    if (this.menuOpen.value) this.menuOpen.next(false);
+  }
+
   // --- Lógica de Datos ---
 
   /** Usado por el Sidebar */

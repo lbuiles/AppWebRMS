@@ -1,7 +1,7 @@
-<header class="bg-white h-20 flex items-center justify-between px-6 lg:px-10 shadow-sm border-b border-gray-100 sticky top-0 z-40">
+<header class="bg-white h-16 sm:h-20 flex items-center justify-between px-3 sm:px-6 lg:px-10 shadow-sm border-b border-gray-100 sticky top-0 z-40">
 
-  <div class="flex items-center gap-4">
-    <button (click)="menuService.toggle()" class="lg:hidden text-[#1e3a8a] hover:bg-blue-50 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#ffb31c]">
+  <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+    <button (click)="menuService.toggle()" aria-label="Abrir menú" class="lg:hidden text-[#1e3a8a] hover:bg-blue-50 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#ffb31c]">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
       </svg>
@@ -13,7 +13,7 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-4 sm:gap-6">
+  <div class="flex items-center gap-2 sm:gap-6">
 
     <button class="relative p-2 text-gray-400 hover:text-[#1e3a8a] transition-colors rounded-full hover:bg-gray-50 focus:outline-none">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@
       </div>
     </div>
 
-    <button (click)="logout()" class="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-600 hover:text-white transition-all group shadow-sm">
+    <button (click)="logout()" class="flex items-center gap-2 bg-red-50 text-red-600 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-600 hover:text-white transition-all group shadow-sm">
       <span class="hidden sm:block">Salir</span>
       <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>

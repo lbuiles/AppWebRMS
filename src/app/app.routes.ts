@@ -19,6 +19,8 @@ import { Diccionario } from './features/administracion/diccionario/diccionario';
 import { ContratistasComponent } from './features/contratistas/contratistas';
 import { TrackerListComponent } from './features/proyectos/tracker-list/tracker-list';
 import { GerencialComponent } from './features/proyectos/gerencial/gerencial';
+import { ConfigCuadrillasComponent } from './features/administracion/config-cuadrillas/config-cuadrillas';
+import { CuadrillasComponent } from './features/proyectos/cuadrillas/cuadrillas';
 
 export const routes: Routes = [
   // --- ZONA PÚBLICA ---
@@ -46,6 +48,12 @@ export const routes: Routes = [
         component: AdministracionComponent,
         canActivate: [permissionGuard],
         data: { permiso: 'admin' }
+      },
+      {
+        path: 'config-cuadrillas',
+        component: ConfigCuadrillasComponent,
+        canActivate: [permissionGuard],
+        data: { permiso: 'proyectos.cuadrillas.config' }
       },
       {
         path: 'diccionario',
@@ -81,6 +89,12 @@ export const routes: Routes = [
         path: 'proyectos/todas',
         component: GerencialComponent,
         data: { permiso: 'proyectos.gerente' }
+      },
+      {
+        path: 'proyectos/cuadrillas',
+        component: CuadrillasComponent,
+        canActivate: [permissionGuard],
+        data: { permiso: 'proyectos.cuadrillas.ver' }
       },
       {
         path: 'proyectos/:linea',

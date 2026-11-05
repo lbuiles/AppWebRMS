@@ -1,0 +1,409 @@
+<div class="p-4 md:p-6 space-y-4">
+
+  <!-- Encabezado -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <a routerLink="/proyectos" class="text-xs text-gray-500 hover:text-[#1e3a8a]">← Proyectos</a>
+      <h1 class="text-2xl font-bold text-[#1e3a8a]">Planeación y seguimiento de cuadrilla</h1>
+      <p class="text-sm text-gray-500">{{ tituloRango() }}</p>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" (click)="exportar()" [disabled]="exportando()"
+              class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 disabled:opacity-50">
+        {{ exportando() ? 'Generando…' : 'Exportar Excel' }}
+      </button>
+    @if (puedeProgramar) {
+      <div class="flex gap-2">
+        <button type="button" (click)="abrirCopia()"
+                class="px-4 py-2 rounded-xl border border-[#1e3a8a] text-[#1e3a8a] font-semibold text-sm hover:bg-blue-50">
+          Copiar semana
+        </button>
+        <button type="button" (click)="nueva()"
+                class="px-4 py-2 rounded-xl bg-[#1e3a8a] text-white font-semibold text-sm hover:bg-[#162c69] shadow">
+          + Programar actividad
+        </button>
+      </div>
+    }
+    </div>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="flex flex-wrap gap-1 border-b border-gray-200">
+    <button type="button" (click)="tab.set('agenda')" class="px-4 py-2 text-sm font-semibold rounded-t-lg"
+            [class]="tab() === 'agenda' ? 'bg-[#1e3a8a] text-white' : 'text-gray-600 hover:bg-gray-100'">Agenda</button>
+    <button type="button" (click)="tab.set('actividades')" class="px-4 py-2 text-sm font-semibold rounded-t-lg"
+            [class]="tab() === 'actividades' ? 'bg-[#1e3a8a] text-white' : 'text-gray-600 hover:bg-gray-100'">Actividades</button>
+    @if (puedeKpi) {
+      <button type="button" (click)="tab.set('kpi')" class="px-4 py-2 text-sm font-semibold rounded-t-lg"
+              [class]="tab() === 'kpi' ? 'bg-[#1e3a8a] text-white' : 'text-gray-600 hover:bg-gray-100'">KPI</button>
+    }
+  </div>
+
+  <!-- Selector de periodo (compartido) -->
+    <div class="flex flex-wrap items-center gap-2 bg-white rounded-xl border border-gray-200 p-3">
+      <div class="flex rounded-lg overflow-hidden border border-gray-300 text-xs font-semibold">
+        <button type="button" (click)="setModo('mes')" class="px-3 py-1.5" [class]="modo() === 'mes' ? 'bg-[#ffb31c] text-[#1e3a8a]' : 'bg-white text-gray-600'">Mes</button>
+        <button type="button" (click)="setModo('q1')" class="px-3 py-1.5" [class]="modo() === 'q1' ? 'bg-[#ffb31c] text-[#1e3a8a]' : 'bg-white text-gray-600'">1–15</button>
+        <button type="button" (click)="setModo('q2')" class="px-3 py-1.5" [class]="modo() === 'q2' ? 'bg-[#ffb31c] text-[#1e3a8a]' : 'bg-white text-gray-600'">16–fin</button>
+        <button type="button" (click)="setModo('semana')" class="px-3 py-1.5" [class]="modo() === 'semana' ? 'bg-[#ffb31c] text-[#1e3a8a]' : 'bg-white text-gray-600'">Semana</button>
+      </div>
+      <button type="button" (click)="mover(-1)" class="px-2 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">‹</button>
+      <button type="button" (click)="hoy()" class="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold hover:bg-gray-50">Hoy</button>
+      <button type="button" (click)="mover(1)" class="px-2 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">›</button>
+
+      @if (tab() !== 'kpi') {
+        <div class="flex flex-wrap gap-2 ml-auto">
+          <input type="text" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" placeholder="Buscar…"
+                 class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-40">
+          @if (puedeProgramar) {
+            <select [ngModel]="filtroTecnico()" (ngModelChange)="filtroTecnico.set($event)" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+              <option value="">Todos los técnicos</option>
+              @for (t of tecnicos(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+            </select>
+            <select [ngModel]="filtroProyecto()" (ngModelChange)="filtroProyecto.set($event)" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm max-w-[14rem]">
+              <option value="">Todos los proyectos</option>
+              @for (p of proyectos(); track p.id) { <option [value]="p.id">{{ p.codigo }} · {{ p.nombre }}</option> }
+            </select>
+          }
+          <select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+            <option value="">Todos los estados</option>
+            @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+          </select>
+        </div>
+      }
+    </div>
+
+  @if (cargando()) { <div class="text-sm text-gray-500">Cargando…</div> }
+
+  <!-- AGENDA -->
+  @if (tab() === 'agenda') {
+    <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+      <div class="min-w-[56rem]">
+        <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+          @for (d of diasSemana; track d) { <div class="px-2 py-2 text-xs font-bold text-gray-500 text-center">{{ d }}</div> }
+        </div>
+        @for (fila of semanas(); track $index) {
+          <div class="grid grid-cols-7 border-b border-gray-100 last:border-0">
+            @for (dia of fila; track dia.fecha) {
+              <div class="min-h-[7rem] p-1.5 border-r border-gray-100 last:border-0"
+                   [class.bg-gray-50]="!dia.enRango" [class.opacity-50]="!dia.enRango">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold px-1.5 rounded-full"
+                        [class]="esHoy(dia.fecha) ? 'bg-[#1e3a8a] text-white' : 'text-gray-500'">{{ fechaCorta(dia.fecha) }}</span>
+                  @if (puedeProgramar && dia.enRango) {
+                    <button type="button" (click)="nueva(dia.fecha)" class="text-gray-300 hover:text-[#1e3a8a] text-sm leading-none" title="Programar este día">+</button>
+                  }
+                </div>
+                <div class="space-y-1">
+                  @for (a of dia.acts; track a.id) {
+                    <button type="button" (click)="abrirDetalle(a)"
+                            class="w-full text-left rounded-md border px-1.5 py-1 text-[11px] leading-tight hover:shadow"
+                            [class]="claseEstado(a.estado)"
+                            [class.border-dashed]="cruces().has(a.id)" [class.border-2]="cruces().has(a.id)"
+                            [class.line-through]="a.estadoPlanificacion === 'Cancelada'">
+                      <div class="font-bold truncate">{{ a.tecnico?.nombre }}</div>
+                      <div class="truncate">{{ esNoLaboral(a) ? etiquetaTipo(a.tipoRegistro) : (a.actividad || etiquetaTipo(a.tipoRegistro)) }}</div>
+                      @if (horario(a)) { <div class="opacity-70">{{ horario(a) }}</div> }
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-3 text-[11px] text-gray-500">
+      @for (e of estados; track e) { <span class="px-2 py-0.5 rounded border" [class]="claseEstado(e)">{{ e }}</span> }
+      <span class="px-2 py-0.5 rounded border-2 border-dashed border-gray-400">Cruce de horario</span>
+    </div>
+  }
+
+  <!-- ACTIVIDADES (tabla) -->
+  @if (tab() === 'actividades') {
+    <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+          <tr>
+            <th class="px-3 py-2 text-left">Fecha</th>
+            <th class="px-3 py-2 text-left">Técnico</th>
+            <th class="px-3 py-2 text-left">Tipo</th>
+            <th class="px-3 py-2 text-left">Proyecto</th>
+            <th class="px-3 py-2 text-left">Actividad</th>
+            <th class="px-3 py-2 text-left">Horario</th>
+            <th class="px-3 py-2 text-right">H. plan.</th>
+            <th class="px-3 py-2 text-right">H. reales</th>
+            <th class="px-3 py-2 text-left">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of filtradas(); track a.id) {
+            <tr class="border-t border-gray-100 hover:bg-gray-50 cursor-pointer" (click)="abrirDetalle(a)">
+              <td class="px-3 py-2 whitespace-nowrap">{{ fecha(a) }}</td>
+              <td class="px-3 py-2">{{ a.tecnico?.nombre }}</td>
+              <td class="px-3 py-2">{{ etiquetaTipo(a.tipoRegistro) }}</td>
+              <td class="px-3 py-2 max-w-[14rem] truncate">{{ nombreProyecto(a) }}</td>
+              <td class="px-3 py-2 max-w-[18rem] truncate">{{ a.actividad }}</td>
+              <td class="px-3 py-2 whitespace-nowrap">
+                {{ horario(a) }}
+                @if (cruces().has(a.id)) { <span class="text-red-500 text-xs font-bold" title="Cruce de horario">⚠</span> }
+              </td>
+              <td class="px-3 py-2 text-right">{{ a.horasPlaneadas ?? '—' }}</td>
+              <td class="px-3 py-2 text-right">{{ a.horasReales ?? '—' }}</td>
+              <td class="px-3 py-2"><span class="px-2 py-0.5 rounded border text-xs font-semibold" [class]="claseEstado(a.estado)">{{ a.estado }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="px-3 py-8 text-center text-gray-400">No hay actividades en este periodo.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (tab() === 'kpi' && puedeKpi) {
+    <app-cuadrillas-kpi [desde]="rango().desde" [hasta]="rango().hasta"
+                        [tecnicos]="tecnicos()" [proyectos]="proyectos()" [puedeProgramar]="puedeProgramar" />
+  }
+
+</div>
+
+<!-- MODAL DETALLE / EJECUCIÓN -->
+@if (detalle(); as a) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="cerrarDetalle()">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-start justify-between">
+        <div>
+          <div class="text-xs text-gray-500">{{ fecha(a) }} · {{ a.tecnico?.nombre }}</div>
+          <h2 class="text-lg font-bold text-[#1e3a8a]">{{ a.actividad || etiquetaTipo(a.tipoRegistro) }}</h2>
+        </div>
+        <button type="button" (click)="cerrarDetalle()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+      </div>
+
+      <div class="px-5 py-4 space-y-4 text-sm">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+          <div><span class="text-gray-500">Tipo:</span> {{ etiquetaTipo(a.tipoRegistro) }}</div>
+          <div><span class="text-gray-500">Proyecto:</span> {{ nombreProyecto(a) }}</div>
+          <div><span class="text-gray-500">OT:</span> {{ a.ot || '—' }}</div>
+          <div><span class="text-gray-500">Horario:</span> {{ horario(a) || '—' }}</div>
+          <div><span class="text-gray-500">Horas planeadas:</span> {{ a.horasPlaneadas ?? '—' }}</div>
+          <div><span class="text-gray-500">Prioridad:</span> {{ a.prioridad }}</div>
+          <div><span class="text-gray-500">Planificación:</span> {{ a.estadoPlanificacion }}</div>
+          <div><span class="text-gray-500">Supervisor:</span> {{ a.supervisorNombre || '—' }}</div>
+        </div>
+
+        <!-- Seguimiento de ejecución (técnico o programador) -->
+        <form [formGroup]="ejec" (ngSubmit)="guardarEjecucion()" class="rounded-xl border border-gray-200 p-3 space-y-3">
+          <div class="font-semibold text-gray-700">Seguimiento de ejecución</div>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block"><span class="text-xs text-gray-500">Estado</span>
+              <select formControlName="estado" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+                @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+              </select></label>
+            <label class="block"><span class="text-xs text-gray-500">Horas reales</span>
+              <input type="number" step="0.25" min="0" formControlName="horasReales" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+            <label class="block"><span class="text-xs text-gray-500">Tipo de novedad</span>
+              <input type="text" formControlName="tipoNovedad" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+            <label class="block"><span class="text-xs text-gray-500">Fecha de cierre</span>
+              <input type="date" formControlName="fechaCierre" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+          </div>
+          <label class="block"><span class="text-xs text-gray-500">Detalle del bloqueo @if (ejec.value.estado === 'Bloqueada') { <b class="text-red-600">(obligatorio)</b> }</span>
+            <textarea rows="2" formControlName="detalleBloqueo" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></textarea></label>
+          <label class="block"><span class="text-xs text-gray-500">Siguiente acción</span>
+            <input type="text" formControlName="siguienteAccion" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+          <label class="block"><span class="text-xs text-gray-500">Observaciones</span>
+            <textarea rows="2" formControlName="observaciones" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></textarea></label>
+          <div class="flex justify-end">
+            <button type="submit" [disabled]="guardando()" class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50">Guardar seguimiento</button>
+          </div>
+        </form>
+
+        @if (a.historial?.length) {
+          <div>
+            <div class="font-semibold text-gray-700 mb-1">Historial</div>
+            <ul class="space-y-1 max-h-40 overflow-y-auto text-xs text-gray-600">
+              @for (h of a.historial; track h.id) {
+                <li class="border-l-2 border-gray-200 pl-2">{{ h.fecha | date:'yyyy-MM-dd HH:mm' }} · {{ h.usuario?.nombre }} — {{ h.texto }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      @if (puedeProgramar) {
+        <div class="px-5 py-3 border-t border-gray-100 flex justify-between">
+          <button type="button" (click)="eliminar(a)" class="px-3 py-2 rounded-lg text-red-600 text-sm font-semibold hover:bg-red-50">Eliminar</button>
+          <button type="button" (click)="editar(a)" class="px-4 py-2 rounded-lg bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#162c69]">Editar planeación</button>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- MODAL PLANEACIÓN -->
+@if (formAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="cerrarForm()">
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[92vh] overflow-y-auto"
+          (click)="$event.stopPropagation()">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-[#1e3a8a]">{{ editandoId() ? 'Editar planeación' : 'Programar actividad' }}</h2>
+        <button type="button" (click)="cerrarForm()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+      </div>
+
+      <div class="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <label class="block"><span class="text-xs text-gray-500">Fecha *</span>
+          <input type="date" formControlName="fecha" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+        <label class="block"><span class="text-xs text-gray-500">Técnico *</span>
+          <select formControlName="tecnicoId" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            <option value="">Selecciona…</option>
+            @for (t of tecnicos(); track t.id) { <option [value]="t.id">{{ t.nombre }}</option> }
+          </select></label>
+
+        <label class="block"><span class="text-xs text-gray-500">Tipo de registro *</span>
+          <select formControlName="tipoRegistro" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            @for (t of tipos; track t.v) { <option [value]="t.v">{{ t.t }}</option> }
+          </select></label>
+        <label class="block"><span class="text-xs text-gray-500">Prioridad</span>
+          <select formControlName="prioridad" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            @for (p of prioridades; track p) { <option [value]="p">{{ p }}</option> }
+          </select></label>
+
+        <label class="block md:col-span-2"><span class="text-xs text-gray-500">Proyecto (del tracker)</span>
+          <select formControlName="proyectoId" (change)="alCambiarProyecto()" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            <option value="">— Sin proyecto / sede libre —</option>
+            @for (p of proyectos(); track p.id) { <option [value]="p.id">{{ p.codigo }} · {{ p.nombre }} ({{ p.clienteNombre }})</option> }
+          </select></label>
+        @if (!form.value.proyectoId) {
+          <label class="block md:col-span-2"><span class="text-xs text-gray-500">Proyecto / sede (texto libre)</span>
+            <input type="text" formControlName="proyectoReferencia" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+        }
+
+        <label class="block md:col-span-2"><span class="text-xs text-gray-500">Actividad</span>
+          <textarea rows="2" formControlName="actividad" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></textarea></label>
+
+        <label class="block"><span class="text-xs text-gray-500">OT</span>
+          <input type="text" formControlName="ot" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+        <label class="block"><span class="text-xs text-gray-500">Horas planeadas (si no hay horario)</span>
+          <input type="number" step="0.25" min="0" formControlName="horasPlaneadas" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+
+        <label class="block"><span class="text-xs text-gray-500">Hora inicio</span>
+          <input type="time" formControlName="horaInicio" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+        <label class="block"><span class="text-xs text-gray-500">Hora fin</span>
+          <input type="time" formControlName="horaFin" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+
+        <label class="block"><span class="text-xs text-gray-500">Estado de ejecución</span>
+          <select formControlName="estado" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+          </select></label>
+        <label class="block"><span class="text-xs text-gray-500">Estado de planificación</span>
+          <select formControlName="estadoPlanificacion" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            @for (e of estadosPlan; track e) { <option [value]="e">{{ e }}</option> }
+          </select></label>
+
+        <!-- Supervisor -->
+        <label class="block"><span class="text-xs text-gray-500">Supervisor</span>
+          <select formControlName="supervisorTipo" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            <option value="">Sin supervisor</option>
+            <option value="CLIENTE">Del cliente (contacto)</option>
+            <option value="INTERNO">Interno (usuario)</option>
+          </select></label>
+        @if (form.value.supervisorTipo === 'CLIENTE') {
+          <label class="block"><span class="text-xs text-gray-500">Contacto del cliente</span>
+            <select formControlName="supervisorContactoId" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+              <option value="">Selecciona…</option>
+              @for (s of supervisoresCliente(); track s.id) { <option [value]="s.id">{{ s.nombre }}{{ s.cargo ? ' — ' + s.cargo : '' }}</option> }
+            </select>
+            @if (!form.value.proyectoId) { <span class="text-[11px] text-gray-400">Elige un proyecto para listar los contactos de su cliente.</span> }
+          </label>
+        } @else if (form.value.supervisorTipo === 'INTERNO') {
+          <label class="block"><span class="text-xs text-gray-500">Usuario interno</span>
+            <select formControlName="supervisorUsuarioId" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+              <option value="">Selecciona…</option>
+              @for (s of supervisores(); track s.id) { <option [value]="s.id">{{ s.nombre }}</option> }
+            </select></label>
+        } @else {
+          <div></div>
+        }
+
+        <label class="block md:col-span-2"><span class="text-xs text-gray-500">Observaciones</span>
+          <textarea rows="2" formControlName="observaciones" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></textarea></label>
+
+        <!-- Aplicar a varios técnicos / repetir en varios días (solo al crear) -->
+        @if (!editandoId()) {
+          <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-3 space-y-3 bg-gray-50">
+            <div class="text-xs font-bold text-gray-600 uppercase">Aplicar a más técnicos / repetir en varios días (opcional)</div>
+
+            <div>
+              <div class="text-xs text-gray-500 mb-1">También asignar a:</div>
+              <div class="flex flex-wrap gap-1.5">
+                @for (t of tecnicos(); track t.id) {
+                  @if (t.id !== form.value.tecnicoId) {
+                    <button type="button" (click)="toggleExtra(t.id)"
+                            class="px-2.5 py-1 rounded-full border text-xs font-medium"
+                            [class]="extraTecnicos().includes(t.id) ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]' : 'bg-white text-gray-600 border-gray-300'">
+                      {{ t.nombre }}
+                    </button>
+                  }
+                }
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+              <label class="block"><span class="text-xs text-gray-500">Repetir hasta (máx. 120 días)</span>
+                <input type="date" formControlName="repetirHasta" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+              <div>
+                <div class="text-xs text-gray-500 mb-1">Días de la semana</div>
+                <div class="flex gap-1">
+                  @for (d of diasSemana; track d; let i = $index) {
+                    <button type="button" (click)="toggleDia(i)" class="w-9 py-1 rounded-md border text-xs font-semibold"
+                            [class]="diasRep()[i] ? 'bg-[#ffb31c] text-[#1e3a8a] border-[#ffb31c]' : 'bg-white text-gray-500 border-gray-300'">{{ d }}</button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            @if (totalLote() > 1) {
+              <div class="text-sm font-semibold text-[#1e3a8a]">
+                Se crearán {{ totalLote() }} actividades ({{ tecnicosLote().length }} técnico(s) × {{ fechasLote().length }} día(s)).
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+        <button type="button" (click)="cerrarForm()" class="px-4 py-2 rounded-lg border border-gray-300 text-sm">Cancelar</button>
+        <button type="submit" [disabled]="guardando()" class="px-4 py-2 rounded-lg bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#162c69] disabled:opacity-50">Guardar</button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- MODAL COPIAR SEMANA -->
+@if (copiaAbierta()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="cerrarCopia()">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-[#1e3a8a]">Copiar semana</h2>
+        <button type="button" (click)="cerrarCopia()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+      </div>
+      <div class="px-5 py-4 space-y-3 text-sm">
+        <p class="text-gray-500 text-xs">
+          Copia la programación de la semana origen a la destino conservando el día de la semana. Las copias quedan como
+          "Planeada" y sin horas reales. Los registros que ya existan en el destino se omiten.
+        </p>
+        <label class="block"><span class="text-xs text-gray-500">Cualquier día de la semana origen</span>
+          <input type="date" [ngModel]="copiaOrigen()" (ngModelChange)="copiaOrigen.set($event)" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+        <label class="block"><span class="text-xs text-gray-500">Cualquier día de la semana destino</span>
+          <input type="date" [ngModel]="copiaDestino()" (ngModelChange)="copiaDestino.set($event)" class="w-full border border-gray-300 rounded-lg px-2 py-1.5"></label>
+        <div class="text-xs text-gray-600 bg-gray-50 rounded-lg p-2">
+          Alcance: {{ filtroTecnico() ? 'solo ' + nombreFiltroTecnico() : 'todos los técnicos' }}
+          <span class="text-gray-400">(cambia el filtro de técnico para limitarlo)</span>
+        </div>
+      </div>
+      <div class="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+        <button type="button" (click)="cerrarCopia()" class="px-4 py-2 rounded-lg border border-gray-300 text-sm">Cancelar</button>
+        <button type="button" (click)="ejecutarCopia()" [disabled]="guardando()" class="px-4 py-2 rounded-lg bg-[#1e3a8a] text-white text-sm font-semibold hover:bg-[#162c69] disabled:opacity-50">Copiar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -50,6 +50,10 @@ export class ProyectosComponent implements OnInit {
     return this.authService.hasPermission(permiso);
   }
 
+  get puedeCuadrillas(): boolean {
+    return this.authService.hasPermission('proyectos.cuadrillas.ver');
+  }
+
   get esGerente(): boolean {
     return this.authService.hasPermission('proyectos.gerente');
   }
