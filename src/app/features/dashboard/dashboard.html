@@ -50,9 +50,9 @@
       <p class="text-[10px] text-slate-400 mt-1">de {{ proyectosFiltrados().length }} totales</p>
     </div>
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Presupuestado</p>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Valor PO</p>
       <h3 class="text-xl font-black text-slate-900">{{ kpiPresupuestado() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
-      <p class="text-[10px] text-slate-400 mt-1">valor total OC</p>
+      <p class="text-[10px] text-slate-400 mt-1">valor total Purchase Order</p>
     </div>
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Facturado</p>
@@ -128,16 +128,18 @@
       <table class="w-full text-left whitespace-nowrap">
         <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100">
           <tr>
-            <th class="px-4 py-3">Código</th>
-            <th class="px-4 py-3">Proyecto</th>
+            <th class="px-4 py-3">Código y/o Proyecto</th>
+            <th class="px-4 py-3">Actividad</th>
             <th class="px-4 py-3">División</th>
             <th class="px-4 py-3">Cliente</th>
             <th class="px-4 py-3 text-center">Estado</th>
-            <th class="px-4 py-3 text-right">Presupuestado</th>
+            <th class="px-4 py-3">No. PO</th>
+            <th class="px-4 py-3 text-right">Valor PO</th>
             <th class="px-4 py-3 text-right">Facturado</th>
             <th class="px-4 py-3 text-right">Gasto</th>
             <th class="px-4 py-3 text-right">Margen</th>
             <th class="px-4 py-3">Responsable</th>
+            <th class="px-4 py-3 text-center">Fecha de Asignación</th>
           </tr>
         </thead>
         <tbody class="text-sm text-slate-700 divide-y divide-slate-50">
@@ -153,6 +155,7 @@
                   {{ p.estado.replace('_', ' ') }}
                 </span>
               </td>
+              <td class="px-4 py-3 text-xs text-slate-500 font-mono">{{ p.numeroOC || '—' }}</td>
               <td class="px-4 py-3 text-right text-xs font-bold text-slate-700">
                 {{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}
               </td>
@@ -163,14 +166,15 @@
                 {{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}
               </td>
               <td class="px-4 py-3 text-right text-xs font-bold"
-                  [ngClass]="(p.utilidad || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'">
-                {{ p.valorOC > 0 ? (((p.valorFacturado - p.valorGasto) / p.valorOC) * 100).toFixed(0) + '%' : '—' }}
+                  [ngClass]="(p.utilidad ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                {{ p.valorFacturado > 0 ? (((p.utilidad ?? 0) / p.valorFacturado) * 100).toFixed(0) + '%' : '—' }}
               </td>
               <td class="px-4 py-3 text-xs text-slate-500">{{ p.responsable?.nombre || '—' }}</td>
+              <td class="px-4 py-3 text-center text-xs text-slate-500">{{ p.fechaAsignacion ? (p.fechaAsignacion | date:'dd/MM/yyyy') : '—' }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="10" class="px-5 py-10 text-center text-slate-400 text-xs">
+              <td colspan="12" class="px-5 py-10 text-center text-slate-400 text-xs">
                 No hay proyectos para mostrar con los filtros actuales.
               </td>
             </tr>

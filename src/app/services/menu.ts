@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, map } from 'rxjs';
 import { Apollo, gql } from 'apollo-angular';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 // 1. Query básico para el Sidebar (Solo lo necesario para navegar)
 const GET_MENU_CONFIG = gql`
@@ -47,10 +49,20 @@ const CREATE_PERMISO = gql`
 })
 export class MenuService {
   private apollo = inject(Apollo);
+  private router = inject(Router);
 
   // --- Lógica de UI (Sidebar Toggle) ---
   private menuOpen = new BehaviorSubject<boolean>(false);
   public menuOpen$ = this.menuOpen.asObservable();
+
+  constructor() {
+    // Punto 2 (semana 39): en móvil el menú lateral quedaba abierto y
+    // congelaba la navegación al cambiar de ruta (nadie lo cerraba).
+    // Lo cerramos automáticamente en cada navegación completada.
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.close());
+  }
 
   toggle() {
     this.menuOpen.next(!this.menuOpen.value);

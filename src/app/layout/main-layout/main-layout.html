@@ -1,4 +1,8 @@
-<div class="flex h-dvh overflow-hidden">
+<div class="flex h-dvh overflow-hidden relative">
+  <!-- Punto 2 (semana 39): backdrop para cerrar el menú en móvil al tocar fuera -->
+  @if (menuService.menuOpen$ | async) {
+    <div class="fixed inset-0 z-40 bg-black/40 lg:hidden" (click)="menuService.close()"></div>
+  }
   <app-sidebar></app-sidebar>
 
   <div class="flex-1 min-w-0 flex flex-col overflow-hidden">

@@ -24,11 +24,125 @@ export class TrackerListComponent implements OnInit {
   // Señales de la tabla
   public lineaActiva = signal<string>('');
   public mostrarFinalizados = signal<boolean>(false);
+  public filtroEstado = signal<string>('todos');
+  public filtroResponsable = signal<string>('todos');
+  public filtroCliente = signal<string>('todos');
+
+  // --- Archivar / Eliminar proyectos (punto 17) ---
+  public viendoArchivados   = signal<boolean>(false);
+  public proyectosArchivados = signal<any[]>([]);
+  public cargandoArchivados  = signal<boolean>(false);
+
+  toggleVerArchivados() {
+    const nuevo = !this.viendoArchivados();
+    this.viendoArchivados.set(nuevo);
+    if (nuevo) this.cargarProyectosArchivados();
+  }
+
+  cargarProyectosArchivados() {
+    this.cargandoArchivados.set(true);
+    this.trackerService.getProyectosArchivadosPorLinea(this.lineaActiva()).subscribe({
+      next: (data) => { this.proyectosArchivados.set(data); this.cargandoArchivados.set(false); },
+      error: () => this.cargandoArchivados.set(false)
+    });
+  }
+
+  confirmarArchivarProyecto(p: any) {
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Archivar este proyecto?',
+      html: `El proyecto <b>${p.codigo}</b> se ocultará del listado activo, pero conserva todo su historial. Podrás reactivarlo después desde "Ver archivados".`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, archivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      const usuario = this.authService.usuarioActual();
+      if (!usuario?.id) return;
+
+      this.trackerService.archivarProyecto(p.id, usuario.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Proyecto archivado', timer: 1500, showConfirmButton: false });
+          this.cerrarPanel();
+          this.cargarProyectos(this.lineaActiva());
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo archivar el proyecto.' });
+          console.error(err);
+        }
+      });
+    });
+  }
+
+  confirmarReactivarProyecto(p: any) {
+    Swal.fire({
+      icon: 'question',
+      title: '¿Reactivar este proyecto?',
+      html: `El proyecto <b>${p.codigo}</b> volverá a aparecer en el listado activo.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reactivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#1e3a8a'
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      this.trackerService.reactivarProyecto(p.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Proyecto reactivado', timer: 1500, showConfirmButton: false });
+          this.cargarProyectosArchivados();
+          this.cargarProyectos(this.lineaActiva());
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo reactivar el proyecto.' });
+          console.error(err);
+        }
+      });
+    });
+  }
+
+  confirmarEliminarDefinitivo(p: any) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Eliminar definitivamente',
+      html: `Esta acción <b>no se puede deshacer</b>. Se eliminará por completo el proyecto <b>${p.codigo} — ${p.nombre}</b>.<br><br>Solo es posible si el proyecto no tiene OTs, requisiciones, anticipos ni valores financieros registrados.<br><br>Escribe <b>ELIMINAR</b> para confirmar.`,
+      input: 'text',
+      inputPlaceholder: 'ELIMINAR',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar definitivamente',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+      preConfirm: (valor) => {
+        if (valor !== 'ELIMINAR') {
+          Swal.showValidationMessage('Debes escribir ELIMINAR exactamente para confirmar.');
+          return false;
+        }
+        return true;
+      }
+    }).then((res) => {
+      if (!res.isConfirmed) return;
+      this.trackerService.eliminarProyectoDefinitivo(p.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Proyecto eliminado', timer: 1500, showConfirmButton: false });
+          this.cerrarPanel();
+          this.cargarProyectos(this.lineaActiva());
+          if (this.viendoArchivados()) this.cargarProyectosArchivados();
+        },
+        error: (err) => {
+          const mensaje = err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar el proyecto.';
+          Swal.fire({ icon: 'error', title: 'No se puede eliminar', text: mensaje });
+        }
+      });
+    });
+  }
   public modalAnticipoDirectoAbierto = signal<boolean>(false);
   public contratistaSeleccionadoOT = signal<any | null>(null);
   public proyectoParaAnticipo = signal<any | null>(null);
   public anticipoDirectoForm!: FormGroup;
   public anticiposDirectos = signal<any[]>([]);
+  public modalCorteFacturacionAbierto = signal<boolean>(false);
+  public proyectoParaCorte = signal<any | null>(null);
+  public corteFacturacionForm!: FormGroup;
+  public cortesFacturacion = signal<any[]>([]);
   public configVisual = signal<any>({});
   public proyectos = signal<any[]>([]);
   public cargando = signal<boolean>(true);
@@ -63,7 +177,7 @@ export class TrackerListComponent implements OnInit {
   public actualizando = signal<boolean>(false);
   public actualizarForm!: FormGroup;
 
-  public vistaPanel = signal<'resumen' | 'resumen_general' | 'detalles' | 'bitacora' | 'compras'>('resumen');
+  public vistaPanel = signal<'resumen' | 'resumen_general' | 'detalles' | 'bitacora' | 'compras' | 'control'>('resumen');
   public nuevaObservacion = signal<string>('');
   public guardandoObs = signal<boolean>(false);
   public esAdminFase = signal<boolean>(false);
@@ -287,12 +401,31 @@ export class TrackerListComponent implements OnInit {
     return `${dias} días ✗`;
   }
 
+  /**
+   * Calcula cuántos días han pasado desde la fecha tentativa de fin hasta hoy.
+   * Positivo = retraso, Negativo = adelanto, 0 = en fecha.
+   */
+  calcularDiasDesviacion(fechaTentativa: string | null): number {
+    if (!fechaTentativa) return 0;
+    const tentativa = new Date(fechaTentativa + 'T00:00:00').setHours(0, 0, 0, 0);
+    const hoy = new Date().setHours(0, 0, 0, 0);
+    return Math.floor((hoy - tentativa) / (1000 * 60 * 60 * 24));
+  }
+
   calcularDiasDiferencia(fechaInicial: string | null, fechaFinal: string | null): number | null {
     if (!fechaInicial || !fechaFinal) return null;
     const f1 = new Date(fechaInicial).setHours(0,0,0,0);
     const f2 = new Date(fechaFinal).setHours(0,0,0,0);
     const diffTime = Math.abs(f2 - f1);
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  /** Diferencia con signo: positivo = real fue después de tentativa (retraso), negativo = adelanto */
+  calcularDesviacionFecha(fechaTentativa: string | null, fechaReal: string | null): number {
+    if (!fechaTentativa || !fechaReal) return 0;
+    const t = new Date(fechaTentativa).setHours(0,0,0,0);
+    const r = new Date(fechaReal).setHours(0,0,0,0);
+    return Math.floor((r - t) / (1000 * 60 * 60 * 24));
   }
 
   obtenerEstadoSLA(p: any) {
@@ -355,7 +488,30 @@ export class TrackerListComponent implements OnInit {
 
   // --- MÉTODOS DE DATOS ---
   get esGerente(): boolean {
-    return this.authService.hasPermission('proyectos.editar');
+    // Punto 8 (semana 39, revisión final): la visibilidad de TODOS los proyectos
+    // de la división (en vez de solo los propios, ver proyectosFiltrados abajo)
+    // depende exclusivamente de 'proyectos.gerente'. 'proyectos.editar' es un
+    // permiso distinto (habilita editar campos) y NO debe dar acceso a ver los
+    // proyectos de otros usuarios.
+    return this.authService.hasPermission('proyectos.gerente');
+  }
+
+  get responsablesDisponibles() {
+    const mapa = new Map<string, string>();
+    for (const p of this.proyectos()) {
+      if (p.responsable?.id && p.responsable?.nombre) {
+        mapa.set(p.responsable.id, p.responsable.nombre);
+      }
+    }
+    return Array.from(mapa.entries()).map(([id, nombre]) => ({ id, nombre }));
+  }
+
+  get clientesDisponibles(): string[] {
+    const set = new Set<string>();
+    for (const p of this.proyectos()) {
+      if (p.cliente?.razonSocial) set.add(p.cliente.razonSocial);
+    }
+    return Array.from(set).sort();
   }
 
   get proyectosFiltrados() {
@@ -371,6 +527,26 @@ export class TrackerListComponent implements OnInit {
     if (!this.mostrarFinalizados()) {
       lista = lista.filter(p => p.estado !== 'FINALIZADO_TOTAL');
     }
+
+    // Filtro por estado
+    if (this.filtroEstado() !== 'todos') {
+      lista = lista.filter(p => p.estado === this.filtroEstado());
+    }
+
+    // Filtro por responsable
+    if (this.filtroResponsable() !== 'todos') {
+      lista = lista.filter(p => p.responsable?.id === this.filtroResponsable());
+    }
+
+    // Filtro por cliente
+    if (this.filtroCliente() !== 'todos') {
+      lista = lista.filter(p => p.cliente?.razonSocial === this.filtroCliente());
+    }
+
+    // Más reciente primero por Fecha de Asignación
+    lista = [...lista].sort((a, b) =>
+      new Date(b.fechaAsignacion).getTime() - new Date(a.fechaAsignacion).getTime()
+    );
 
     return lista;
   }
@@ -446,12 +622,45 @@ export class TrackerListComponent implements OnInit {
     });
   }
 
+  // Signal para alternar entre selector de clientes y texto libre
+  public clienteLibre = signal<boolean>(true); // Default: texto libre (sin dropdown)
+
+  // Contratista en el flujo de proyecto: false = seleccionar de los ya registrados, true = texto libre
+  public contratistaModoLibre = signal<boolean>(false);
+
+  onSeleccionarContratistaProyecto(event: Event) {
+    const val = (event.target as HTMLSelectElement).value;
+    if (val === '__OTRO__') {
+      this.contratistaModoLibre.set(true);
+      this.actualizarForm.get('contratista')?.setValue('');
+      return;
+    }
+    this.actualizarForm.get('contratista')?.setValue(val);
+  }
+
+  toggleClienteLibre() {
+    const nuevo = !this.clienteLibre();
+    this.clienteLibre.set(nuevo);
+    const ctrl = this.proyectoForm.get('clienteId');
+    const ctrlNombre = this.proyectoForm.get('clienteNombre');
+    if (nuevo) {
+      // Texto libre: quitar validación obligatoria del select
+      ctrl?.clearValidators(); ctrl?.setValue(''); ctrl?.updateValueAndValidity();
+      ctrlNombre?.setValidators(Validators.required); ctrlNombre?.updateValueAndValidity();
+    } else {
+      // Selector: restaurar validación
+      ctrlNombre?.clearValidators(); ctrlNombre?.setValue(''); ctrlNombre?.updateValueAndValidity();
+      ctrl?.setValidators(Validators.required); ctrl?.updateValueAndValidity();
+    }
+  }
+
   // --- MÉTODOS DEL MODAL ---
   inicializarFormulario() {
     this.proyectoForm = this.fb.group({
       codigo: ['', Validators.required],
       nombre: ['', Validators.required],
       clienteId: ['', Validators.required],
+      clienteNombre: [''],
       supervisorCliente: [''],
       responsableId: [''],
       valorOC: [0, [Validators.required, Validators.min(0)]],
@@ -484,6 +693,12 @@ export class TrackerListComponent implements OnInit {
       observaciones: ['']
     });
 
+    this.corteFacturacionForm = this.fb.group({
+      valorCorte:    [0, [Validators.required, Validators.min(1)]],
+      numeroFactura: [''],
+      observaciones: ['']
+    });
+
     this.reqForm = this.fb.group({
       consecutivo: ['', Validators.required],
 
@@ -492,6 +707,12 @@ export class TrackerListComponent implements OnInit {
   }
 
   abrirModal() {
+    this.clienteLibre.set(true); // Default: texto libre, sin dropdown
+    // Con texto libre, clienteNombre es requerido; clienteId no
+    const ctrl = this.proyectoForm.get('clienteId');
+    const ctrlNombre = this.proyectoForm.get('clienteNombre');
+    ctrl?.clearValidators();
+    ctrlNombre?.setValidators(Validators.required);
     this.proyectoForm.reset({ valorOC: 0 });
     this.modalAbierto.set(true);
   }
@@ -508,8 +729,17 @@ export class TrackerListComponent implements OnInit {
 
     this.guardando.set(true);
 
+    const rawForm = { ...this.proyectoForm.value };
+
+    // Limpiar el campo no usado según el modo del selector de cliente
+    if (this.clienteLibre()) {
+      delete rawForm['clienteId'];
+    } else {
+      delete rawForm['clienteNombre'];
+    }
+
     const inputData = {
-      ...this.proyectoForm.value,
+      ...rawForm,
       fechaAsignacion: this.proyectoForm.get('fechaAsignacion')?.value
         ? new Date(this.proyectoForm.get('fechaAsignacion')?.value + 'T00:00:00Z').toISOString()
         : new Date().toISOString(),
@@ -551,6 +781,13 @@ export class TrackerListComponent implements OnInit {
     const p = this.proyectoSeleccionado();
     if (!p) return;
 
+    const contratistasRegistrados = this.listasFormulario().contratistas || [];
+    const nombreContratistaActual = (p.contratista || '').trim();
+    const coincideConRegistrado = !nombreContratistaActual || contratistasRegistrados.some(
+      (c: any) => (c.razonSocial || c.nombreCompleto || '').trim() === nombreContratistaActual
+    );
+    this.contratistaModoLibre.set(!coincideConRegistrado);
+
     this.actualizarForm = this.fb.group({
       nombre: [p.nombre, Validators.required],
       responsableId: [p.responsable?.id || ''],
@@ -574,6 +811,7 @@ export class TrackerListComponent implements OnInit {
       fechaEnvioPresupuesto: [this.formatToDateInput(p.fechaEnvioPresupuesto)],
       fechaAprobacionPresupuesto: [this.formatToDateInput(p.fechaAprobacionPresupuesto)],
       fechaInicioActividades: [this.formatToDateInput(p.fechaInicioActividades)],
+      fechaInicioObra: [this.formatToDateInput(p.fechaInicioObra)],
       fechaTentativaFin: [this.formatToDateInput(p.fechaTentativaFin)],
       fechaFinalizacionActividades: [this.formatToDateInput(p.fechaFinalizacionActividades)],
       cierreTecnicoAprobado: [p.cierreTecnicoAprobado || false],
@@ -609,19 +847,70 @@ export class TrackerListComponent implements OnInit {
         const camposOperativos = [
           'fechaRespuestaCliente', 'fechaSolicitudPermisos', 'fechaVisitaTecnica', 'fechaEnvioPermiso',
           'fechaAprobacionPermisos', 'fechaEnvioPresupuesto', 'fechaAprobacionPresupuesto',
-          'fechaInicioActividades', 'fechaTentativaFin', 'fechaFinalizacionActividades'
+          'fechaInicioActividades', 'fechaInicioObra', 'fechaTentativaFin', 'fechaFinalizacionActividades'
         ];
         camposOperativos.forEach(c => this.actualizarForm.get(c)?.disable());
       }
-
-      // IMPORTANTE: Estos dos SIEMPRE se bloquean en edición porque los calcula el backend
-      this.actualizarForm.get('valorGasto')?.disable();
-      this.actualizarForm.get('costoRealTotal')?.disable();
+      // valorGasto y costoRealTotal ahora son editables manualmente
     }
   }
 
   cerrarModalActualizar() {
     this.modalActualizarAbierto.set(false);
+  }
+
+  /** Cambia el modo del campo OC/PO: normal (número), pendiente (sin OC aún), noAplica */
+  setModoOC(modo: 'normal' | 'pendiente' | 'noAplica') {
+    const ctrlNumero = this.actualizarForm.get('numeroOC');
+    const ctrlSinOc  = this.actualizarForm.get('sinOcAun');
+    if (!ctrlNumero || !ctrlSinOc) return;
+
+    if (modo === 'normal') {
+      ctrlSinOc.setValue(false);
+      // Limpia el valor si era un marcador especial
+      const val = (ctrlNumero.value || '').toString().toUpperCase();
+      if (val === 'PENDIENTE' || val === 'NO_APLICA') ctrlNumero.setValue('');
+    } else if (modo === 'pendiente') {
+      ctrlSinOc.setValue(true);
+      ctrlNumero.setValue('PENDIENTE');
+    } else {
+      ctrlSinOc.setValue(false);
+      ctrlNumero.setValue('NO_APLICA');
+    }
+  }
+
+  /**
+   * Guarda solo el Nombre del Proyecto, sin depender de la validez del resto
+   * del formulario gigante de actualización (que tiene muchos otros campos
+   * requeridos en otras secciones/pestañas). Antes, el botón "Guardar" junto
+   * al nombre llamaba a guardarActualizacion(), que fallaba silenciosamente
+   * si cualquier otro campo del formulario estaba incompleto.
+   */
+  guardarNombreProyecto() {
+    const ctrlNombre = this.actualizarForm.get('nombre');
+    if (!ctrlNombre || !ctrlNombre.value?.trim()) {
+      ctrlNombre?.markAsTouched();
+      Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'El nombre del proyecto no puede quedar vacío.' });
+      return;
+    }
+
+    const p = this.proyectoSeleccionado();
+    if (!p) return;
+
+    this.actualizando.set(true);
+    this.trackerService.actualizarNombreProyecto(p.id, ctrlNombre.value.trim()).subscribe({
+      next: () => {
+        this.actualizando.set(false);
+        Swal.fire({ icon: 'success', title: 'Nombre actualizado', timer: 1500, showConfirmButton: false });
+        this.proyectoSeleccionado.set({ ...p, nombre: ctrlNombre.value.trim() });
+        this.cargarProyectos(this.lineaActiva());
+      },
+      error: (err) => {
+        this.actualizando.set(false);
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar el nombre del proyecto.' });
+        console.error(err);
+      }
+    });
   }
 
   guardarActualizacion() {
@@ -711,6 +1000,63 @@ export class TrackerListComponent implements OnInit {
         }
       }
     });
+  }
+
+  // ==========================================
+  // REVERSIÓN DE CIERRE DE OBRA
+  // ==========================================
+  async revertirCierreObra() {
+    const result = await Swal.fire({
+      title: '¿Revertir el cierre de obra?',
+      html: `Se borrará la <b>fecha de finalización de actividades</b>.<br>
+             El proyecto volverá a estado <b>En Ejecución</b> y podrás corregir la información.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, revertir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d97706',
+      cancelButtonColor: '#64748b'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Re-habilitar el formulario en caso de que esté deshabilitado (FINALIZADO_TOTAL)
+    this.actualizarForm.enable();
+
+    // Limpiar solo la fecha de finalización de actividades
+    this.actualizarForm.patchValue({ fechaFinalizacionActividades: '' });
+
+    this.guardarActualizacion();
+  }
+
+  async revertirCierreCompleto() {
+    const result = await Swal.fire({
+      title: '¿Revertir cierre completo?',
+      html: `Se borrarán la <b>fecha de finalización</b> y todos los <b>ítems documentales</b> marcados.<br>
+             El proyecto quedará pendiente de cierre nuevamente.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, revertir todo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b'
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Re-habilitar el formulario (FINALIZADO_TOTAL lo deshabilita por completo)
+    this.actualizarForm.enable();
+
+    // Limpiar fecha de fin + todos los ítems de cierre
+    this.actualizarForm.patchValue({
+      fechaFinalizacionActividades: '',
+      cierreTecnicoAprobado: false,
+      dossierEntregado: false,
+      liquidacionTerminada: false,
+      facturacionCompletada: false
+    });
+
+    this.guardarActualizacion();
   }
 
   // ==========================================
@@ -1159,6 +1505,34 @@ export class TrackerListComponent implements OnInit {
   }
 
   // ==========================================
+  // BACKLOG #6 — Panel de Control PO
+  // ==========================================
+
+  /** Porcentaje del PO (valorOC) ya facturado */
+  get porcentajeFacturacion(): number {
+    if (!this.actualizarForm) return 0;
+    const po = this.actualizarForm.get('valorOC')?.value || 0;
+    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
+    if (po === 0) return 0;
+    return Math.min((facturado / po) * 100, 100);
+  }
+
+  /** Saldo pendiente de facturar contra el PO */
+  get saldoPorFacturar(): number {
+    if (!this.actualizarForm) return 0;
+    const po = this.actualizarForm.get('valorOC')?.value || 0;
+    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
+    return Math.max(po - facturado, 0);
+  }
+
+  /** Costo total acumulado (REQ + OTs) */
+  get costoTotalAcumulado(): number {
+    if (!this.actualizarForm) return 0;
+    return (this.actualizarForm.get('valorGasto')?.value || 0)
+         + (this.actualizarForm.get('costoRealTotal')?.value || 0);
+  }
+
+  // ==========================================
   // VALIDACIÓN PRE-CIERRE (Paso 4 - FINALIZADO_TOTAL)
   // Espeja los 8 candados del backend para auditoría final
   // ==========================================
@@ -1269,6 +1643,18 @@ export class TrackerListComponent implements OnInit {
     // Las pólizas son informativas: se muestra advertencia si están pendientes
     // pero NO bloquean el inicio de obra (decisión de negocio — Bug #4).
     return !!this.actualizarForm;
+  }
+
+  /**
+   * Backlog #3 — Fecha de inicio manual.
+   * Si el campo está vacío usa la fecha de hoy, luego guarda.
+   */
+  async iniciarObra() {
+    const ctrl = this.actualizarForm.get('fechaInicioActividades');
+    if (!ctrl?.value) {
+      ctrl?.setValue(this.hoy());
+    }
+    await this.guardarActualizacion();
   }
 
   // Advertencia de OC sin registrar (no bloquea pero avisa)
@@ -1383,6 +1769,133 @@ export class TrackerListComponent implements OnInit {
         const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo crear el anticipo.';
         Swal.fire('Error', msg, 'error');
       }
+    });
+  }
+
+  // ── Cortes de Facturación ──
+  abrirModalCorteFacturacion(p: any) {
+    this.proyectoParaCorte.set(p);
+    this.cortesFacturacion.set(p.cortesFacturacion || []);
+    this.corteFacturacionForm.reset({ valorCorte: 0 });
+    this.modalCorteFacturacionAbierto.set(true);
+  }
+
+  cerrarModalCorteFacturacion() {
+    this.modalCorteFacturacionAbierto.set(false);
+    this.proyectoParaCorte.set(null);
+  }
+
+  descargandoExcel = signal<boolean>(false);
+
+  descargarExcel() {
+    this.descargandoExcel.set(true);
+    this.trackerService.descargarExcelProyectos(this.lineaActiva()).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `RMS_Tracker_${this.lineaActiva()}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        this.descargandoExcel.set(false);
+      },
+      error: (err) => {
+        this.descargandoExcel.set(false);
+        if (err?.status === 401) {
+          Swal.fire('Sesión expirada', 'Tu sesión expiró. Vuelve a iniciar sesión e intenta de nuevo.', 'warning');
+        } else {
+          Swal.fire('Error', 'No se pudo generar el archivo Excel.', 'error');
+        }
+      }
+    });
+  }
+
+  get totalCortesActivos(): number {
+    return this.cortesFacturacion()
+      .filter((c: any) => c.estado !== 'ANULADO')
+      .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0);
+  }
+
+  guardarCorteFacturacion() {
+    if (this.corteFacturacionForm.invalid) {
+      this.corteFacturacionForm.markAllAsTouched();
+      return;
+    }
+    const p = this.proyectoParaCorte();
+    const usuario = this.authService.usuarioActual();
+    const raw = this.corteFacturacionForm.value;
+    this.trackerService.addCorteFacturacion({
+      proyectoId:      p.id,
+      registradoPorId: usuario?.id,
+      valorCorte:      raw.valorCorte,
+      numeroFactura:   raw.numeroFactura || null,
+      observaciones:   raw.observaciones || null
+    }).subscribe({
+      next: (res) => {
+        this.cortesFacturacion.update(a => [res, ...a]);
+        this.corteFacturacionForm.reset({ valorCorte: 0 });
+        const pCorte = this.proyectoParaCorte();
+        if (pCorte) {
+          this.proyectos.update(ps => ps.map(proj =>
+            proj.id === pCorte.id
+              ? {
+                  ...proj,
+                  cortesFacturacion: [res, ...(proj.cortesFacturacion || [])],
+                  valorFacturado: [res, ...(proj.cortesFacturacion || [])]
+                    .filter((c: any) => c.estado !== 'ANULADO')
+                    .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0)
+                }
+              : proj
+          ));
+        }
+        Swal.fire({ icon: 'success', title: 'Corte de facturación registrado', timer: 2000, showConfirmButton: false });
+      },
+      error: (err) => {
+        const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo registrar el corte de facturación.';
+        Swal.fire('Error', msg, 'error');
+      }
+    });
+  }
+
+  anularCorteFacturacionConfirm(corte: any) {
+    Swal.fire({
+      title: '¿Anular corte de facturación?',
+      text: `El corte de ${corte.valorCorte?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} se marcará como anulado y se descontará del total facturado.`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sí, anular', confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.trackerService.anularCorteFacturacion(corte.id).subscribe({
+        next: () => {
+          this.cortesFacturacion.update(a => a.map((x: any) => x.id === corte.id ? { ...x, estado: 'ANULADO' } : x));
+          this.cargarProyectos(this.lineaActiva());
+          Swal.fire({ icon: 'success', title: 'Corte anulado', timer: 1500, showConfirmButton: false });
+        },
+        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo anular.', 'error')
+      });
+    });
+  }
+
+  eliminarCorteFacturacionConfirm(corte: any) {
+    Swal.fire({
+      title: '¿Eliminar corte de facturación?',
+      text: `El corte de ${corte.valorCorte?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} será eliminado permanentemente.`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar', confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.trackerService.eliminarCorteFacturacion(corte.id).subscribe({
+        next: () => {
+          this.cortesFacturacion.update(a => a.filter((x: any) => x.id !== corte.id));
+          this.cargarProyectos(this.lineaActiva());
+          Swal.fire({ icon: 'success', title: 'Corte eliminado', timer: 1500, showConfirmButton: false });
+        },
+        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
+      });
     });
   }
 
