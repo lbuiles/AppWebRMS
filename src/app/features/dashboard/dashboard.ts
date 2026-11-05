@@ -29,7 +29,13 @@ export class DashboardComponent implements OnInit {
 
   // ── Getters de rol ──────────────────────────────────────────────
   get esGerente(): boolean {
-    return this.authService.hasPermission('proyectos.editar');
+    // Punto 8 (semana 39, revisión final): 'proyectos.editar' NO debe otorgar
+    // visibilidad de proyectos ajenos -- ese permiso solo habilita EDITAR datos.
+    // La visibilidad total (ver todos los proyectos, no solo los propios) depende
+    // exclusivamente de 'proyectos.gerente'. Antes este getter incluía
+    // 'proyectos.editar' como alternativa, lo que hacía que cualquier usuario con
+    // permiso de edición viera los proyectos de sus compañeros indebidamente.
+    return this.authService.hasPermission('proyectos.gerente');
   }
 
   get usuarioActual() {
@@ -74,8 +80,17 @@ export class DashboardComponent implements OnInit {
     this.proyectosFiltrados().reduce((s, p) => s + (p.valorGasto || 0), 0)
   );
 
+  public kpiCostoOTs = computed(() =>
+    this.proyectosFiltrados().reduce((s, p) => s + (p.costoRealTotal || 0), 0)
+  );
+
+  // Punto 13 (semana 38/39): antes esta utilidad era Facturado - Gasto, sin
+  // descontar los Costos de OTs, por eso no coincidía con la utilidad correcta
+  // que se ve dentro de cada proyecto (Control PO). Usamos el campo `utilidad`
+  // que ya trae cada proyecto desde el backend (Facturado - Gasto - CostoOTs),
+  // sumado por proyecto, para que ambas vistas siempre coincidan.
   public kpiUtilidad = computed(() =>
-    this.kpiFacturado() - this.kpiGasto()
+    this.proyectosFiltrados().reduce((s, p) => s + (p.utilidad ?? (p.valorFacturado || 0) - (p.valorGasto || 0) - (p.costoRealTotal || 0)), 0)
   );
 
   public kpiMargen = computed(() => {

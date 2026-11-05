@@ -1,10 +1,10 @@
 <aside class="fixed md:static inset-y-0 left-0 z-50 h-screen w-64 bg-[#111827] text-white flex flex-col shadow-2xl transition-transform duration-300 transform md:translate-x-0"
        [class.-translate-x-full]="!(menuService.menuOpen$ | async)">
 
-  <div class="h-20 flex flex-col items-center justify-center border-b border-gray-800 px-6 relative">
+  <a routerLink="/panel" class="h-20 flex flex-col items-center justify-center border-b border-gray-800 px-6 relative cursor-pointer hover:bg-gray-800/60 transition-colors" title="Volver al Panel de Control">
     <img src="/logo_rms.png" alt="Logo RMS" class="h-10 w-auto mb-1 brightness-0 invert">
     <p class="text-[10px] text-[#ffb31c] uppercase tracking-widest font-bold">Diseño y Construcción</p>
-  </div>
+  </a>
 
   <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
     @for (item of menuItems(); track item.id) {

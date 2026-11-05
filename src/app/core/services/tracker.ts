@@ -1,14 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { Observable, map } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 
 // ==========================================
 // 1. QUERIES PRINCIPALES (PROYECTOS)
 // ==========================================
 const GET_PROYECTOS_POR_LINEA = gql`
   query GetProyectos($linea: String!) {
-    proyectos(where: { lineaNegocio: { eq: $linea } }, order: { fechaAsignacion: DESC }) {
+    proyectos(where: { and: [{ lineaNegocio: { eq: $linea } }, { archivado: { neq: true } }] }, order: { fechaAsignacion: DESC }) {
       id
       codigo
       nombre
@@ -28,9 +28,11 @@ const GET_PROYECTOS_POR_LINEA = gql`
       fechaEnvioPresupuesto
       fechaAprobacionPresupuesto
       fechaInicioActividades
+      fechaInicioObra
       fechaTentativaFin
       fechaFinalizacionActividades
       anticiposDirectos { id valorAnticipo concepto beneficiario estado fechaSolicitud idEgresoWorldOffice fechaPago solicitante { id nombre } aprobador { id nombre } }
+      cortesFacturacion { id valorCorte numeroFactura observaciones estado fechaCorte registradoPor { id nombre } }
       ordenesTrabajo { id consecutivo estado contratistaNombre contratistaNit tecnicoInterno { id nombre } }
       requisiciones { id consecutivo estado }
       supervisorCliente
@@ -67,9 +69,48 @@ const GET_PROYECTOS_POR_LINEA = gql`
   }
 `;
 
+const GET_PROYECTOS_ARCHIVADOS_POR_LINEA = gql`
+  query GetProyectosArchivados($linea: String!) {
+    proyectos(where: { and: [{ lineaNegocio: { eq: $linea } }, { archivado: { eq: true } }] }, order: { fechaArchivado: DESC }) {
+      id
+      codigo
+      nombre
+      estado
+      fechaArchivado
+      archivadoPor { nombre }
+      cliente { razonSocial }
+    }
+  }
+`;
+
+const ARCHIVAR_PROYECTO = gql`
+  mutation ArchivarProyecto($id: UUID!, $usuarioId: UUID!) {
+    archivarProyecto(id: $id, usuarioId: $usuarioId) {
+      id
+      archivado
+      fechaArchivado
+    }
+  }
+`;
+
+const REACTIVAR_PROYECTO = gql`
+  mutation ReactivarProyecto($id: UUID!) {
+    reactivarProyecto(id: $id) {
+      id
+      archivado
+    }
+  }
+`;
+
+const ELIMINAR_PROYECTO_DEFINITIVO = gql`
+  mutation EliminarProyectoDefinitivo($id: UUID!) {
+    eliminarProyectoDefinitivo(id: $id)
+  }
+`;
+
 const GET_PROYECTOS_TODAS_LINEAS = gql`
   query GetProyectosTodas {
-    proyectos(order: { fechaAsignacion: DESC }) {
+    proyectos(where: { archivado: { neq: true } }, order: { fechaAsignacion: DESC }) {
       id codigo nombre estado lineaNegocio valorOC valorFacturado valorGasto utilidad
       porcentajeAvanceFinanciero fechaAsignacion fechaRespuestaCliente fechaInicioActividades fechaFinalizacionActividades
       fechaTentativaFin numeroOC polizas centroDeCostos
@@ -80,6 +121,7 @@ const GET_PROYECTOS_TODAS_LINEAS = gql`
       ordenesTrabajo { id consecutivo estado contratistaNombre contratistaNit tecnicoInterno { id nombre } }
       requisiciones { id consecutivo estado }
       anticiposDirectos { id valorAnticipo concepto beneficiario estado fechaSolicitud idEgresoWorldOffice fechaPago solicitante { id nombre } aprobador { id nombre } }
+      cortesFacturacion { id valorCorte numeroFactura observaciones estado fechaCorte registradoPor { id nombre } }
     }
   }
 `;
@@ -181,6 +223,15 @@ const CREAR_PROYECTO = gql`
   }
 `;
 
+const ACTUALIZAR_NOMBRE_PROYECTO = gql`
+  mutation ActualizarNombreProyecto($id: UUID!, $nombre: String!) {
+    actualizarNombreProyecto(id: $id, nombre: $nombre) {
+      id
+      nombre
+    }
+  }
+`;
+
 const ACTUALIZAR_PROYECTO = gql`
   mutation ActualizarProyecto($id: UUID!, $input: ProyectoUpdateInput!) {
     updateProyecto(id: $id, input: $input) {
@@ -199,6 +250,7 @@ const ACTUALIZAR_PROYECTO = gql`
       fechaEnvioPresupuesto
       fechaAprobacionPresupuesto
       fechaInicioActividades
+      fechaInicioObra
       fechaTentativaFin
       fechaFinalizacionActividades
       supervisorCliente
@@ -307,7 +359,7 @@ const GET_DASHBOARD_RESUMEN = gql`
 
 const GET_TODOS_LOS_PROYECTOS = gql`
   query GetTodosLosProyectos {
-    proyectos(order: { fechaAsignacion: DESC }) {
+    proyectos(where: { archivado: { neq: true } }, order: { fechaAsignacion: DESC }) {
       id
       codigo
       nombre
@@ -317,6 +369,7 @@ const GET_TODOS_LOS_PROYECTOS = gql`
       valorOC
       valorFacturado
       valorGasto
+      costoRealTotal
       utilidad
       porcentajeAvanceFinanciero
       fechaAsignacion
@@ -391,12 +444,34 @@ const ELIMINAR_ANTICIPO_DIRECTO = gql`
   }
 `;
 
+const ADD_CORTE_FACTURACION = gql`
+  mutation AddCorteFacturacion($input: CorteFacturacionInput!) {
+    addCorteFacturacion(input: $input) {
+      id proyectoId valorCorte numeroFactura observaciones estado fechaCorte
+      registradoPor { id nombre }
+    }
+  }
+`;
+
+const ANULAR_CORTE_FACTURACION = gql`
+  mutation AnularCorteFacturacion($id: UUID!) {
+    anularCorteFacturacion(id: $id)
+  }
+`;
+
+const ELIMINAR_CORTE_FACTURACION = gql`
+  mutation EliminarCorteFacturacion($id: UUID!) {
+    eliminarCorteFacturacion(id: $id)
+  }
+`;
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class TrackerService {
   private apollo = inject(Apollo);
+  private http = inject(HttpClient);
 
   // ==========================================
   // MÉTODOS DEL TRACKER PRINCIPAL
@@ -445,6 +520,44 @@ export class TrackerService {
     }).pipe(
       map((result: any) => result.data?.updateProyecto)
     );
+  }
+
+  actualizarNombreProyecto(id: string, nombre: string): Observable<any> {
+    return this.apollo.mutate({
+      mutation: ACTUALIZAR_NOMBRE_PROYECTO,
+      variables: { id, nombre }
+    }).pipe(
+      map((result: any) => result.data?.actualizarNombreProyecto)
+    );
+  }
+
+  getProyectosArchivadosPorLinea(linea: string): Observable<any[]> {
+    return this.apollo.query<any>({
+      query: GET_PROYECTOS_ARCHIVADOS_POR_LINEA,
+      variables: { linea },
+      fetchPolicy: 'network-only'
+    }).pipe(map((r: any) => r.data?.proyectos || []));
+  }
+
+  archivarProyecto(id: string, usuarioId: string): Observable<any> {
+    return this.apollo.mutate({
+      mutation: ARCHIVAR_PROYECTO,
+      variables: { id, usuarioId }
+    }).pipe(map((result: any) => result.data?.archivarProyecto));
+  }
+
+  reactivarProyecto(id: string): Observable<any> {
+    return this.apollo.mutate({
+      mutation: REACTIVAR_PROYECTO,
+      variables: { id }
+    }).pipe(map((result: any) => result.data?.reactivarProyecto));
+  }
+
+  eliminarProyectoDefinitivo(id: string): Observable<boolean> {
+    return this.apollo.mutate({
+      mutation: ELIMINAR_PROYECTO_DEFINITIVO,
+      variables: { id }
+    }).pipe(map((result: any) => result.data?.eliminarProyectoDefinitivo));
   }
 
   agregarObservacion(proyectoId: string, usuarioId: string, texto: string): Observable<any> {
@@ -582,6 +695,21 @@ export class TrackerService {
       .pipe(map((r: any) => r.data?.eliminarAnticipoDirecto));
   }
 
+  addCorteFacturacion(input: any): Observable<any> {
+    return this.apollo.mutate({ mutation: ADD_CORTE_FACTURACION, variables: { input } })
+      .pipe(map((r: any) => r.data?.addCorteFacturacion));
+  }
+
+  anularCorteFacturacion(id: string): Observable<any> {
+    return this.apollo.mutate({ mutation: ANULAR_CORTE_FACTURACION, variables: { id } })
+      .pipe(map((r: any) => r.data?.anularCorteFacturacion));
+  }
+
+  eliminarCorteFacturacion(id: string): Observable<any> {
+    return this.apollo.mutate({ mutation: ELIMINAR_CORTE_FACTURACION, variables: { id } })
+      .pipe(map((r: any) => r.data?.eliminarCorteFacturacion));
+  }
+
   rechazarAnticipoDirecto(id: string): Observable<any> {
     return this.apollo.mutate({
       mutation: RECHAZAR_ANTICIPO_DIRECTO,
@@ -590,7 +718,20 @@ export class TrackerService {
   }
 
   notificarAlertaGerencia(proyectoId: string, codigo: string, nombre: string): Observable<any> {
-    const http = inject(HttpClient);
-    return http.post('/api/n8n/alerta-gerencia', { proyectoId, codigo, nombre, evento: 'ALERTA_MANUAL_GERENCIA' });
+    return this.http.post('/api/n8n/alerta-gerencia', { proyectoId, codigo, nombre, evento: 'ALERTA_MANUAL_GERENCIA' });
+  }
+
+  // --- Exportación a Excel (respaldo operativo) ---
+  descargarExcelProyectos(linea?: string): Observable<Blob> {
+    const token = localStorage.getItem('rms_token');
+    const headers = new HttpHeaders({
+      Authorization: token ? `Bearer ${token}` : ''
+    });
+    const params = linea ? new HttpParams().set('linea', linea) : undefined;
+    return this.http.get('/api/export/proyectos', {
+      headers,
+      params,
+      responseType: 'blob'
+    });
   }
 }

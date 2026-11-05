@@ -18,6 +18,10 @@ export class HeaderComponent {
 
   constructor(public menuService: MenuService) {}
 
+  irAHome() {
+    this.router.navigate(['/panel']);
+  }
+
   logout() {
     this.socialAuth.signOut().catch(() => {});
     // Limpiamos LocalStorage
