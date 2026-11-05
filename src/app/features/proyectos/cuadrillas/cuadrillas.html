@@ -1,4 +1,4 @@
-<div class="p-4 md:p-6 space-y-4">
+<div class="p-1 sm:p-2 md:p-4 space-y-4">
 
   <!-- Encabezado -->
   <div class="flex flex-wrap items-center justify-between gap-3">
@@ -7,7 +7,7 @@
       <h1 class="text-2xl font-bold text-[#1e3a8a]">Planeación y seguimiento de cuadrilla</h1>
       <p class="text-sm text-gray-500">{{ tituloRango() }}</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <button type="button" (click)="exportar()" [disabled]="exportando()"
               class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 disabled:opacity-50">
         {{ exportando() ? 'Generando…' : 'Exportar Excel' }}
@@ -28,7 +28,7 @@
   </div>
 
   <!-- Pestañas -->
-  <div class="flex flex-wrap gap-1 border-b border-gray-200">
+  <div class="flex gap-1 border-b border-gray-200 overflow-x-auto whitespace-nowrap">
     <button type="button" (click)="tab.set('agenda')" class="px-4 py-2 text-sm font-semibold rounded-t-lg"
             [class]="tab() === 'agenda' ? 'bg-[#1e3a8a] text-white' : 'text-gray-600 hover:bg-gray-100'">Agenda</button>
     <button type="button" (click)="tab.set('actividades')" class="px-4 py-2 text-sm font-semibold rounded-t-lg"
@@ -77,7 +77,42 @@
 
   <!-- AGENDA -->
   @if (tab() === 'agenda') {
-    <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+    <!-- Móvil: lista de días con actividades -->
+    <div class="md:hidden space-y-2">
+      @for (fila of semanas(); track $index) {
+        @for (dia of fila; track dia.fecha) {
+          @if (dia.enRango && (dia.acts.length > 0 || esHoy(dia.fecha))) {
+            <div class="bg-white rounded-xl border p-3" [class]="esHoy(dia.fecha) ? 'border-[#1e3a8a]' : 'border-gray-200'">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-gray-600">{{ nombreDia(dia.fecha) }} {{ dia.fecha }}@if (esHoy(dia.fecha)) { <span class="ml-1 text-[#1e3a8a]">· hoy</span> }</span>
+                @if (puedeProgramar) {
+                  <button type="button" (click)="nueva(dia.fecha)" class="px-2 text-[#1e3a8a] text-lg leading-none" title="Programar este día">+</button>
+                }
+              </div>
+              <div class="space-y-1.5">
+                @for (a of dia.acts; track a.id) {
+                  <button type="button" (click)="abrirDetalle(a)"
+                          class="w-full text-left rounded-lg border px-2.5 py-2 text-xs leading-tight"
+                          [class]="claseEstado(a.estado)"
+                          [class.border-dashed]="cruces().has(a.id)" [class.border-2]="cruces().has(a.id)"
+                          [class.line-through]="a.estadoPlanificacion === 'Cancelada'">
+                    <div class="font-bold">{{ a.tecnico?.nombre }}</div>
+                    <div>{{ esNoLaboral(a) ? etiquetaTipo(a.tipoRegistro) : (a.actividad || etiquetaTipo(a.tipoRegistro)) }}</div>
+                    @if (horario(a)) { <div class="opacity-70">{{ horario(a) }}</div> }
+                  </button>
+                } @empty {
+                  <div class="text-xs text-gray-400">Sin actividades.</div>
+                }
+              </div>
+            </div>
+          }
+        }
+      } @empty {
+        <div class="text-sm text-gray-400">No hay actividades en este periodo.</div>
+      }
+    </div>
+
+    <div class="hidden md:block bg-white rounded-xl border border-gray-200 overflow-x-auto">
       <div class="min-w-[56rem]">
         <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
           @for (d of diasSemana; track d) { <div class="px-2 py-2 text-xs font-bold text-gray-500 text-center">{{ d }}</div> }

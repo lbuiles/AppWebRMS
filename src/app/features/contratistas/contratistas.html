@@ -1,7 +1,7 @@
-<div class="min-h-screen bg-slate-50/50 p-6">
+<div class="min-h-screen bg-slate-50/50 p-3 sm:p-6">
 
   <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <div>
       <h1 class="text-xl font-black text-slate-800 uppercase tracking-widest">Contratistas y Proveedores</h1>
       <p class="text-xs text-slate-400 mt-0.5">Formulario RMS-ADM-FT-02 · Conocimiento de terceros</p>
@@ -17,7 +17,7 @@
   <div class="flex gap-3 mb-5 flex-wrap items-center">
     <input [value]="busqueda()" (input)="busqueda.set($any($event.target).value)"
            placeholder="Buscar por nombre o NIT..."
-           class="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white w-64 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-colors">
+           class="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white w-full sm:w-64 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-colors">
     @for (tipo of ['Todos','Contratista','Proveedor','Ambos']; track tipo) {
       <button (click)="filtroTipo.set(tipo)"
               class="text-xs font-medium px-3 py-2 rounded-lg border transition-colors"
@@ -426,7 +426,7 @@
 
         <!-- PASO 1: Clasificación -->
         @if (pasoActual() === 1) {
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Tipo de Tercero <span class="text-red-500">*</span></label>
               <select formControlName="tipoTercero" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400">
@@ -460,8 +460,8 @@
         @if (pasoActual() === 2) {
           @if (esNatural) {
             <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§1 Persona Natural</p>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="col-span-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
                 <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nombres y Apellidos completos <span class="text-red-500">*</span></label>
                 <input type="text" formControlName="nombreCompleto" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
@@ -506,7 +506,7 @@
                 <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Correo Electrónico</label>
                 <input type="email" formControlName="correoElectronico" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
-              <div class="col-span-2">
+              <div class="sm:col-span-2">
                 <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Dirección Residencia</label>
                 <input type="text" formControlName="direccionResidencia" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
@@ -533,8 +533,8 @@
             </div>
           } @else {
             <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§2 Persona Jurídica</p>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="col-span-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
                 <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nombre o Razón Social <span class="text-red-500">*</span></label>
                 <input type="text" formControlName="razonSocial" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold">
               </div>
@@ -546,7 +546,7 @@
                 <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">DV</label>
                 <input type="text" formControlName="digitoVerificador" maxlength="1" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
-              <div class="col-span-2">
+              <div class="sm:col-span-2">
                 <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Dirección</label>
                 <input type="text" formControlName="direccionEmpresa" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
@@ -591,9 +591,9 @@
                 <input type="url" formControlName="paginaWeb" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
               <!-- Representante Legal -->
-              <div class="col-span-2 pt-2 border-t border-slate-100">
+              <div class="sm:col-span-2 pt-2 border-t border-slate-100">
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">§2.1 Representante Legal</p>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Nombres y Apellidos</label>
                     <input type="text" formControlName="nombreRepresentanteLegal" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
@@ -606,7 +606,7 @@
               </div>
               <!-- Accionistas -->
               @if (esJuridica) {
-                <div class="col-span-2 pt-2 border-t border-slate-100">
+                <div class="sm:col-span-2 pt-2 border-t border-slate-100">
                   <div class="flex items-center justify-between mb-3">
                     <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">§2.2 Composición Accionaria</p>
                     <button type="button" (click)="agregarAccionista()"
@@ -619,8 +619,8 @@
                   }
                   <div formArrayName="accionistas" class="space-y-3">
                     @for (a of accionistas.controls; track $index) {
-                      <div [formGroupName]="$index" class="grid grid-cols-4 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <div class="col-span-2">
+                      <div [formGroupName]="$index" class="grid grid-cols-1 sm:grid-cols-4 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div class="sm:col-span-2">
                           <label class="block text-[8px] text-slate-400 mb-0.5">Nombre / Razón Social</label>
                           <input type="text" formControlName="nombreRazonSocial" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
                         </div>
@@ -634,7 +634,7 @@
                           <label class="block text-[8px] text-slate-400 mb-0.5">Número</label>
                           <input type="text" formControlName="numeroDocumento" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
                         </div>
-                        <div class="col-span-3 flex items-center gap-2">
+                        <div class="sm:col-span-3 flex items-center gap-2">
                           <input type="checkbox" formControlName="tieneCategoriaPEP" class="rounded text-red-500">
                           <label class="text-[10px] text-slate-600">¿Tiene categoría PEP?</label>
                         </div>
@@ -675,7 +675,7 @@
               </div>
             }
             @if (form.get('tieneVinculoPEP')?.value) {
-              <div class="grid grid-cols-3 gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
                 <div>
                   <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nombres y Apellidos</label>
                   <input type="text" formControlName="vinculoPEPNombre" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
@@ -700,7 +700,7 @@
         <!-- PASO 4: Tributaria -->
         @if (pasoActual() === 4) {
           <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§3 Información Tributaria</p>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             @for (opt of [
               {ctrl:'esAgenteRetencion', label:'23 - Agente de retención en ventas'},
               {ctrl:'esGranContribuyente', label:'13 - Gran Contribuyente'},
@@ -743,7 +743,7 @@
         @if (pasoActual() === 5) {
           <!-- Financiera -->
           <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">§4 Información Financiera</p>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             @for (campo of [
               {ctrl:'ingresosMensuales', label:'Ingresos mensuales ($)'},
               {ctrl:'egresosMensuales', label:'Egresos mensuales ($)'},
@@ -757,7 +757,7 @@
                 <input type="number" [formControlName]="campo.ctrl" min="0" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
               </div>
             }
-            <div class="col-span-2">
+            <div class="sm:col-span-2">
               <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1.5">Concepto otros ingresos</label>
               <input type="text" formControlName="conceptoOtrosIngresos" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
             </div>
@@ -788,7 +788,7 @@
             </div>
             <div formArrayName="cuentasBancarias" class="space-y-3">
               @for (c of cuentasBancarias.controls; track $index) {
-                <div [formGroupName]="$index" class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div [formGroupName]="$index" class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <div>
                     <label class="block text-[8px] text-slate-400 mb-0.5">Tipo <span class="text-red-400">*</span></label>
                     <select formControlName="tipoProducto" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white">
@@ -816,7 +816,7 @@
                     <button type="button" (click)="eliminarCuenta($index)"
                             class="text-[9px] text-red-600 bg-red-50 px-2 py-1.5 rounded-lg hover:bg-red-100 w-full">Eliminar</button>
                   </div>
-                  <div class="col-span-3">
+                  <div class="sm:col-span-3">
                     <label class="block text-[8px] text-slate-400 mb-0.5">Observaciones</label>
                     <input type="text" formControlName="observaciones" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
                   </div>
@@ -836,7 +836,7 @@
             </div>
             <div formArrayName="referencias" class="space-y-2">
               @for (r of referencias.controls; track $index) {
-                <div [formGroupName]="$index" class="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div [formGroupName]="$index" class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <div>
                     <label class="block text-[8px] text-slate-400 mb-0.5">Entidad <span class="text-red-400">*</span></label>
                     <input type="text" formControlName="entidad" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
@@ -849,7 +849,7 @@
                     <label class="block text-[8px] text-slate-400 mb-0.5">Teléfono</label>
                     <input type="text" formControlName="telefono" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs">
                   </div>
-                  <div class="col-span-3 flex justify-end">
+                  <div class="sm:col-span-3 flex justify-end">
                     <button type="button" (click)="eliminarReferencia($index)"
                             class="text-[9px] text-red-600 bg-red-50 px-2 py-1 rounded-lg hover:bg-red-100">Eliminar</button>
                   </div>

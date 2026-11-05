@@ -330,6 +330,7 @@ export class CuadrillasComponent implements OnInit {
 
   // ---------- Presentación ----------
   fechaCorta(f: string) { return parse(f).getDate(); }
+  nombreDia(f: string) { return this.diasSemana[(parse(f).getDay() + 6) % 7]; }
   esHoy(f: string) { return f === fmt(new Date()); }
   claseEstado(e: string) { return COLOR_ESTADO[e] ?? 'bg-gray-100 text-gray-700 border-gray-300'; }
   fecha(a: CuadrillaActividad) { return soloFecha(a.fecha); }

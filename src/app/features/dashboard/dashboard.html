@@ -1,7 +1,7 @@
 <div class="space-y-5 animate-fade-in-up font-sans">
 
   <!-- Header con filtros -->
-  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:flex-row gap-3 items-center justify-between relative overflow-hidden">
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between relative overflow-hidden">
     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#1e3a8a]"></div>
     <div class="flex items-center gap-3 pl-2">
       <div class="bg-blue-50 p-2 rounded-xl text-[#1e3a8a]">
@@ -14,16 +14,16 @@
         </p>
       </div>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2 w-full lg:w-auto">
       <select [value]="filtroDivision()" (change)="filtroDivision.set($any($event.target).value)"
-              class="border border-slate-200 bg-slate-50 text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+              class="flex-1 lg:flex-none min-w-[9rem] border border-slate-200 bg-slate-50 text-slate-700 py-2 lg:py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
         <option value="todas">Todas las divisiones</option>
         <option value="civiles">Construcción</option>
         <option value="energia">Energía</option>
         <option value="telecomunicaciones">O&M</option>
       </select>
       <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)"
-              class="border border-slate-200 bg-slate-50 text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+              class="flex-1 lg:flex-none min-w-[9rem] border border-slate-200 bg-slate-50 text-slate-700 py-2 lg:py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
         <option value="todos">Todos los estados</option>
         <option value="PENDIENTE">Pendiente</option>
         <option value="PENDIENTE_PRELIMINARES">Preliminares</option>
@@ -43,7 +43,7 @@
   } @else {
 
   <!-- KPIs -->
-  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Proyectos activos</p>
       <h3 class="text-3xl font-black text-slate-900">{{ kpiActivos() }}</h3>
@@ -51,22 +51,22 @@
     </div>
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Valor PO</p>
-      <h3 class="text-xl font-black text-slate-900">{{ kpiPresupuestado() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
+      <h3 class="text-xl font-black break-words text-slate-900">{{ kpiPresupuestado() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
       <p class="text-[10px] text-slate-400 mt-1">valor total Purchase Order</p>
     </div>
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Facturado</p>
-      <h3 class="text-xl font-black text-emerald-600">{{ kpiFacturado() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
+      <h3 class="text-xl font-black break-words text-emerald-600">{{ kpiFacturado() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
       <p class="text-[10px] text-slate-400 mt-1">ingresos reconocidos</p>
     </div>
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gasto Real</p>
-      <h3 class="text-xl font-black text-amber-600">{{ kpiGasto() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
+      <h3 class="text-xl font-black break-words text-amber-600">{{ kpiGasto() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
       <p class="text-[10px] text-slate-400 mt-1">costos ejecutados</p>
     </div>
-    <div class="bg-[#1e3a8a] p-4 rounded-2xl shadow-md flex flex-col">
+    <div class="bg-[#1e3a8a] p-4 rounded-2xl shadow-md flex flex-col sm:col-span-2 lg:col-span-1">
       <p class="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-1">Utilidad</p>
-      <h3 class="text-xl font-black text-white">{{ kpiUtilidad() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
+      <h3 class="text-xl font-black break-words text-white">{{ kpiUtilidad() | currency:'COP':'symbol-narrow':'1.0-0' }}</h3>
       <p class="text-[10px] text-blue-300 mt-1">margen {{ kpiMargen() }}%</p>
     </div>
   </div>
@@ -114,7 +114,7 @@
 
   <!-- Tabla de proyectos -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+    <div class="p-4 border-b border-slate-100 flex flex-wrap gap-2 justify-between items-center bg-slate-50/50">
       <div>
         <h3 class="text-sm font-bold text-slate-800">Desglose de Proyectos</h3>
         <p class="text-[10px] text-slate-400 mt-0.5">{{ tablaProyectos().length }} registros</p>
