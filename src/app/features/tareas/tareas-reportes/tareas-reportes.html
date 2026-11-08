@@ -148,7 +148,7 @@
   </div>
   } <!-- end @if tab mensual filtros -->
 
-  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
 
     <!-- ══════════════════════════════════════════════════════════════
          TAB: TENDENCIA MENSUAL
@@ -1043,8 +1043,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="kpi.icon"/>
               </svg>
             </div>
-            <div>
-              <p class="text-xl font-black text-gray-900">{{ kpi.valor }}</p>
+            <div class="min-w-0">
+              <p class="text-xl font-black text-gray-900 break-words">{{ kpi.valor }}</p>
               <p class="text-xs text-gray-500">{{ kpi.label }}</p>
             </div>
           </div>

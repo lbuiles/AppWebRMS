@@ -402,7 +402,7 @@
       </div>
 
       <!-- Barra de pasos -->
-      <div class="flex gap-0 border-b border-slate-100">
+      <div class="flex gap-0 border-b border-slate-100 overflow-x-auto">
         @for (paso of [
           {n:1, label:'Clasificación'},
           {n:2, label:'Identidad'},
@@ -412,7 +412,7 @@
           {n:6, label:'Documentos'}
         ]; track paso.n) {
           <button (click)="irPaso(paso.n)"
-                  class="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2"
+                  class="flex-1 shrink-0 whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2"
                   [ngClass]="pasoActual() === paso.n
                     ? 'border-indigo-500 text-indigo-600 bg-indigo-50/50'
                     : 'border-transparent text-slate-400 hover:text-slate-600'">
