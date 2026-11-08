@@ -29,7 +29,7 @@ export class AdministracionComponent implements OnInit {
 
     // Solo mostramos lo que el usuario tiene permitido ver
     return modulos
-      .filter(m => this.auth.hasModule(m.slugRaiz) && m.slugRaiz.startsWith('admin.'))
+      .filter(m => m.slugRaiz.startsWith('admin.') && this.puedeVer(m.slugRaiz))
       .map(m => {
         // Buscamos si tenemos estilos definidos para este slug,
         // si no, ponemos uno por defecto (indigo)
@@ -47,9 +47,24 @@ export class AdministracionComponent implements OnInit {
       });
   });
 
+  /** Módulos de administración cuyo acceso depende de un permiso de otro módulo */
+  private permisoPorSlug: Record<string, string> = {
+    'admin.cuadrillas': 'proyectos.cuadrillas.config'
+  };
+
+  private puedeVer(slug: string): boolean {
+    const permiso = this.permisoPorSlug[slug];
+    return permiso ? this.auth.hasPermission(permiso) : this.auth.hasModule(slug);
+  }
+
   // Diccionario para mantener tus textos y colores bonitos
   // (Esto es temporal hasta que decidas llevar descripción/color a la DB)
   private configuracionVisual: any = {
+    'admin.cuadrillas': {
+      descripcion: 'Reglas de fechas, base de horas, festivos, compensatorios y cuadrillas.',
+      color: 'text-cyan-600',
+      bg: 'bg-cyan-50'
+    },
     'admin.clientes': {
       descripcion: 'Gestiona las empresas contratantes, NITs y contactos principales.',
       color: 'text-blue-600',

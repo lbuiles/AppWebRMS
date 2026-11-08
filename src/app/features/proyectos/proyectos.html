@@ -3,12 +3,12 @@
   <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#1e3a8a]"></div>
 
-    <div class="flex items-center gap-4">
-      <div class="bg-blue-50 p-3 rounded-xl text-[#1e3a8a] shadow-inner">
+    <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+      <div class="bg-blue-50 p-3 rounded-xl text-[#1e3a8a] shadow-inner shrink-0">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
       </div>
-      <div>
-        <h2 class="text-2xl font-black text-[#1e3a8a] tracking-wide uppercase">Divisiones Operativas</h2>
+      <div class="min-w-0">
+        <h2 class="text-lg sm:text-2xl font-black text-[#1e3a8a] tracking-wide uppercase break-words">Divisiones Operativas</h2>
         <p class="text-xs text-gray-500 font-medium mt-1">Selecciona la línea de negocio para gestionar sus proyectos</p>
       </div>
     </div>
@@ -68,6 +68,24 @@
         </div>
         }
       }
+    </div>
+  }
+
+  <!-- Planeación y seguimiento de cuadrilla -->
+  @if (puedeCuadrillas) {
+    <div class="max-w-2xl mx-auto w-full">
+      <a routerLink="/proyectos/cuadrillas" class="bg-white rounded-2xl p-6 flex items-center justify-between shadow-sm border border-gray-100 hover:shadow-xl hover:border-[#1e3a8a] transition-all group">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-[#1e3a8a] flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <p class="font-black text-gray-800 group-hover:text-[#1e3a8a]">Planeación y seguimiento de cuadrilla</p>
+            <p class="text-xs text-gray-500">Agenda, actividades, KPI y compensatorios de los técnicos</p>
+          </div>
+        </div>
+        <span class="text-[#1e3a8a] font-bold">→</span>
+      </a>
     </div>
   }
 

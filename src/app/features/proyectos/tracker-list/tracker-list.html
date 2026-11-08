@@ -1,6 +1,6 @@
 <div class="space-y-6 animate-fade-in-up font-sans h-full flex flex-col">
 
-  <div class="bg-white p-6 rounded-2xl shadow-subtle-card border border-slate-100 flex items-center justify-between relative overflow-hidden shrink-0">
+  <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-subtle-card border border-slate-100 flex flex-wrap items-center justify-between gap-3 relative overflow-hidden shrink-0">
     <div class="absolute left-0 top-0 bottom-0 w-1.5" [ngClass]="configVisual().bgColor"></div>
 
     <div class="flex items-center gap-4 pl-2">
@@ -25,7 +25,7 @@
     </div>
   </div>
 
-  <div class="flex gap-6 border-b border-slate-200 px-6 shrink-0 bg-white shadow-subtle-card rounded-t-2xl">
+  <div class="flex gap-4 sm:gap-6 border-b border-slate-200 px-3 sm:px-6 shrink-0 bg-white shadow-subtle-card rounded-t-2xl overflow-x-auto whitespace-nowrap">
     <button (click)="vistaPrincipal.set('portafolio')"
             class="py-4 text-sm font-black tracking-wide border-b-2 transition-colors flex items-center gap-2"
             [ngClass]="vistaPrincipal() === 'portafolio' ? ('border-' + configVisual().bgColor.replace('bg-', '') + ' ' + configVisual().textoColor) : 'border-transparent text-slate-400 hover:text-slate-700'">
@@ -55,7 +55,7 @@
 
       @if (vistaPrincipal() === 'portafolio') {
         <!-- Barra de herramientas: vista por rol + toggle finalizados -->
-        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white gap-3">
+        <div class="flex flex-wrap items-center justify-between px-4 py-2 border-b border-slate-100 bg-white gap-2 sm:gap-3">
           <!-- Vista activa -->
           <div class="flex items-center gap-2">
             @if (!esGerente) {
@@ -187,7 +187,7 @@
               <tr>
                 <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Código y/o Proyecto</th>
                 <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Actividad</th>
-                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Cliente</th>
+                <th class="hidden sm:table-cell px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Cliente</th>
                 <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-center">Estado</th>
 
                 @if (esAdminFase()) {
@@ -195,8 +195,8 @@
                   <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-right">Facturado</th>
                 }
 
-                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Responsable</th>
-                <th class="px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-center">Fecha de Asignación</th>
+                <th class="hidden md:table-cell px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-left">Responsable</th>
+                <th class="hidden lg:table-cell px-4 py-2.5 text-[11px] font-semibold text-slate-500 text-center">Fecha de Asignación</th>
               </tr>
             </thead>
             <tbody class="text-sm text-slate-700 divide-y divide-slate-100">
@@ -206,7 +206,7 @@
 
                   <td class="px-4 py-2.5"><span class="text-xs font-bold" [ngClass]="configVisual().textoColor">{{ p.codigo }}</span></td>
                   <td class="px-4 py-2.5 font-medium text-slate-900 text-sm">{{ p.nombre }}</td>
-                  <td class="px-4 py-2.5 text-xs text-slate-400">{{ p.cliente?.razonSocial || 'Sin asignar' }}</td>
+                  <td class="hidden sm:table-cell px-4 py-2.5 text-xs text-slate-400">{{ p.cliente?.razonSocial || 'Sin asignar' }}</td>
                   <td class="px-4 py-2.5 text-center">
                     <span class="px-2 py-0.5 rounded text-[11px] font-medium"
                           [ngClass]="obtenerClaseEstado(p.estado)">
@@ -219,7 +219,7 @@
                     <td class="px-4 py-2.5 text-right text-xs font-medium text-emerald-600">{{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                   }
 
-                  <td class="px-4 py-2.5">
+                  <td class="hidden md:table-cell px-4 py-2.5">
                     <div class="flex items-center gap-2">
                       <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold bg-slate-100 text-slate-600 shrink-0">
                         {{ p.responsable?.nombre?.charAt(0) || '?' }}
@@ -227,7 +227,7 @@
                       <span class="text-xs text-slate-600">{{ p.responsable?.nombre || 'Sin asignar' }}</span>
                     </div>
                   </td>
-                  <td class="px-4 py-2.5 text-center text-xs text-slate-500">
+                  <td class="hidden lg:table-cell px-4 py-2.5 text-center text-xs text-slate-500">
                     {{ p.fechaAsignacion | date:'dd/MM/yyyy' }}
                   </td>
                 </tr>
@@ -443,7 +443,7 @@
 
     @if (proyectoSeleccionado(); as p) {
 
-      <div class="px-8 py-5 border-b border-slate-200 flex justify-between items-center shrink-0 bg-white shadow-subtle-card z-20">
+      <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-200 flex justify-between items-center gap-3 shrink-0 bg-white shadow-subtle-card z-20">
         <div class="flex items-center gap-5">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-heading font-black text-lg shadow-inner"
                [ngClass]="configVisual().bgClaro + ' ' + configVisual().textoColor">
@@ -474,11 +474,11 @@
         </button>
       </div>
 
-      <div [formGroup]="actualizarForm" class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+      <div [formGroup]="actualizarForm" class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-y-auto lg:overflow-hidden">
 
-        <div class="flex-1 flex flex-col min-w-0 bg-slate-50/50 relative">
+        <div class="flex-none lg:flex-1 flex flex-col min-w-0 lg:min-h-0 bg-slate-50/50 relative">
 
-          <div class="flex border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 shrink-0 z-10">
+          <div class="flex border-b border-slate-200 bg-white/80 backdrop-blur-md px-3 sm:px-8 shrink-0 z-10 overflow-x-auto whitespace-nowrap">
             <button type="button" (click)="vistaPanel.set('resumen')"
                     class="px-4 py-3.5 text-xs font-semibold tracking-wide border-b-2 transition-all"
                     [class.border-blue-600]="vistaPanel() === 'resumen'" [class.text-blue-700]="vistaPanel() === 'resumen'"
@@ -514,7 +514,7 @@
             </button>
           </div>
 
-          <div class="flex-1 overflow-y-auto p-8">
+          <div class="flex-1 overflow-y-auto p-4 sm:p-8">
 
             @if (vistaPanel() === 'resumen') {
               <div class="max-w-3xl mx-auto animate-fade-in-up">
@@ -1296,7 +1296,7 @@
                 </div>
 
                 <!-- Sub-flujos resumen -->
-                <div class="grid grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div class="bg-white rounded-2xl border border-slate-200 shadow-subtle-card p-3 text-center">
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">OTs</p>
                     <p class="text-2xl font-heading font-black" [ngClass]="configVisual().textoColor">{{ p.ordenesTrabajo?.length || 0 }}</p>
@@ -1528,7 +1528,7 @@
           </div>
         </div>
 
-        <div class="w-full lg:w-[360px] bg-white border-l border-slate-200 overflow-y-auto shrink-0 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] z-20">
+        <div class="w-full lg:w-[360px] bg-white border-t lg:border-t-0 lg:border-l border-slate-200 lg:overflow-y-auto shrink-0 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] z-20">
           <div class="p-6 space-y-8">
 
             <div>
@@ -1819,10 +1819,10 @@
       </div>
 
       <div class="flex-1 overflow-y-auto">
-        <div class="p-5 grid grid-cols-5 gap-5">
+        <div class="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-5 gap-5">
 
           <!-- Columna izquierda: Formulario nueva OT -->
-          <form [formGroup]="otForm" (ngSubmit)="guardarOT()" class="col-span-2 space-y-4">
+          <form [formGroup]="otForm" (ngSubmit)="guardarOT()" class="md:col-span-2 space-y-4">
             <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">Nueva OT</p>
 
             <div>
@@ -1893,7 +1893,7 @@
           </form>
 
           <!-- Columna derecha: Listado de OTs existentes -->
-          <div class="col-span-3 space-y-3">
+          <div class="md:col-span-3 space-y-3">
             <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">
               OTs del Proyecto
               <span class="ml-2 text-slate-400 font-normal normal-case">{{ ordenesTrabajo().length }} registros</span>
@@ -2054,10 +2054,10 @@
       </div>
 
       <div class="flex-1 overflow-y-auto">
-        <div class="p-5 grid grid-cols-5 gap-5">
+        <div class="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-5 gap-5">
 
           <!-- Formulario nueva REQ -->
-          <form [formGroup]="reqForm" (ngSubmit)="guardarReq()" class="col-span-2 space-y-4">
+          <form [formGroup]="reqForm" (ngSubmit)="guardarReq()" class="md:col-span-2 space-y-4">
             <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">Nueva Requisición</p>
 
             <div>
@@ -2082,7 +2082,7 @@
           </form>
 
           <!-- Listado de REQs existentes -->
-          <div class="col-span-3 space-y-3">
+          <div class="md:col-span-3 space-y-3">
             <p class="text-[10px] font-medium text-slate-400 border-b border-slate-100 pb-2">
               Requisiciones del Proyecto
               <span class="ml-2 text-slate-400 font-normal normal-case">{{ requisiciones().length }} registros</span>

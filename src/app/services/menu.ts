@@ -69,7 +69,7 @@ export class MenuService {
   }
 
   close() {
-    this.menuOpen.next(false);
+    if (this.menuOpen.value) this.menuOpen.next(false);
   }
 
   // --- Lógica de Datos ---

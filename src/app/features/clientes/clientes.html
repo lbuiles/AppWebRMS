@@ -1,8 +1,8 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in font-sans h-full flex flex-col">
+<div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6 animate-fade-in font-sans h-full flex flex-col">
 
   <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-200 pb-5 shrink-0">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Directorio de Clientes</h1>
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Directorio de Clientes</h1>
       <p class="text-gray-500 mt-1 text-sm font-medium">Gestiona las empresas contratantes, sus sedes y representantes.</p>
     </div>
 
@@ -312,7 +312,7 @@
       <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="!loadingService.isLoading() && cerrarModal()"></div>
 
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
-        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex justify-between items-center gap-3 bg-gray-50">
           <div>
             <h3 class="text-xl font-bold text-[#1e3a8a] tracking-tight">
               {{ clienteIdEnEdicion() ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}
@@ -324,12 +324,12 @@
           </button>
         </div>
 
-        <div class="overflow-y-auto p-6 bg-white space-y-8">
+        <div class="overflow-y-auto p-4 sm:p-6 bg-white space-y-8">
           <form [formGroup]="clienteForm" (ngSubmit)="guardarCliente()" class="space-y-6">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <h4 class="col-span-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] border-b pb-1">Datos de la Empresa</h4>
-              <div class="col-span-2">
+              <h4 class="md:col-span-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] border-b pb-1">Datos de la Empresa</h4>
+              <div class="md:col-span-2">
                 <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Razón Social *</label>
                 <input formControlName="razonSocial" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none uppercase text-sm font-semibold tracking-wide transition-all">
               </div>
@@ -348,11 +348,11 @@
                 <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Teléfono Principal *</label>
                 <input formControlName="telefono" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm font-semibold transition-all">
               </div>
-              <div class="col-span-2">
+              <div class="md:col-span-2">
                 <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Emails Corporativos *</label>
                 <input formControlName="email" type="text" placeholder="separados por coma" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#ffb31c] outline-none text-sm font-semibold transition-all lowercase">
               </div>
-              <div class="col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Departamento *</label>
                   <select formControlName="departamento" (change)="onDepartamentoChange($event)" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold outline-none">
@@ -372,14 +372,14 @@
                   <input formControlName="direccion" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold uppercase outline-none transition-all">
                 </div>
               </div>
-              <div class="col-span-2">
+              <div class="md:col-span-2">
                 <label class="block text-[11px] font-bold text-gray-600 mb-1 tracking-wider uppercase">Representante / Contacto Principal *</label>
                 <input formControlName="contactoPrincipal" type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold uppercase outline-none transition-all">
               </div>
             </div>
 
-            <div class="p-5 bg-blue-50/40 rounded-2xl border border-blue-100 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <h4 class="col-span-4 text-[11px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+            <div class="p-3 sm:p-5 bg-blue-50/40 rounded-2xl border border-blue-100 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <h4 class="md:col-span-4 text-[11px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2.5"/></svg>
                 Condiciones Comerciales
               </h4>
@@ -439,8 +439,8 @@
               }
             </div>
 
-            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <h4 class="col-span-4 text-[11px] font-bold text-slate-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+            <div class="p-3 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <h4 class="md:col-span-4 text-[11px] font-bold text-slate-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2.5"/></svg>
                 Configuración Operativa
               </h4>
