@@ -44,7 +44,7 @@ import {
     </div>
     <button type="button" (click)="guardarCfg()" class="px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold">Guardar configuración</button>
 
-    <table class="min-w-full text-sm">
+    <div class="overflow-x-auto"><table class="min-w-full text-sm">
       <thead class="text-xs uppercase text-gray-500"><tr><th class="text-left px-2 py-1">Aplica a</th><th class="text-right px-2 py-1">H/sem</th><th class="text-right px-2 py-1">Días</th><th class="text-left px-2 py-1">Desde</th><th></th></tr></thead>
       <tbody>
         @for (c of configs(); track c.id) {
@@ -57,14 +57,14 @@ import {
           </tr>
         }
       </tbody>
-    </table>
+    </table></div>
   </section>
 
   <!-- Compensatorios -->
   <section class="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
     <h3 class="font-bold text-[#1e3a8a]">Compensatorios</h3>
     <p class="text-xs text-gray-500">Los días gastados se calculan con los registros tipo "Descanso"; aquí se edita lo acumulado.</p>
-    <table class="min-w-full text-sm">
+    <div class="overflow-x-auto"><table class="min-w-full text-sm">
       <thead class="text-xs uppercase text-gray-500"><tr><th class="text-left px-2 py-1">Técnico</th><th class="text-right px-2 py-1">Acumulados</th><th class="text-right px-2 py-1">Gastados</th><th class="text-right px-2 py-1">Pendientes</th></tr></thead>
       <tbody>
         @for (c of compensatorios(); track c.tecnicoId) {
@@ -79,7 +79,7 @@ import {
           </tr>
         }
       </tbody>
-    </table>
+    </table></div>
   </section>
 
   <!-- Festivos -->
@@ -90,9 +90,9 @@ import {
         @for (a of anios; track a) { <option [value]="a">{{ a }}</option> }
       </select>
     </div>
-    <div class="flex gap-2 text-sm">
+    <div class="flex flex-wrap gap-2 text-sm">
       <input type="date" [(ngModel)]="nuevoFestivo.fecha" class="border border-gray-300 rounded-lg px-2 py-1.5">
-      <input type="text" [(ngModel)]="nuevoFestivo.nombre" placeholder="Nombre" class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5">
+      <input type="text" [(ngModel)]="nuevoFestivo.nombre" placeholder="Nombre" class="flex-1 min-w-[10rem] border border-gray-300 rounded-lg px-2 py-1.5">
       <button type="button" (click)="agregarFestivo()" class="px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold">Agregar</button>
     </div>
     <ul class="text-sm divide-y divide-gray-100 max-h-72 overflow-y-auto">
@@ -108,8 +108,8 @@ import {
   <!-- Cuadrillas -->
   <section class="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
     <h3 class="font-bold text-[#1e3a8a]">Cuadrillas y miembros</h3>
-    <div class="flex gap-2 text-sm">
-      <input type="text" [(ngModel)]="nuevaCuadrilla" placeholder="Nombre de nueva cuadrilla" class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5">
+    <div class="flex flex-wrap gap-2 text-sm">
+      <input type="text" [(ngModel)]="nuevaCuadrilla" placeholder="Nombre de nueva cuadrilla" class="flex-1 min-w-[10rem] border border-gray-300 rounded-lg px-2 py-1.5">
       <button type="button" (click)="crearCuadrilla()" class="px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold">Crear</button>
     </div>
     @for (c of cuadrillas(); track c.id) {
