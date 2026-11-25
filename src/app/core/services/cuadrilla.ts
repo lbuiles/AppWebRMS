@@ -53,7 +53,7 @@ export interface CuadrillaActividad {
 export interface CuadrillaTecnico { id: string; nombre: string; cuadrillas: string[]; }
 
 export interface CuadrillaProyectoOpcion {
-  id: string; codigo: string; nombre: string; lineaNegocio: string;
+  id: string; codigo: string; nombre: string; lineaNegocio: string; estado?: string;
   clienteId: string; clienteNombre: string; supervisorCliente?: string | null;
 }
 
@@ -75,7 +75,26 @@ export interface CuadrillaConfigHoras {
 
 export interface CuadrillaCopiaResultado { copiadas: number; omitidas: number; detalle?: string | null; }
 
-export interface CuadrillaParametros { diasMaxRetroactivo: number; }
+export interface CuadrillaParametros { diasMaxRetroactivo: number; horasLibresAlerta: number; }
+
+/** Áreas de la actividad (se guardan en lineaNegocio). */
+export const AREAS = [
+  { v: 'energia', t: 'ENERGÍA' },
+  { v: 'telecomunicaciones', t: 'O&M' },
+  { v: 'civiles', t: 'CONSTRUCCIÓN' },
+  { v: 'rms', t: 'RMS (interno)' },
+];
+export function areaEtiqueta(v?: string | null): string {
+  return AREAS.find(a => a.v === (v || '').toLowerCase())?.t ?? '';
+}
+
+export type TipoAlerta = 'VENCIDA' | 'BLOQUEADA' | 'CRUCE' | 'SIN_ASIGNACION' | 'DISPONIBLE' | 'TIEMPO_LIBRE';
+export interface CuadrillaAlerta {
+  tipo: TipoAlerta; fecha: string; tecnicoId: string; tecnicoNombre: string;
+  actividadId?: string | null; proyecto?: string | null; actividad?: string | null;
+  horasProgramadas?: number | null; jornada?: number | null; horasLibres?: number | null; detalle: string;
+}
+export interface CuadrillaAlertasResult { desde: string; hasta: string; umbralHorasLibres: number; alertas: CuadrillaAlerta[]; }
 
 export interface CuadrillaFestivo { fecha: string; nombre: string; }
 
@@ -199,7 +218,7 @@ const GET_CUADRILLAS = gql`
 
 const GET_PROYECTOS_DISPONIBLES = gql`
   query CuadrillaProyectosDisponibles {
-    cuadrillaProyectosDisponibles { id codigo nombre lineaNegocio clienteId clienteNombre supervisorCliente }
+    cuadrillaProyectosDisponibles { id codigo nombre lineaNegocio estado clienteId clienteNombre supervisorCliente }
   }
 `;
 
@@ -315,12 +334,21 @@ const GUARDAR_CONFIG_HORAS = gql`
 `;
 
 const GET_PARAMETROS = gql`
-  query CuadrillaParametros { cuadrillaParametros { diasMaxRetroactivo } }
+  query CuadrillaParametros { cuadrillaParametros { diasMaxRetroactivo horasLibresAlerta } }
+`;
+
+const GET_ALERTAS = gql`
+  query CuadrillaAlertas($desde: DateTime!, $hasta: DateTime!) {
+    cuadrillaAlertas(desde: $desde, hasta: $hasta) {
+      desde hasta umbralHorasLibres
+      alertas { tipo fecha tecnicoId tecnicoNombre actividadId proyecto actividad horasProgramadas jornada horasLibres detalle }
+    }
+  }
 `;
 
 const GUARDAR_PARAMETROS = gql`
-  mutation GuardarCuadrillaParametros($diasMaxRetroactivo: Int!) {
-    guardarCuadrillaParametros(diasMaxRetroactivo: $diasMaxRetroactivo) { diasMaxRetroactivo }
+  mutation GuardarCuadrillaParametros($diasMaxRetroactivo: Int!, $horasLibresAlerta: Float) {
+    guardarCuadrillaParametros(diasMaxRetroactivo: $diasMaxRetroactivo, horasLibresAlerta: $horasLibresAlerta) { diasMaxRetroactivo horasLibresAlerta }
   }
 `;
 
@@ -466,10 +494,14 @@ export class CuadrillaService {
     }, 'guardarCuadrillaConfigHoras');
   }
   getParametros(): Observable<CuadrillaParametros> {
-    return this.q(GET_PARAMETROS, {}, 'cuadrillaParametros', { diasMaxRetroactivo: 7 });
+    return this.q(GET_PARAMETROS, {}, 'cuadrillaParametros', { diasMaxRetroactivo: 7, horasLibresAlerta: 1 });
   }
-  guardarParametros(diasMaxRetroactivo: number): Observable<CuadrillaParametros> {
-    return this.m(GUARDAR_PARAMETROS, { diasMaxRetroactivo }, 'guardarCuadrillaParametros');
+  guardarParametros(diasMaxRetroactivo: number, horasLibresAlerta?: number | null): Observable<CuadrillaParametros> {
+    return this.m(GUARDAR_PARAMETROS, { diasMaxRetroactivo, horasLibresAlerta: horasLibresAlerta ?? null }, 'guardarCuadrillaParametros');
+  }
+  /** Alertas de programación del rango (vencidas, bloqueadas, cruces, sin asignación, disponibilidad). */
+  getAlertas(desde: string, hasta: string): Observable<CuadrillaAlertasResult | null> {
+    return this.q(GET_ALERTAS, { desde: toIsoDate(desde), hasta: toIsoDate(hasta) }, 'cuadrillaAlertas', null);
   }
   eliminarConfigHoras(id: string): Observable<boolean> {
     return this.m(ELIMINAR_CONFIG_HORAS, { id }, 'eliminarCuadrillaConfigHoras');

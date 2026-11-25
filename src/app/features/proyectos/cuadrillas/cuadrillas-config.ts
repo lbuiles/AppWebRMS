@@ -16,10 +16,12 @@ import {
 
   <!-- Parámetros generales -->
   <section class="bg-white rounded-xl border border-gray-200 p-4 space-y-3 xl:col-span-2">
-    <h3 class="font-bold text-[#1e3a8a]">Reglas de fechas</h3>
+    <h3 class="font-bold text-[#1e3a8a]">Reglas de fechas y alertas</h3>
     <div class="flex flex-wrap items-end gap-3 text-sm">
       <label class="block"><span class="text-xs text-gray-500">Días hacia atrás permitidos para crear / editar / eliminar actividades</span>
         <input type="number" min="0" max="365" [(ngModel)]="diasRetro" class="w-28 border border-gray-300 rounded-lg px-2 py-1.5"></label>
+      <label class="block"><span class="text-xs text-gray-500">Horas libres en la jornada para generar alerta</span>
+        <input type="number" min="0.25" max="12" step="0.25" [(ngModel)]="horasLibres" class="w-28 border border-gray-300 rounded-lg px-2 py-1.5"></label>
       <button type="button" (click)="guardarParametros()" class="px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold">Guardar</button>
     </div>
     <p class="text-xs text-gray-500">Quien programa puede trabajar con fechas desde hoy menos estos días. Más atrás solo quien tiene permiso de configuración. La fecha de hoy y el futuro son libres.</p>
@@ -147,6 +149,7 @@ export class CuadrillasConfigComponent implements OnInit {
   cuadrillas = signal<Cuadrilla[]>([]);
 
   diasRetro = 7;
+  horasLibres = 1;
   cfg = { tecnicoId: '', horasSemanales: 42, diasLaborales: 6, vigenteDesde: '' };
   nuevoFestivo = { fecha: '', nombre: '' };
   nuevaCuadrilla = '';
@@ -159,7 +162,7 @@ export class CuadrillasConfigComponent implements OnInit {
   private err = (e: any) => Swal.fire('Error', mensajeError(e), 'error');
 
   cargarTodo() {
-    this.svc.getParametros().subscribe(p => this.diasRetro = p.diasMaxRetroactivo);
+    this.svc.getParametros().subscribe(p => { this.diasRetro = p.diasMaxRetroactivo; this.horasLibres = p.horasLibresAlerta ?? 1; });
     this.svc.getCompensatorios().subscribe(c => this.compensatorios.set(c));
     this.svc.getConfigHoras().subscribe(c => this.configs.set(c));
     this.svc.getCuadrillas().subscribe(c => this.cuadrillas.set(c));
@@ -172,7 +175,11 @@ export class CuadrillasConfigComponent implements OnInit {
     if (!Number.isInteger(n) || n < 0 || n > 365) {
       Swal.fire('Valor no válido', 'Ingresa un número entero entre 0 y 365.', 'warning'); return;
     }
-    this.svc.guardarParametros(n).subscribe({
+    const h = Number(this.horasLibres);
+    if (isNaN(h) || h < 0.25 || h > 12) {
+      Swal.fire('Valor no válido', 'Las horas libres para alertar deben estar entre 0.25 y 12.', 'warning'); return;
+    }
+    this.svc.guardarParametros(n, h).subscribe({
       next: () => Swal.fire({ icon: 'success', title: 'Guardado', timer: 1200, showConfirmButton: false }),
       error: this.err
     });

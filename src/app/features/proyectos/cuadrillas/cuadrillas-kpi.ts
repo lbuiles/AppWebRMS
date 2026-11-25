@@ -1,4 +1,4 @@
-import { Component, inject, input, signal, effect } from '@angular/core';
+import { Component, inject, input, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
@@ -89,18 +89,48 @@ import {
           <button type="button" (click)="marcarManual()" class="px-3 py-1.5 rounded-lg bg-[#ffb31c] text-[#1e3a8a] text-xs font-bold">+ Marcar día improductivo</button>
         }
       </div>
+      <!-- Filtros del listado -->
+      <div class="space-y-2">
+        <div class="flex flex-wrap gap-1.5">
+          @for (e of estadosDia; track e.v) {
+            <button type="button" (click)="dEstado.set(e.v); dLimite.set(15)"
+                    class="px-2.5 py-1 rounded-full border text-xs font-semibold"
+                    [class]="dEstado() === e.v ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]' : 'bg-white text-gray-600 border-gray-300'">
+              {{ e.t }} ({{ conteoEstado()[e.v] }})
+            </button>
+          }
+        </div>
+        <div class="grid grid-cols-2 md:flex md:flex-wrap gap-2">
+          <select [ngModel]="dTecnico()" (ngModelChange)="dTecnico.set($event); dLimite.set(15)" class="min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+            <option value="">Todos los técnicos</option>
+            @for (t of tecnicosDias(); track t.id) { <option [value]="t.id">{{ t.nombre }} ({{ t.n }})</option> }
+          </select>
+          <select [ngModel]="dMotivo()" (ngModelChange)="dMotivo.set($event); dLimite.set(15)" class="min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+            <option value="">Todos los motivos</option>
+            @for (m of motivosDia; track m.v) { <option [value]="m.v">{{ m.t }}</option> }
+          </select>
+          <input type="date" [ngModel]="dFecha()" (ngModelChange)="dFecha.set($event); dLimite.set(15)" title="Filtrar por fecha"
+                 class="min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+          @if (dTecnico() || dMotivo() || dFecha()) {
+            <button type="button" (click)="limpiarFiltrosDias()" class="text-xs font-semibold text-gray-500 hover:text-red-600 px-2">Limpiar filtros</button>
+          }
+        </div>
+        <div class="text-xs text-gray-500">{{ diasFiltrados().length }} día(s) · más recientes primero</div>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead class="text-xs uppercase text-gray-500">
-            <tr><th class="px-2 py-1 text-left">Fecha</th><th class="px-2 py-1 text-left">Técnico</th><th class="px-2 py-1 text-left">Origen</th><th class="px-2 py-1 text-left">Motivo</th><th></th></tr>
+            <tr><th class="px-2 py-1 text-left">Fecha</th><th class="px-2 py-1 text-left">Técnico</th><th class="hidden sm:table-cell px-2 py-1 text-left">Origen</th><th class="px-2 py-1 text-left">Motivo</th><th></th></tr>
           </thead>
           <tbody>
-            @for (d of k.diasImproductivos; track d.tecnicoId + d.fecha) {
+            @for (d of diasVisibles(); track d.tecnicoId + d.fecha) {
               <tr class="border-t border-gray-100">
                 <td class="px-2 py-1 whitespace-nowrap">{{ d.fecha.substring(0,10) }}</td>
                 <td class="px-2 py-1">{{ d.tecnicoNombre }}</td>
-                <td class="px-2 py-1">{{ d.origen }} @if (d.justificado) { <span class="text-green-600 font-semibold">· justificado</span> }</td>
-                <td class="px-2 py-1">{{ d.motivo }}</td>
+                <td class="hidden sm:table-cell px-2 py-1 whitespace-nowrap">{{ etiquetaOrigen(d.origen) }} @if (d.justificado) { <span class="text-green-600 font-semibold">· justificado</span> }</td>
+                <td class="px-2 py-1 min-w-[10rem]">{{ d.motivo }}
+                  <span class="sm:hidden block text-[11px] text-gray-400">{{ etiquetaOrigen(d.origen) }}@if (d.justificado) { · justificado }</span></td>
                 <td class="px-2 py-1 text-right">
                   @if (puedeProgramar() && !d.justificado) {
                     <button type="button" (click)="justificar(d)" class="text-xs text-[#1e3a8a] font-semibold hover:underline">Justificar</button>
@@ -108,11 +138,18 @@ import {
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="5" class="px-2 py-4 text-center text-gray-400">Sin días improductivos en el periodo.</td></tr>
+              <tr><td colspan="5" class="px-2 py-4 text-center text-gray-400">{{ k.diasImproductivos.length ? 'Ningún día coincide con los filtros.' : 'Sin días improductivos en el periodo.' }}</td></tr>
             }
           </tbody>
         </table>
       </div>
+      @if (diasFiltrados().length > diasVisibles().length) {
+        <div class="text-center">
+          <button type="button" (click)="dLimite.set(dLimite() + 30)" class="text-xs font-semibold text-[#1e3a8a] hover:underline">
+            Ver más ({{ diasFiltrados().length - diasVisibles().length }} restantes)
+          </button>
+        </div>
+      }
 
       @if (manuales().length) {
         <div class="pt-2 border-t border-gray-100">
@@ -153,6 +190,69 @@ export class CuadrillasKpiComponent {
   manuales = signal<CuadrillaDiaImproductivoManual[]>([]);
   cargando = signal(false);
   soloFecha = soloFecha;
+
+  // ---------- Filtros del listado de días improductivos (en el cliente) ----------
+  readonly estadosDia = [
+    { v: 'pendientes', t: 'Pendientes de justificar' },
+    { v: 'justificados', t: 'Justificados' },
+    { v: '', t: 'Todos' },
+  ];
+  readonly motivosDia = [
+    { v: 'sin-actividad', t: 'Sin actividad programada' },
+    { v: 'disponible', t: 'Disponible sin actividad operativa' },
+    { v: 'locativa', t: 'Solo locativas / oficina' },
+    { v: 'manual', t: 'Marcados manualmente' },
+  ];
+  dEstado = signal('pendientes');
+  dTecnico = signal('');
+  dMotivo = signal('');
+  dFecha = signal('');
+  dLimite = signal(15);
+
+  private categoria(d: CuadrillaDiaImproductivo): string {
+    if (d.origen === 'MANUAL') return 'manual';
+    const m = (d.motivo || '').toLowerCase();
+    if (m.includes('disponible')) return 'disponible';
+    if (m.includes('locativ') || m.includes('oficina')) return 'locativa';
+    return 'sin-actividad';
+  }
+
+  private diasTodos = computed(() => this.kpi()?.diasImproductivos ?? []);
+
+  conteoEstado = computed(() => {
+    const todos = this.diasTodos();
+    const just = todos.filter(d => d.justificado).length;
+    return { pendientes: todos.length - just, justificados: just, '': todos.length } as Record<string, number>;
+  });
+
+  tecnicosDias = computed(() => {
+    const m = new Map<string, { id: string; nombre: string; n: number }>();
+    for (const d of this.diasTodos()) {
+      const x = m.get(d.tecnicoId) ?? { id: d.tecnicoId, nombre: d.tecnicoNombre, n: 0 };
+      x.n++; m.set(d.tecnicoId, x);
+    }
+    return [...m.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  });
+
+  diasFiltrados = computed(() => {
+    const e = this.dEstado(), t = this.dTecnico(), mo = this.dMotivo(), f = this.dFecha();
+    return this.diasTodos()
+      .filter(d => e === 'pendientes' ? !d.justificado : e === 'justificados' ? d.justificado : true)
+      .filter(d => !t || d.tecnicoId === t)
+      .filter(d => !mo || this.categoria(d) === mo)
+      .filter(d => !f || d.fecha.substring(0, 10) === f)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || a.tecnicoNombre.localeCompare(b.tecnicoNombre));
+  });
+
+  diasVisibles = computed(() => this.diasFiltrados().slice(0, this.dLimite()));
+
+  etiquetaOrigen(o: string) {
+    return ({ AUTOMATICO: 'Automático', MANUAL: 'Manual', JUSTIFICADO: 'Justificado' } as Record<string, string>)[o] ?? o;
+  }
+
+  limpiarFiltrosDias() {
+    this.dTecnico.set(''); this.dMotivo.set(''); this.dFecha.set(''); this.dLimite.set(15);
+  }
 
   constructor() {
     effect(() => { this.desde(); this.hasta(); this.cargar(); });
