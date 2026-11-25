@@ -67,6 +67,10 @@
               @for (p of proyectos(); track p.id) { <option [value]="p.id">{{ p.codigo }} · {{ p.nombre }}</option> }
             </select>
           }
+          <select [ngModel]="filtroArea()" (ngModelChange)="filtroArea.set($event)" class="min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+            <option value="">Todas las áreas</option>
+            @for (ar of areas; track ar.v) { <option [value]="ar.v">{{ ar.t }}</option> }
+          </select>
           <select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)" class="min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
             <option value="">Todos los estados</option>
             @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
@@ -79,6 +83,59 @@
 
   <!-- AGENDA -->
   @if (tab() === 'agenda') {
+    <!-- Alertas de programación (semana actual y siguiente) -->
+    @if (puedeProgramar) {
+      <div class="bg-white rounded-xl border border-gray-200">
+        <button type="button" (click)="alertasAbiertas.set(!alertasAbiertas())"
+                class="w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-left">
+          <span class="font-bold text-[#1e3a8a] text-sm">
+            ⚠ Alertas ({{ alertas().length }})
+            <span class="font-normal text-gray-500 text-xs">· {{ alertasRango().desde }} a {{ alertasRango().hasta }}</span>
+          </span>
+          <span class="text-xs text-gray-500">{{ alertasAbiertas() ? 'Ocultar' : 'Ver' }}</span>
+        </button>
+        @if (alertasAbiertas()) {
+          <div class="px-3 pb-3 space-y-2">
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" (click)="filtroAlerta.set('')"
+                      class="px-2.5 py-1 rounded-full border text-xs font-semibold"
+                      [class]="filtroAlerta() === '' ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]' : 'bg-white text-gray-600 border-gray-300'">Todas</button>
+              @for (t of tiposAlerta; track t.v) {
+                @if (conteoAlertas()[t.v]) {
+                  <button type="button" (click)="filtroAlerta.set(t.v)"
+                          class="px-2.5 py-1 rounded-full border text-xs font-semibold"
+                          [class]="filtroAlerta() === t.v ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]' : t.clase">
+                    {{ t.t }} ({{ conteoAlertas()[t.v] }})
+                  </button>
+                }
+              }
+            </div>
+            @if (alertasVisibles().length) {
+              <div class="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                @for (al of alertasVisibles(); track $index) {
+                  <button type="button" (click)="abrirAlerta(al)"
+                          class="w-full text-left rounded-lg border px-2.5 py-2 text-xs leading-snug hover:shadow"
+                          [class]="claseAlerta(al.tipo)">
+                    <div class="font-bold">{{ al.fecha.substring(0, 10) }} · {{ al.tecnicoNombre }}
+                      <span class="font-semibold opacity-80">· {{ etiquetaAlerta(al.tipo) }}</span></div>
+                    @if (al.proyecto || al.actividad) { <div>{{ al.proyecto }}{{ al.proyecto && al.actividad ? ' — ' : '' }}{{ al.actividad }}</div> }
+                    <div class="opacity-80">{{ al.detalle }}
+                      <span class="underline">{{ (al.tipo === 'VENCIDA' || al.tipo === 'BLOQUEADA' || al.tipo === 'CRUCE') ? '· abrir detalle' : '· programar' }}</span>
+                    </div>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="text-xs text-gray-500">Sin alertas en el periodo.</div>
+            }
+            <div class="text-[11px] text-gray-400">
+              Tiempo libre: se alerta desde {{ umbralHorasLibres() }} h libres en la jornada (configurable en Administración → Cuadrillas).
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     <!-- Móvil: lista de días con actividades -->
     <div class="md:hidden space-y-2">
       @for (fila of semanas(); track $index) {
@@ -95,12 +152,14 @@
                 @for (a of dia.acts; track a.id) {
                   <button type="button" (click)="abrirDetalle(a)"
                           class="w-full text-left rounded-lg border px-2.5 py-2 text-xs leading-tight"
-                          [class]="claseEstado(a.estado)"
-                          [class.border-dashed]="cruces().has(a.id)" [class.border-2]="cruces().has(a.id)"
+                          [class]="disponibleSinAsignacion(a) ? 'bg-red-100 text-red-800 border-red-400' : claseEstado(a.estado)"
+                          [class.border-dashed]="cruces().has(a.id)" [class.border-2]="cruces().has(a.id) || disponibleSinAsignacion(a)"
                           [class.line-through]="a.estadoPlanificacion === 'Cancelada'">
-                    <div class="font-bold">{{ a.tecnico?.nombre }}</div>
+                    @if (disponibleSinAsignacion(a)) { <div class="font-black uppercase text-[10px] mb-0.5">⚠ Disponible sin asignación</div> }
+                    <div class="font-bold uppercase">{{ a.tecnico?.nombre }}</div>
+                    @if (horarioProyecto(a)) { <div class="opacity-80">{{ horarioProyecto(a) }}</div> }
                     <div>{{ esNoLaboral(a) ? etiquetaTipo(a.tipoRegistro) : (a.actividad || etiquetaTipo(a.tipoRegistro)) }}</div>
-                    @if (horario(a)) { <div class="opacity-70">{{ horario(a) }}</div> }
+                    <div class="opacity-80">{{ estadoHoras(a) }}</div>
                   </button>
                 } @empty {
                   <div class="text-xs text-gray-400">Sin actividades.</div>
@@ -135,12 +194,15 @@
                   @for (a of dia.acts; track a.id) {
                     <button type="button" (click)="abrirDetalle(a)"
                             class="w-full text-left rounded-md border px-1.5 py-1 text-[11px] leading-tight hover:shadow"
-                            [class]="claseEstado(a.estado)"
-                            [class.border-dashed]="cruces().has(a.id)" [class.border-2]="cruces().has(a.id)"
-                            [class.line-through]="a.estadoPlanificacion === 'Cancelada'">
-                      <div class="font-bold truncate">{{ a.tecnico?.nombre }}</div>
+                            [class]="disponibleSinAsignacion(a) ? 'bg-red-100 text-red-800 border-red-400' : claseEstado(a.estado)"
+                            [class.border-dashed]="cruces().has(a.id)" [class.border-2]="cruces().has(a.id) || disponibleSinAsignacion(a)"
+                            [class.line-through]="a.estadoPlanificacion === 'Cancelada'"
+                            [title]="horarioProyecto(a) + ' — ' + (a.actividad || '')">
+                      @if (disponibleSinAsignacion(a)) { <div class="font-black uppercase text-[9px]">⚠ Disponible sin asignación</div> }
+                      <div class="font-bold uppercase truncate">{{ a.tecnico?.nombre }}</div>
+                      @if (horarioProyecto(a)) { <div class="line-clamp-2 opacity-80">{{ horarioProyecto(a) }}</div> }
                       <div class="truncate">{{ esNoLaboral(a) ? etiquetaTipo(a.tipoRegistro) : (a.actividad || etiquetaTipo(a.tipoRegistro)) }}</div>
-                      @if (horario(a)) { <div class="opacity-70">{{ horario(a) }}</div> }
+                      <div class="opacity-80 truncate">{{ estadoHoras(a) }}</div>
                     </button>
                   }
                 </div>
@@ -166,6 +228,7 @@
             <th class="px-3 py-2 text-left">Técnico</th>
             <th class="px-3 py-2 text-left">Tipo</th>
             <th class="px-3 py-2 text-left">Proyecto</th>
+            <th class="px-3 py-2 text-left">Área</th>
             <th class="px-3 py-2 text-left">Actividad</th>
             <th class="px-3 py-2 text-left">Horario</th>
             <th class="px-3 py-2 text-right">H. plan.</th>
@@ -180,6 +243,7 @@
               <td class="px-3 py-2">{{ a.tecnico?.nombre }}</td>
               <td class="px-3 py-2">{{ etiquetaTipo(a.tipoRegistro) }}</td>
               <td class="px-3 py-2 max-w-[14rem] truncate">{{ nombreProyecto(a) }}</td>
+              <td class="px-3 py-2 whitespace-nowrap">{{ areaEtiqueta(a.lineaNegocio) || '—' }}</td>
               <td class="px-3 py-2 max-w-[18rem] truncate">{{ a.actividad }}</td>
               <td class="px-3 py-2 whitespace-nowrap">
                 {{ horario(a) }}
@@ -190,7 +254,7 @@
               <td class="px-3 py-2"><span class="px-2 py-0.5 rounded border text-xs font-semibold" [class]="claseEstado(a.estado)">{{ a.estado }}</span></td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="px-3 py-8 text-center text-gray-400">No hay actividades en este periodo.</td></tr>
+            <tr><td colspan="10" class="px-3 py-8 text-center text-gray-400">No hay actividades en este periodo.</td></tr>
           }
         </tbody>
       </table>
@@ -220,6 +284,7 @@
         <div class="grid grid-cols-2 gap-x-4 gap-y-2">
           <div><span class="text-gray-500">Tipo:</span> {{ etiquetaTipo(a.tipoRegistro) }}</div>
           <div><span class="text-gray-500">Proyecto:</span> {{ nombreProyecto(a) }}</div>
+          <div><span class="text-gray-500">Área:</span> {{ areaEtiqueta(a.lineaNegocio) || '—' }}</div>
           <div><span class="text-gray-500">OT:</span> {{ a.ot || '—' }}</div>
           <div><span class="text-gray-500">Horario:</span> {{ horario(a) || '—' }}</div>
           <div><span class="text-gray-500">Horas planeadas:</span> {{ a.horasPlaneadas ?? '—' }}</div>
@@ -304,10 +369,24 @@
             @for (p of prioridades; track p) { <option [value]="p">{{ p }}</option> }
           </select></label>
 
-        <label class="block md:col-span-2"><span class="text-xs text-gray-500">Proyecto (del tracker)</span>
+        <div class="block md:col-span-2 space-y-1">
+          <span class="text-xs text-gray-500">Proyecto (del tracker)</span>
+          <input type="text" [ngModel]="buscarProyecto()" (ngModelChange)="buscarProyecto.set($event)" [ngModelOptions]="{ standalone: true }"
+                 placeholder="Buscar por código, nombre o cliente…" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
           <select formControlName="proyectoId" (change)="alCambiarProyecto()" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
             <option value="">— Sin proyecto / sede libre —</option>
-            @for (p of proyectos(); track p.id) { <option [value]="p.id">{{ p.codigo }} · {{ p.nombre }} ({{ p.clienteNombre }})</option> }
+            @for (p of proyectosVisibles(); track p.id) {
+              <option [value]="p.id">{{ p.codigo }} · {{ p.nombre }} ({{ p.clienteNombre }}){{ p.estado === 'FINALIZADO_TOTAL' ? ' — Finalizado' : '' }}</option>
+            }
+          </select>
+          @if (buscarProyecto() && proyectosVisibles().length === 0) {
+            <span class="text-[11px] text-gray-400">Ningún proyecto coincide con la búsqueda.</span>
+          }
+        </div>
+        <label class="block md:col-span-2"><span class="text-xs text-gray-500">Área</span>
+          <select formControlName="lineaNegocio" class="w-full border border-gray-300 rounded-lg px-2 py-1.5">
+            <option value="">— Según el proyecto —</option>
+            @for (ar of areas; track ar.v) { <option [value]="ar.v">{{ ar.t }}</option> }
           </select></label>
         @if (!form.value.proyectoId) {
           <label class="block md:col-span-2"><span class="text-xs text-gray-500">Proyecto / sede (texto libre)</span>

@@ -6,7 +6,8 @@ import Swal from 'sweetalert2';
 import { AuthService } from '../../../core/auth/auth.service';
 import {
   CuadrillaService, CuadrillaActividad, CuadrillaTecnico, CuadrillaProyectoOpcion,
-  CuadrillaSupervisorOpcion, CuadrillaActividadInput, soloFecha, esCruceHorario, mensajeError
+  CuadrillaSupervisorOpcion, CuadrillaActividadInput, soloFecha, esCruceHorario, mensajeError,
+  AREAS, areaEtiqueta, CuadrillaAlerta, TipoAlerta
 } from '../../../core/services/cuadrilla';
 import { CuadrillasKpiComponent } from './cuadrillas-kpi';
 
@@ -32,6 +33,18 @@ export const TIPOS_REGISTRO = [
   { v: 'Disponible', t: 'Disponible' },
 ];
 
+/** Texto sin tildes y en minúsculas, para búsquedas */
+const normalizar = (t: string) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+export const TIPOS_ALERTA: { v: TipoAlerta; t: string; clase: string }[] = [
+  { v: 'SIN_ASIGNACION', t: 'Sin asignación', clase: 'bg-red-100 text-red-800 border-red-300' },
+  { v: 'DISPONIBLE', t: 'Disponible sin asignación', clase: 'bg-red-100 text-red-800 border-red-300' },
+  { v: 'TIEMPO_LIBRE', t: 'Tiempo libre', clase: 'bg-amber-100 text-amber-800 border-amber-300' },
+  { v: 'VENCIDA', t: 'Vencidas', clase: 'bg-orange-100 text-orange-800 border-orange-300' },
+  { v: 'BLOQUEADA', t: 'Bloqueadas', clase: 'bg-rose-100 text-rose-800 border-rose-300' },
+  { v: 'CRUCE', t: 'Cruces de horario', clase: 'bg-purple-100 text-purple-800 border-purple-300' },
+];
+
 const COLOR_ESTADO: Record<string, string> = {
   'Planeada': 'bg-blue-100 text-blue-800 border-blue-300',
   'En ejecución': 'bg-amber-100 text-amber-800 border-amber-300',
@@ -55,6 +68,9 @@ export class CuadrillasComponent implements OnInit {
   readonly prioridades = PRIORIDADES;
   readonly estadosPlan = ESTADOS_PLANIFICACION;
   readonly tipos = TIPOS_REGISTRO;
+  readonly areas = AREAS;
+  readonly tiposAlerta = TIPOS_ALERTA;
+  areaEtiqueta = areaEtiqueta;
   readonly diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   readonly meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -76,6 +92,8 @@ export class CuadrillasComponent implements OnInit {
   filtroTecnico = signal('');
   filtroProyecto = signal('');
   filtroEstado = signal('');
+  filtroArea = signal('');
+  buscarProyecto = signal('');
   busqueda = signal('');
 
   // Modales
@@ -90,6 +108,7 @@ export class CuadrillasComponent implements OnInit {
     tipoRegistro: ['Actividad', Validators.required],
     proyectoId: [''],
     proyectoReferencia: [''],
+    lineaNegocio: [''],
     actividad: [''],
     ot: [''],
     horaInicio: [''],
@@ -240,12 +259,13 @@ export class CuadrillasComponent implements OnInit {
 
   // ---------- Datos filtrados ----------
   filtradas = computed(() => {
-    const t = this.filtroTecnico(), p = this.filtroProyecto(), e = this.filtroEstado();
+    const t = this.filtroTecnico(), p = this.filtroProyecto(), e = this.filtroEstado(), ar = this.filtroArea();
     const q = this.busqueda().trim().toLowerCase();
     return this.actividades().filter(a => {
       if (t && a.tecnicoId !== t) return false;
       if (p && a.proyectoId !== p) return false;
       if (e && a.estado !== e) return false;
+      if (ar && (a.lineaNegocio || '').toLowerCase() !== ar) return false;
       if (q) {
         const txt = `${a.actividad} ${a.ot ?? ''} ${a.proyecto?.nombre ?? ''} ${a.proyectoReferencia ?? ''} ${a.tecnico?.nombre ?? ''}`.toLowerCase();
         if (!txt.includes(q)) return false;
@@ -299,11 +319,79 @@ export class CuadrillasComponent implements OnInit {
 
   proyectoSeleccionado = computed(() => this.proyectos().find(p => p.id === this.form.value.proyectoId) ?? null);
 
+  /** Técnico+día con al menos una actividad operativa (para resaltar los "Disponible" sin asignación) */
+  diasConOperativa = computed(() => {
+    const set = new Set<string>();
+    for (const a of this.actividades()) {
+      if (!this.esNoLaboral(a) && a.tipoRegistro !== 'Disponible' && a.estadoPlanificacion !== 'Cancelada')
+        set.add(`${a.tecnicoId}|${soloFecha(a.fecha)}`);
+    }
+    return set;
+  });
+
+  /** Proyectos filtrados por el buscador (código, nombre o cliente); conserva el seleccionado */
+  proyectosVisibles(): CuadrillaProyectoOpcion[] {
+    const q = normalizar(this.buscarProyecto().trim());
+    const sel = this.form.value.proyectoId;
+    if (!q) return this.proyectos();
+    return this.proyectos().filter(p =>
+      p.id === sel || normalizar(`${p.codigo} ${p.nombre} ${p.clienteNombre}`).includes(q));
+  }
+
+  private cargarProyectos() {
+    if (this.puedeProgramar) this.svc.getProyectosDisponibles().subscribe(p => this.proyectos.set(p));
+  }
+
+  // ---------- Alertas (semana actual y siguiente) ----------
+  alertas = signal<CuadrillaAlerta[]>([]);
+  alertasRango = signal({ desde: '', hasta: '' });
+  umbralHorasLibres = signal(1);
+  filtroAlerta = signal<TipoAlerta | ''>('');
+  // En celular el panel arranca cerrado para no empujar la agenda
+  alertasAbiertas = signal(typeof window === 'undefined' || window.innerWidth >= 768);
+
+  conteoAlertas = computed(() => {
+    const c: Record<string, number> = {};
+    for (const a of this.alertas()) c[a.tipo] = (c[a.tipo] ?? 0) + 1;
+    return c;
+  });
+  alertasVisibles = computed(() => {
+    const f = this.filtroAlerta();
+    return f ? this.alertas().filter(a => a.tipo === f) : this.alertas();
+  });
+
+  cargarAlertas() {
+    if (!this.puedeProgramar) return;
+    const lunes = lunesDe(new Date());
+    const desde = fmt(lunes), hasta = fmt(addDias(lunes, 13));
+    this.svc.getAlertas(desde, hasta).subscribe({
+      next: r => {
+        this.alertas.set(r?.alertas ?? []);
+        this.alertasRango.set({ desde, hasta });
+        this.umbralHorasLibres.set(r?.umbralHorasLibres ?? 1);
+      },
+      error: () => this.alertas.set([])
+    });
+  }
+
+  etiquetaAlerta(t: string) { return TIPOS_ALERTA.find(x => x.v === t)?.t ?? t; }
+  claseAlerta(t: string) { return TIPOS_ALERTA.find(x => x.v === t)?.clase ?? 'bg-gray-100 text-gray-700 border-gray-300'; }
+
+  /** Desde una alerta: las de actividad abren el detalle; las de disponibilidad abren la programación del técnico ese día */
+  abrirAlerta(al: CuadrillaAlerta) {
+    const fecha = soloFecha(al.fecha);
+    if ((al.tipo === 'VENCIDA' || al.tipo === 'BLOQUEADA' || al.tipo === 'CRUCE') && al.actividadId) {
+      this.svc.getActividad(al.actividadId).subscribe(a => { if (a) this.abrirDetalle(a); });
+    } else if (this.puedeProgramar) {
+      this.nueva(fecha, al.tecnicoId);
+    }
+  }
+
   ngOnInit(): void {
     this.svc.getTecnicos().subscribe(t => this.tecnicos.set(t));
     this.svc.getParametros().subscribe(p => this.diasMaxRetro.set(p.diasMaxRetroactivo));
     if (this.puedeProgramar) {
-      this.svc.getProyectosDisponibles().subscribe(p => this.proyectos.set(p));
+      this.cargarProyectos();
       this.svc.getSupervisoresInternos().subscribe(s => this.supervisores.set(s));
     }
     this.cargar();
@@ -323,7 +411,7 @@ export class CuadrillasComponent implements OnInit {
     this.cargando.set(true);
     const r = this.rango();
     this.svc.getActividades(r.desde, r.hasta).subscribe({
-      next: a => { this.actividades.set(a); this.cargando.set(false); },
+      next: a => { this.actividades.set(a); this.cargando.set(false); this.cargarAlertas(); },
       error: e => { this.cargando.set(false); Swal.fire('Error', mensajeError(e), 'error'); }
     });
   }
@@ -340,6 +428,23 @@ export class CuadrillasComponent implements OnInit {
   horario(a: CuadrillaActividad) { return a.horaInicio && a.horaFin ? `${a.horaInicio}–${a.horaFin}` : ''; }
   etiquetaTipo(v: string) { return this.tipos.find(t => t.v === v)?.t ?? v; }
   esNoLaboral(a: CuadrillaActividad) { return a.tipoRegistro === 'Permiso' || a.tipoRegistro === 'Descanso'; }
+  /** Proyecto o sede para los recuadros del calendario */
+  proyectoCorto(a: CuadrillaActividad) {
+    return a.proyecto ? `${a.proyecto.codigo} · ${a.proyecto.nombre}` : (a.proyectoReferencia || '');
+  }
+  /** Línea "horario · proyecto" del recuadro */
+  horarioProyecto(a: CuadrillaActividad) {
+    return [this.horario(a), this.proyectoCorto(a)].filter(Boolean).join(' · ');
+  }
+  /** Línea "estado · horas reales" del recuadro */
+  estadoHoras(a: CuadrillaActividad) {
+    if (this.esNoLaboral(a)) return this.etiquetaTipo(a.tipoRegistro);
+    return `${a.estado} · ${(a.horasReales ?? 0).toFixed(1)} h`;
+  }
+  /** Registro "Disponible" sin ninguna actividad operativa del técnico ese día */
+  disponibleSinAsignacion(a: CuadrillaActividad) {
+    return a.tipoRegistro === 'Disponible' && !this.diasConOperativa().has(`${a.tecnicoId}|${soloFecha(a.fecha)}`);
+  }
 
   // ---------- Detalle / ejecución ----------
   abrirDetalle(a: CuadrillaActividad) {
@@ -372,11 +477,13 @@ export class CuadrillasComponent implements OnInit {
   }
 
   // ---------- Planeación ----------
-  nueva(fecha?: string) {
+  nueva(fecha?: string, tecnicoId?: string) {
     this.editandoId.set(null);
+    this.cargarProyectos();
+    this.buscarProyecto.set('');
     this.form.reset({
-      fecha: fecha ?? fmt(new Date()), tecnicoId: this.filtroTecnico() || '', tipoRegistro: 'Actividad',
-      proyectoId: '', proyectoReferencia: '', actividad: '', ot: '', horaInicio: '', horaFin: '',
+      fecha: fecha ?? fmt(new Date()), tecnicoId: tecnicoId || this.filtroTecnico() || '', tipoRegistro: 'Actividad',
+      proyectoId: '', proyectoReferencia: '', lineaNegocio: '', actividad: '', ot: '', horaInicio: '', horaFin: '',
       horasPlaneadas: null, prioridad: 'Media', estado: 'Planeada', estadoPlanificacion: 'Programada',
       supervisorTipo: '', supervisorContactoId: '', supervisorUsuarioId: '', supervisorNombre: '', observaciones: '', repetirHasta: '',
     });
@@ -389,9 +496,12 @@ export class CuadrillasComponent implements OnInit {
   editar(a: CuadrillaActividad) {
     this.cerrarDetalle();
     this.editandoId.set(a.id);
+    this.cargarProyectos();
+    this.buscarProyecto.set('');
     this.form.reset({
       fecha: soloFecha(a.fecha), tecnicoId: a.tecnicoId, tipoRegistro: a.tipoRegistro,
-      proyectoId: a.proyectoId ?? '', proyectoReferencia: a.proyectoReferencia ?? '', actividad: a.actividad ?? '',
+      proyectoId: a.proyectoId ?? '', proyectoReferencia: a.proyectoReferencia ?? '',
+      lineaNegocio: (a.lineaNegocio || '').toLowerCase(), actividad: a.actividad ?? '',
       ot: a.ot ?? '', horaInicio: a.horaInicio ?? '', horaFin: a.horaFin ?? '', horasPlaneadas: a.horasPlaneadas ?? null,
       prioridad: a.prioridad, estado: a.estado, estadoPlanificacion: a.estadoPlanificacion,
       supervisorTipo: a.supervisorTipo ?? '', supervisorContactoId: a.supervisorContactoId ?? '',
@@ -406,6 +516,8 @@ export class CuadrillasComponent implements OnInit {
 
   /** Al elegir proyecto: hereda línea y recarga contactos del cliente */
   alCambiarProyecto() {
+    const p = this.proyectoSeleccionado();
+    if (p?.lineaNegocio) this.form.patchValue({ lineaNegocio: p.lineaNegocio.toLowerCase() });
     this.cargarSupervisoresCliente();
   }
 
@@ -446,7 +558,7 @@ export class CuadrillasComponent implements OnInit {
     const input: CuadrillaActividadInput = {
       fecha: v.fecha!, tecnicoId: v.tecnicoId!, tipoRegistro: tipo,
       proyectoId: v.proyectoId || null, proyectoReferencia: v.proyectoId ? null : (v.proyectoReferencia || null),
-      lineaNegocio: proy?.lineaNegocio ?? null,
+      lineaNegocio: v.lineaNegocio || proy?.lineaNegocio || null,
       actividad: v.actividad || null, ot: v.ot || null,
       horaInicio: v.horaInicio || null, horaFin: v.horaFin || null, horasPlaneadas: v.horasPlaneadas,
       prioridad: v.prioridad, estado: v.estado, estadoPlanificacion: v.estadoPlanificacion,
