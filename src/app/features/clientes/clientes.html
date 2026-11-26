@@ -227,7 +227,7 @@
             @if(clienteSel.documentos && clienteSel.documentos.length > 0) {
               <div class="grid grid-cols-2 gap-3">
                 @for(doc of clienteSel.documentos; track doc.url) {
-                  <a [href]="serverUrl + doc.url" target="_blank"
+                  <a href="#" (click)="$event.preventDefault(); archivos.abrir(doc.url)"
                      class="flex flex-col items-center justify-center p-3 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-colors group cursor-pointer">
                     <svg class="w-8 h-8 text-gray-400 group-hover:text-blue-600 transition-colors mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight">{{ doc.tipoDocumento }}</span>
