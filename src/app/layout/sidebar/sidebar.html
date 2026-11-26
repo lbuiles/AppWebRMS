@@ -53,4 +53,27 @@
     }
   </nav>
 
+  <!-- Versión publicada (web y API). El detalle con el commit se abre con el ícono de información -->
+  <div class="border-t border-gray-800 px-4 py-2 text-[10px] text-gray-500">
+    @if (verDetalleVersion()) {
+      <div class="mb-2 space-y-1 rounded-lg bg-gray-800/70 p-2 text-gray-400">
+        <div><span class="text-gray-300">Web:</span> {{ fechaVersion(version.web.fecha) }} · {{ version.web.commit || '—' }}</div>
+        <div><span class="text-gray-300">API:</span> {{ fechaVersion(version.api()?.fecha) }} · {{ version.api()?.commit || '—' }}</div>
+      </div>
+    }
+    <div class="flex items-center justify-between gap-2">
+      <div class="leading-tight">
+        <div>Web {{ version.etiquetaWeb }}</div>
+        <div>API {{ version.etiquetaApi() }}</div>
+      </div>
+      <button type="button" (click)="verDetalleVersion.set(!verDetalleVersion())"
+              [attr.aria-expanded]="verDetalleVersion()" aria-label="Detalle de la versión" title="Detalle de la versión"
+              class="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
 </aside>
