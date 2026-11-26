@@ -296,7 +296,7 @@ export class ContratistasComponent implements OnInit {
         this.tipoDocSelect = '';
         event.target.value = '';
       },
-      error: () => Swal.fire('Error', 'No se pudo subir el archivo.', 'error')
+      error: (err: any) => Swal.fire('Error', err?.error?.message || 'No se pudo subir el archivo.', 'error')
     });
   }
 
