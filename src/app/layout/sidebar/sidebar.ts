@@ -5,6 +5,7 @@ import { filter, map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MenuService } from '../../services/menu';
 import { AuthService } from '../../core/auth/auth.service';
+import { VersionService, fechaVersion } from '../../core/services/version';
 
 @Component({
   selector: 'app-sidebar',
@@ -16,6 +17,10 @@ import { AuthService } from '../../core/auth/auth.service';
 export class SidebarComponent implements OnInit {
   public menuService = inject(MenuService);
   public auth = inject(AuthService);
+  public version = inject(VersionService);
+  /** Detalle de la versión (fecha completa y commit), oculto por defecto */
+  public verDetalleVersion = signal(false);
+  public fechaVersion = fechaVersion;
   private router = inject(Router);
 
   constructor() {
@@ -45,6 +50,7 @@ export class SidebarComponent implements OnInit {
   private modulosDesdeDB = signal<any[]>([]);
 
   ngOnInit() {
+  this.version.cargarApi();
 
   this.menuService.getMenuConfig().subscribe({
     next: (data) => {
