@@ -514,7 +514,7 @@
                   </select>
 
                   <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-2">2. Adjuntar Archivo (PDF, DOCX)</label>
-                  <input type="file" (change)="onArchivoSeleccionado($event, tipoDocSelect)"
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" (change)="onArchivoSeleccionado($event, tipoDocSelect)"
                          class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#1e3a8a] file:text-white hover:file:bg-blue-800 cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
                 </div>
 

@@ -280,7 +280,7 @@ export class ClientesComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.loadingService.hide();
-        Swal.fire('Error', 'No se pudo subir el archivo. Revisa la consola.', 'error');
+        Swal.fire('Error', err?.error?.message || 'No se pudo subir el archivo.', 'error');
       }
     });
   }

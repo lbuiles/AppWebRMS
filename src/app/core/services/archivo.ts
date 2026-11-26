@@ -22,7 +22,17 @@ export class ArchivoService {
       .subscribe({
         next: blob => {
           const url = URL.createObjectURL(blob);
-          if (ventana) ventana.location.href = url; else window.open(url, '_blank');
+          const seMuestra = /^(application\/pdf|image\/(jpeg|png|webp))$/.test(blob.type);
+          if (seMuestra) {
+            if (ventana) ventana.location.href = url; else window.open(url, '_blank');
+          } else {
+            // Word, Excel y otros: se descargan en lugar de abrirse en una pestaña
+            ventana?.close();
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = ruta.split('/').pop() || 'documento';
+            a.click();
+          }
           setTimeout(() => URL.revokeObjectURL(url), 60000);
         },
         error: err => {
