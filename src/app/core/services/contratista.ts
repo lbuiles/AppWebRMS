@@ -1,8 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+
+/** Encabezado Authorization con el token de la sesión (la subida de archivos exige sesión) */
+function encabezadoAuth(): HttpHeaders {
+  let token = '';
+  try { token = localStorage.getItem('rms_token') ?? ''; } catch { /* sin storage */ }
+  return new HttpHeaders(token ? { Authorization: `Bearer ${token}` } : {});
+}
 
 const GET_CONTRATISTAS = gql`
   query GetContratistaProveedores {
@@ -195,6 +202,6 @@ export class ContratistaService {
     formData.append('archivo', archivo);
     formData.append('modulo', modulo);
     // Mismo patrón exacto que cliente.service.ts
-    return this.http.post<{ url: string }>(`${environment.restUrl}/upload/documento`, formData);
+    return this.http.post<{ url: string }>(`${environment.restUrl}/upload/documento`, formData, { headers: encabezadoAuth() });
   }
 }

@@ -1,8 +1,15 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Apollo, gql } from 'apollo-angular';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment'; // Verifica que la ruta sea correcta
+
+/** Encabezado Authorization con el token de la sesión (la subida de archivos exige sesión) */
+function encabezadoAuth(): HttpHeaders {
+  let token = '';
+  try { token = localStorage.getItem('rms_token') ?? ''; } catch { /* sin storage */ }
+  return new HttpHeaders(token ? { Authorization: `Bearer ${token}` } : {});
+}
 
 // --- QUERIES Y MUTATIONS ---
 
@@ -133,6 +140,6 @@ export class ClienteService {
     formData.append('modulo', modulo);
 
     // Usamos environment.restUrl para que se adapte automáticamente en dev y prod
-    return this.http.post<{url: string}>(`${environment.restUrl}/upload/documento`, formData);
+    return this.http.post<{url: string}>(`${environment.restUrl}/upload/documento`, formData, { headers: encabezadoAuth() });
   }
 }

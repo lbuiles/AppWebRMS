@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { LoadingService } from '../../core/services/loading';
 import { AuthService } from '../../core/auth/auth.service';
 import { environment } from '../../../environments/environment';
+import { ArchivoService } from '../../core/services/archivo';
 
 export interface Contacto { nombre: string; cargo?: string; email?: string; telefono?: string; }
 export interface Sucursal { nombre: string; departamento: string; ciudad: string; direccion: string; telefono: string; contactos?: Contacto[]; }
@@ -40,6 +41,7 @@ export class ClientesComponent implements OnInit {
   public loadingService = inject(LoadingService);
   public authService = inject(AuthService);
   public serverUrl = environment.production ? '' : 'http://localhost:5180';
+  public archivos = inject(ArchivoService);
 
   // --- SEÑALES DE ESTADO ---
   public clientes = signal<Cliente[]>([]);

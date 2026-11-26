@@ -142,8 +142,8 @@ export class AuthService {
       Swal.close();
 
       let mensaje = 'Error de conexión con el servidor.';
-      if (error.message === 'USUARIO_NO_ENCONTRADO') {
-        mensaje = 'Tu correo no está registrado en el sistema RMS.';
+      if (error.message === 'USUARIO_NO_ENCONTRADO' || error?.status === 401 || error?.status === 403) {
+        mensaje = 'Tu correo no está registrado en el sistema RMS o tu usuario está inactivo.';
       }
 
       Swal.fire({

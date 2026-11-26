@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, FormArray, Va
 import { ContratistaService } from '../../core/services/contratista';
 import { AuthService } from '../../core/auth/auth.service';
 import { environment } from '../../../environments/environment';
+import { ArchivoService } from '../../core/services/archivo';
 import Swal from 'sweetalert2';
 
 const TIPOS_DOCUMENTO_CP = [
@@ -32,6 +33,7 @@ export class ContratistasComponent implements OnInit {
 
   // Mismo patrón que clientes.ts para servir archivos en dev vs prod
   public serverUrl = environment.production ? '' : 'http://localhost:5180';
+  public archivos = inject(ArchivoService);
 
   // State signals
   terceros = signal<any[]>([]);
