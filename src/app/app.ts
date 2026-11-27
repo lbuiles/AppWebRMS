@@ -1,6 +1,7 @@
 import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router, NavigationStart, NavigationEnd, NavigationCancel, NavigationError, RouterOutlet } from '@angular/router';
 import { LoadingService } from './core/services/loading';
+import { ActualizacionService } from './core/services/actualizacion';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,8 @@ export class App {
   private router = inject(Router);
 
   constructor() {
+    inject(ActualizacionService).iniciar();
+
     // Escuchamos los eventos del router para activar/desactivar la barra
     this.router.events.subscribe(event => {
       if (event instanceof NavigationStart) {

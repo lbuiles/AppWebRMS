@@ -1,4 +1,5 @@
-import { ApplicationConfig, importProvidersFrom, inject, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, inject, isDevMode, provideZoneChangeDetection } from '@angular/core';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
@@ -21,6 +22,7 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 
 import Swal from 'sweetalert2';
+import { esSesionVencida, esSinConexion } from './core/errores';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -30,6 +32,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withXhr()),
     provideCharts(withDefaultRegisterables()),
+    // PWA: el service worker solo se activa en producción. Se registra cuando la app se estabiliza
+    // (o a los 30 s) para no competir con la carga inicial.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    }),
     importProvidersFrom(SocialLoginModule),
 
     {
@@ -54,24 +62,32 @@ export const appConfig: ApplicationConfig = {
       const httpLink = inject(HttpLink);
       const authService = inject(SocialAuthService);
 
-      // 1. MIDDLEWARE DE ERRORES (Tipado como any para evitar el error de ErrorHandlerOptions)
-      const errorLink = onError(({ graphQLErrors, networkError }: any) => {
-        if (graphQLErrors) {
-          graphQLErrors.forEach((err: any) => {
-            if (err.extensions?.code === 'AUTH_NOT_AUTHENTICATED' || err.message.includes('authorized')) {
-              localStorage.removeItem('rms_token');
-              localStorage.removeItem('rms_user');
-              authService.signOut().catch(() => {});
-
-              Swal.fire({
-                title: 'Sesión Inválida',
-                text: 'Tu sesión ha expirado. Por favor ingresa de nuevo.',
-                icon: 'warning',
-                confirmButtonColor: '#1e3a8a'
-              }).then(() => {
-                window.location.href = '/login';
-              });
-            }
+      // 1. MIDDLEWARE DE ERRORES (Apollo 4: llega un único `error`; ver core/errores.ts)
+      let avisandoSesion = false;
+      let ultimoAvisoConexion = 0;
+      const errorLink = onError(({ error }: any) => {
+        if (esSesionVencida(error)) {
+          if (avisandoSesion) return;
+          avisandoSesion = true;
+          localStorage.removeItem('rms_token');
+          localStorage.removeItem('rms_user');
+          authService.signOut().catch(() => {});
+          Swal.fire({
+            title: 'Sesión vencida',
+            text: 'Tu sesión expiró. Por favor ingresa de nuevo.',
+            icon: 'warning',
+            confirmButtonColor: '#1e3a8a',
+            allowOutsideClick: false
+          }).then(() => {
+            window.location.href = '/login';
+          });
+        } else if (esSinConexion(error) && Date.now() - ultimoAvisoConexion > 10_000) {
+          // Aviso discreto (una vez cada 10 s) para consultas que no muestran su propio error
+          ultimoAvisoConexion = Date.now();
+          Swal.fire({
+            toast: true, position: 'top-end', icon: 'error', timer: 4000, showConfirmButton: false,
+            title: 'Sin conexión con el servidor',
+            text: 'Revisa tu internet. Los datos pueden no estar actualizados.'
           });
         }
       });

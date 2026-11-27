@@ -149,7 +149,7 @@
                 </span>
               </div>
             </div>
-            <button (click)="cerrarDetalle()" class="text-gray-300 hover:text-gray-900 transition-colors p-2 bg-gray-50 rounded-full">
+            <button aria-label="Cerrar detalle" (click)="cerrarDetalle()" class="text-gray-300 hover:text-gray-900 transition-colors p-2 bg-gray-50 rounded-full">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
             </button>
           </div>
@@ -319,7 +319,7 @@
             </h3>
             <p class="text-xs text-gray-500 font-medium mt-0.5 tracking-wide">Gestión integral de datos maestros y operativos.</p>
           </div>
-          <button (click)="cerrarModal()" [disabled]="loadingService.isLoading()" class="text-gray-400 hover:text-red-500 transition-colors">
+          <button aria-label="Cerrar" (click)="cerrarModal()" [disabled]="loadingService.isLoading()" class="text-gray-400 hover:text-red-500 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
           </button>
         </div>
@@ -533,7 +533,7 @@
                             <svg class="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             <span class="text-xs font-bold text-blue-900 truncate">{{ doc.tipoDocumento }}</span>
                           </div>
-                          <button type="button" (click)="eliminarDocumento(i)" class="text-gray-400 hover:text-red-500 p-1">
+                          <button aria-label="Quitar documento" type="button" (click)="eliminarDocumento(i)" class="text-gray-400 hover:text-red-500 p-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                           </button>
                         </div>
@@ -556,7 +556,7 @@
               <div formArrayName="sucursales" class="space-y-6">
                 @for (sucursal of sucursales.controls; track $index; let i = $index) {
                   <div [formGroupName]="i" class="p-6 border-2 border-gray-100 rounded-2xl bg-gray-50/30 relative animate-fade-in">
-                    <button type="button" (click)="eliminarSucursal(i)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
+                    <button aria-label="Quitar sucursal" type="button" (click)="eliminarSucursal(i)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5"/></svg>
                     </button>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -597,7 +597,7 @@
                             <input formControlName="telefono" placeholder="Teléfono *" class="w-full md:w-32 px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-semibold outline-none border-none">
 
                             <input formControlName="email" placeholder="Email" class="flex-1 px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-semibold outline-none lowercase border-none">
-                            <button type="button" (click)="eliminarContacto(i, j)" class="p-1.5 text-gray-300 hover:text-red-500 transition-colors self-center">
+                            <button aria-label="Quitar contacto" type="button" (click)="eliminarContacto(i, j)" class="p-1.5 text-gray-300 hover:text-red-500 transition-colors self-center">
                               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
                             </button>
                           </div>

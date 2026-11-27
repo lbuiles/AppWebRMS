@@ -7,7 +7,8 @@ export default defineConfig({
   timeout: 30_000,
   retries: 0,
   reporter: [['list']],
-  use: { baseURL: 'http://localhost:4310', trace: 'retain-on-failure' },
+  // serviceWorkers: 'block': con el service worker activo las consultas no pasarían por los simuladores de page.route
+  use: { baseURL: 'http://localhost:4310', trace: 'retain-on-failure', serviceWorkers: 'block' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: { command: 'node e2e/servir-dist.mjs 4310', url: 'http://localhost:4310', reuseExistingServer: true, timeout: 30_000 }
 });

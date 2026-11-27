@@ -7,6 +7,7 @@ import { TrackerService } from '../../../../core/services/tracker';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { CurrencyMaskDirective } from '../../../../core/directives/currency-mask';
 import { confirmarDescartarCambios } from '../../../../core/guards/cambios-pendientes.guard';
+import { erroresGraphQL, esSinConexion, esSinPermiso, mensajeError } from '../../../../core/errores';
 
 /**
  * Panel lateral de un proyecto del Tracker: resumen, detalles, bitácora, finanzas y cierre.
@@ -405,17 +406,12 @@ export class ProyectoPanelComponent implements OnInit {
         this.actualizando.set(false);
         console.error('Error completo:', err);
 
-        let mensajeServidor = '';
+        // Mensaje de negocio del servidor (candados de auditoría), si lo hay
+        const mensajeServidor = erroresGraphQL(err).length && !esSinPermiso(err) && !esSinConexion(err)
+          ? mensajeError(err, '')
+          : '';
 
-        if (err.graphQLErrors && err.graphQLErrors.length > 0) {
-          mensajeServidor = err.graphQLErrors[0].message;
-        } else if (err.message) {
-          mensajeServidor = err.message;
-        }
-
-        const errorStr = JSON.stringify(err).toLowerCase();
-
-        if (errorStr.includes('not authorized') || errorStr.includes('permission')) {
+        if (esSinPermiso(err)) {
           Swal.fire({
             icon: 'error',
             title: 'Acceso Denegado',
@@ -435,7 +431,7 @@ export class ProyectoPanelComponent implements OnInit {
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'No se pudo actualizar el Tracker. Por favor, intenta de nuevo.',
+            text: mensajeError(err, 'No se pudo actualizar el Tracker. Por favor, intenta de nuevo.'),
             confirmButtonColor: '#ef4444'
           });
         }

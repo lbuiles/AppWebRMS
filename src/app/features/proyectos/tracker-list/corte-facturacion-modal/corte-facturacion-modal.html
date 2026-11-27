@@ -8,7 +8,7 @@
         <h3 class="text-sm font-black text-slate-800">Cortes de Facturación</h3>
         <p class="text-[11px] text-slate-500 mt-0.5">{{ p.codigo }} · {{ p.nombre }}</p>
       </div>
-      <button type="button" (click)="cancelar()" class="text-slate-400 hover:text-red-500 transition-colors">
+      <button aria-label="Cerrar" type="button" (click)="cancelar()" class="text-slate-400 hover:text-red-500 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>

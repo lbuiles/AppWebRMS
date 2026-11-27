@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { TrackerService } from '../../../../core/services/tracker';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { confirmarDescartarCambios } from '../../../../core/guards/cambios-pendientes.guard';
+import { mensajeError } from '../../../../core/errores';
 
 /** Modal "Cortes de Facturación" de un proyecto: registrar, anular y eliminar cortes. */
 @Component({
@@ -77,7 +78,7 @@ export class CorteFacturacionModalComponent {
         Swal.fire({ icon: 'success', title: 'Corte de facturación registrado', timer: 2000, showConfirmButton: false });
       },
       error: (err) => {
-        const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo registrar el corte de facturación.';
+        const msg = mensajeError(err, 'No se pudo registrar el corte de facturación.');
         Swal.fire('Error', msg, 'error');
       }
     });
@@ -98,7 +99,7 @@ export class CorteFacturacionModalComponent {
           this.cortesCambiados.emit();
           Swal.fire({ icon: 'success', title: 'Corte anulado', timer: 1500, showConfirmButton: false });
         },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo anular.', 'error')
+        error: (err) => Swal.fire('Error', mensajeError(err, 'No se pudo anular el corte.'), 'error')
       });
     });
   }
@@ -118,7 +119,7 @@ export class CorteFacturacionModalComponent {
           this.cortesCambiados.emit();
           Swal.fire({ icon: 'success', title: 'Corte eliminado', timer: 1500, showConfirmButton: false });
         },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
+        error: (err) => Swal.fire('Error', mensajeError(err, 'No se pudo eliminar el corte.'), 'error')
       });
     });
   }
