@@ -71,6 +71,22 @@
             }
             <span class="text-[11px] text-slate-400">{{ (viendoArchivados() ? proyectosArchivados().length : proyectosFiltrados.length) }} proyecto(s)</span>
           </div>
+
+          <!-- Celular: los filtros y acciones se recogen en este botón -->
+          <button type="button" (click)="filtrosAbiertos.set(!filtrosAbiertos())"
+                  class="md:hidden flex items-center gap-2 text-[11px] font-bold px-3 py-2 rounded-lg border transition-colors"
+                  [ngClass]="filtrosAbiertos() ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-200'"
+                  [attr.aria-expanded]="filtrosAbiertos()" aria-controls="tracker-filtros">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+            Filtros
+            @if (filtrosActivos() > 0) {
+              <span class="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] leading-[1.1rem] text-center"
+                    [ngClass]="filtrosAbiertos() ? 'bg-white text-slate-700' : 'bg-slate-700 text-white'">{{ filtrosActivos() }}</span>
+            }
+          </button>
+
+          <div id="tracker-filtros" class="w-full md:w-auto flex-wrap items-center gap-2"
+               [ngClass]="filtrosAbiertos() ? 'flex' : 'hidden md:flex'">
           <!-- Toggle finalizados -->
           <button type="button" (click)="mostrarFinalizados.set(!mostrarFinalizados())"
                   class="flex items-center gap-2 text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-colors"
@@ -99,13 +115,15 @@
               Descargar Excel
             }
           </button>
+          </div>
         </div>
 
         @if (!viendoArchivados()) {
           <!-- Filtros: estado, responsable, cliente -->
-          <div class="flex items-center flex-wrap gap-2 px-4 py-2 border-b border-slate-100 bg-slate-50/50">
+          <div class="items-center flex-wrap gap-2 px-4 py-2 border-b border-slate-100 bg-slate-50/50"
+               [ngClass]="filtrosAbiertos() ? 'flex' : 'hidden md:flex'">
             <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)"
-                    class="border border-slate-200 bg-white text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+                    class="w-full md:w-auto border border-slate-200 bg-white text-slate-700 py-2 md:py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
               <option value="todos">Todos los estados</option>
               <option value="PENDIENTE">Pendiente</option>
               <option value="PENDIENTE_PRELIMINARES">Preliminares</option>
@@ -117,7 +135,7 @@
 
             @if (esGerente) {
               <select [value]="filtroResponsable()" (change)="filtroResponsable.set($any($event.target).value)"
-                      class="border border-slate-200 bg-white text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+                      class="w-full md:w-auto border border-slate-200 bg-white text-slate-700 py-2 md:py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
                 <option value="todos">Todos los responsables</option>
                 @for (r of responsablesDisponibles; track r.id) {
                   <option [value]="r.id">{{ r.nombre }}</option>
@@ -126,7 +144,7 @@
             }
 
             <select [value]="filtroCliente()" (change)="filtroCliente.set($any($event.target).value)"
-                    class="border border-slate-200 bg-white text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+                    class="w-full md:w-auto border border-slate-200 bg-white text-slate-700 py-2 md:py-1.5 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
               <option value="todos">Todos los clientes</option>
               @for (c of clientesDisponibles; track c) {
                 <option [value]="c">{{ c }}</option>
@@ -143,7 +161,7 @@
         }
 
         @if (viendoArchivados()) {
-          <div class="overflow-x-auto h-full animate-fade-in">
+          <div class="hidden md:block overflow-x-auto h-full animate-fade-in">
             <table class="w-full text-left whitespace-nowrap">
               <thead class="bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
                 <tr>
@@ -180,8 +198,32 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Celular: tarjetas en lugar de la tabla -->
+          <div class="md:hidden p-3 space-y-2 animate-fade-in">
+            @for (p of proyectosArchivados(); track p.id) {
+              <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-subtle-card">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-[11px] font-bold text-slate-500">{{ p.codigo }}</p>
+                    <p class="text-sm font-medium text-slate-800 break-words">{{ p.nombre }}</p>
+                  </div>
+                  <button type="button" (click)="confirmarReactivarProyecto(p)"
+                          class="shrink-0 text-[11px] font-bold px-3 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
+                    Reactivar
+                  </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-1.5">{{ p.cliente?.razonSocial || '—' }}</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">
+                  Archivado por {{ p.archivadoPor?.nombre || '—' }} · {{ p.fechaArchivado | date:'dd/MM/yyyy' }}
+                </p>
+              </div>
+            } @empty {
+              <p class="py-12 text-center text-slate-400 text-sm">No hay proyectos archivados en esta línea de negocio.</p>
+            }
+          </div>
         } @else {
-        <div class="overflow-x-auto h-full animate-fade-in">
+        <div class="hidden md:block overflow-x-auto h-full animate-fade-in">
           <table class="w-full text-left whitespace-nowrap">
             <thead class="bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
               <tr>
@@ -250,6 +292,52 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Celular: cada proyecto como una tarjeta que se toca para abrir el panel -->
+        <div class="md:hidden p-3 space-y-2 animate-fade-in">
+          @for (p of proyectosFiltrados; track p.id) {
+            <button type="button" (click)="abrirPanel(p)"
+                    class="w-full text-left bg-white rounded-xl border border-slate-200 p-3 shadow-subtle-card active:bg-slate-50 transition-colors"
+                    [attr.aria-label]="'Abrir proyecto ' + p.codigo + ' ' + p.nombre">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold" [ngClass]="configVisual().textoColor">{{ p.codigo }}</span>
+                <span class="px-2 py-0.5 rounded text-[11px] font-medium shrink-0" [ngClass]="obtenerClaseEstado(p.estado)">
+                  {{ p.estado.replace('_', ' ').toLowerCase() | titlecase }}
+                </span>
+              </div>
+              <p class="text-sm font-medium text-slate-900 mt-1 break-words">{{ p.nombre }}</p>
+              <p class="text-xs text-slate-400 mt-0.5">{{ p.cliente?.razonSocial || 'Sin asignar' }}</p>
+
+              @if (esAdminFase()) {
+                <div class="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
+                  <div>
+                    <p class="text-[10px] text-slate-400">Presupuesto</p>
+                    <p class="text-xs font-semibold text-slate-700">{{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[10px] text-slate-400">Facturado</p>
+                    <p class="text-xs font-semibold text-emerald-600">{{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                  </div>
+                </div>
+              }
+
+              <div class="flex items-center justify-between gap-2 mt-2.5 text-[11px] text-slate-500">
+                <span class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold bg-slate-100 text-slate-600 shrink-0">
+                    {{ p.responsable?.nombre?.charAt(0) || '?' }}
+                  </span>
+                  <span class="truncate">{{ p.responsable?.nombre || 'Sin asignar' }}</span>
+                </span>
+                <span class="shrink-0">{{ p.fechaAsignacion | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </button>
+          } @empty {
+            <div class="py-12 text-center">
+              <p class="text-slate-500 font-medium text-sm">No hay proyectos activos en esta línea de negocio.</p>
+              <p class="text-xs text-slate-400 mt-1">Toca "Crear Proyecto" para comenzar el registro.</p>
+            </div>
+          }
+        </div>
         }
       }
 
@@ -257,71 +345,71 @@
         <div class="flex flex-col h-full animate-fade-in overflow-hidden">
 
           <!-- KPI Cards -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-5 shrink-0 bg-white border-b border-slate-100">
+          <div class="grid grid-cols-4 gap-1.5 md:gap-3 p-2 md:p-5 shrink-0 bg-white border-b border-slate-100">
 
             <button type="button" (click)="filtroAlertas.set('criticos')"
-                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    class="flex flex-col md:flex-row items-center gap-0.5 md:gap-3 p-1.5 md:p-3 rounded-xl border transition-all text-center md:text-left min-w-0"
                     [ngClass]="filtroAlertas() === 'criticos' ? 'border-red-300 bg-red-50/60 shadow-subtle-card' : 'border-slate-200 bg-white hover:bg-slate-50'">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              <div class="hidden md:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
                    [ngClass]="filtroAlertas() === 'criticos' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600'">
                 <i class="ti ti-alert-circle text-lg" aria-hidden="true"></i>
               </div>
-              <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Críticos</p>
-                <p class="text-2xl font-heading font-black" [ngClass]="kpiCriticos() > 0 ? 'text-red-600' : 'text-slate-700'">{{ kpiCriticos() }}</p>
-                <p class="text-[9px] text-slate-400">Acción inmediata</p>
+              <div class="min-w-0 flex flex-col-reverse md:flex-col">
+                <p class="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase md:tracking-wider leading-tight">Críticos</p>
+                <p class="text-lg md:text-2xl font-heading font-black leading-tight md:leading-normal" [ngClass]="kpiCriticos() > 0 ? 'text-red-600' : 'text-slate-700'">{{ kpiCriticos() }}</p>
+                <p class="hidden md:block text-[9px] text-slate-400">Acción inmediata</p>
               </div>
             </button>
 
             <button type="button" (click)="filtroAlertas.set('ejecucion')"
-                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    class="flex flex-col md:flex-row items-center gap-0.5 md:gap-3 p-1.5 md:p-3 rounded-xl border transition-all text-center md:text-left min-w-0"
                     [ngClass]="filtroAlertas() === 'ejecucion' ? 'border-amber-300 bg-amber-50/60 shadow-subtle-card' : 'border-slate-200 bg-white hover:bg-slate-50'">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              <div class="hidden md:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
                    [ngClass]="filtroAlertas() === 'ejecucion' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-600'">
                 <i class="ti ti-clock-exclamation text-lg" aria-hidden="true"></i>
               </div>
-              <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ejecución vencida</p>
-                <p class="text-2xl font-heading font-black" [ngClass]="kpiEjecucionVencida() > 0 ? 'text-amber-700' : 'text-slate-700'">{{ kpiEjecucionVencida() }}</p>
-                <p class="text-[9px] text-slate-400">Fin de obra superado</p>
+              <div class="min-w-0 flex flex-col-reverse md:flex-col">
+                <p class="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase md:tracking-wider leading-tight">Ejecución vencida</p>
+                <p class="text-lg md:text-2xl font-heading font-black leading-tight md:leading-normal" [ngClass]="kpiEjecucionVencida() > 0 ? 'text-amber-700' : 'text-slate-700'">{{ kpiEjecucionVencida() }}</p>
+                <p class="hidden md:block text-[9px] text-slate-400">Fin de obra superado</p>
               </div>
             </button>
 
             <button type="button" (click)="filtroAlertas.set('cierre')"
-                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    class="flex flex-col md:flex-row items-center gap-0.5 md:gap-3 p-1.5 md:p-3 rounded-xl border transition-all text-center md:text-left min-w-0"
                     [ngClass]="filtroAlertas() === 'cierre' ? 'border-blue-300 bg-blue-50/60 shadow-subtle-card' : 'border-slate-200 bg-white hover:bg-slate-50'">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              <div class="hidden md:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
                    [ngClass]="filtroAlertas() === 'cierre' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600'">
                 <i class="ti ti-file-invoice text-lg" aria-hidden="true"></i>
               </div>
-              <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cierre pendiente</p>
-                <p class="text-2xl font-heading font-black text-blue-700">{{ kpiCierre() }}</p>
-                <p class="text-[9px] text-slate-400">En finalizado parcial</p>
+              <div class="min-w-0 flex flex-col-reverse md:flex-col">
+                <p class="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase md:tracking-wider leading-tight">Cierre pendiente</p>
+                <p class="text-lg md:text-2xl font-heading font-black leading-tight md:leading-normal text-blue-700">{{ kpiCierre() }}</p>
+                <p class="hidden md:block text-[9px] text-slate-400">En finalizado parcial</p>
               </div>
             </button>
 
             <button type="button" (click)="filtroAlertas.set('todos')"
-                    class="flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                    class="flex flex-col md:flex-row items-center gap-0.5 md:gap-3 p-1.5 md:p-3 rounded-xl border transition-all text-center md:text-left min-w-0"
                     [ngClass]="filtroAlertas() === 'todos' ? 'border-emerald-300 bg-emerald-50/60 shadow-subtle-card' : 'border-slate-200 bg-white hover:bg-slate-50'">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              <div class="hidden md:flex w-10 h-10 rounded-full items-center justify-center shrink-0"
                    [ngClass]="filtroAlertas() === 'todos' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600'">
                 <i class="ti ti-circle-check text-lg" aria-hidden="true"></i>
               </div>
-              <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SLA a tiempo</p>
-                <p class="text-2xl font-heading font-black text-emerald-700">{{ kpiSLA().aTiempo }}</p>
-                <p class="text-[9px] text-slate-400">Ver todos los activos</p>
+              <div class="min-w-0 flex flex-col-reverse md:flex-col">
+                <p class="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase md:tracking-wider leading-tight">SLA a tiempo</p>
+                <p class="text-lg md:text-2xl font-heading font-black leading-tight md:leading-normal text-emerald-700">{{ kpiSLA().aTiempo }}</p>
+                <p class="hidden md:block text-[9px] text-slate-400">Ver todos los activos</p>
               </div>
             </button>
           </div>
 
           <!-- Filtros rápidos -->
-          <div class="flex items-center gap-2 px-5 py-3 bg-white border-b border-slate-100 shrink-0 flex-wrap">
-            <span class="text-[11px] font-medium text-slate-400 mr-1">Filtrar:</span>
+          <div class="flex items-center gap-2 px-3 md:px-5 py-2 md:py-3 bg-white border-b border-slate-100 shrink-0 flex-nowrap md:flex-wrap overflow-x-auto">
+            <span class="hidden md:inline text-[11px] font-medium text-slate-400 mr-1">Filtrar:</span>
             @for (f of [{id:'todos',label:'Todos'},{id:'criticos',label:'Críticos'},{id:'ejecucion',label:'Ejecución vencida'},{id:'cierre',label:'Cierre pendiente'},{id:'ok',label:'Sin alertas activas'}]; track f.id) {
               <button type="button" (click)="setFiltroAlertas(f.id)"
-                      class="text-[11px] px-3 py-1.5 rounded-lg border transition-all font-medium"
+                      class="shrink-0 whitespace-nowrap text-[11px] px-3 py-1.5 rounded-lg border transition-all font-medium"
                       [ngClass]="filtroAlertas() === f.id
                         ? 'bg-slate-800 text-white border-slate-800'
                         : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'">
@@ -331,11 +419,11 @@
                 }
               </button>
             }
-            <span class="ml-auto text-[10px] text-slate-400">{{ alertasFiltradas().length }} proyecto(s)</span>
+            <span class="ml-auto shrink-0 whitespace-nowrap text-[10px] text-slate-400">{{ alertasFiltradas().length }} proyecto(s)</span>
           </div>
 
           <!-- Lista de alertas -->
-          <div class="flex-1 overflow-y-auto p-5 space-y-3">
+          <div class="flex-1 overflow-y-auto p-3 md:p-5 space-y-3">
 
             @if (alertasFiltradas().length === 0) {
               <div class="flex flex-col items-center justify-center h-64 text-slate-400">

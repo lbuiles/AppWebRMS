@@ -103,3 +103,31 @@ test('registra un corte de facturación desde el panel del proyecto', async ({ p
   await expect.poll(() => operaciones.includes('AddCorteFacturacion')).toBe(true);
   await expect(page.getByText('FV-PRUEBA-1').first()).toBeVisible();
 });
+
+test.describe('en celular', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('el Tracker muestra tarjetas y una tarjeta abre el panel del proyecto', async ({ page }) => {
+    await prepararSesion(page);
+    await page.goto('/proyectos/energia');
+    const tarjeta = page.getByRole('button', { name: /Abrir proyecto E-001/ });
+    await expect(tarjeta).toBeVisible();
+    await expect(page.locator('table:visible')).toHaveCount(0);
+    await tarjeta.click();
+    await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue(/Subestación de prueba/);
+  });
+
+  test('los filtros se recogen en el botón Filtros', async ({ page }) => {
+    await prepararSesion(page);
+    await page.goto('/proyectos/energia');
+    const estado = page.locator('select').filter({ hasText: 'Todos los estados' });
+    await expect(estado).toBeHidden();
+    const boton = page.getByRole('button', { name: /^Filtros/ });
+    await boton.click();
+    await expect(estado).toBeVisible();
+    await estado.selectOption('PENDIENTE');
+    await expect(boton).toHaveText(/Filtros\s*1/);
+    await boton.click();
+    await expect(estado).toBeHidden();
+  });
+});
