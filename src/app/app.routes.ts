@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, publicGuard, permissionGuard } from './core/auth/auth.guard';
+import { cambiosPendientesGuard } from './core/guards/cambios-pendientes.guard';
 
 // Componentes: el layout se carga de inmediato; cada pantalla se descarga al entrar a su ruta (lazy loading)
 import { MainLayoutComponent } from './layout/main-layout/main-layout';
@@ -83,6 +84,7 @@ export const routes: Routes = [
         path: 'proyectos/:linea',
         loadComponent: () => import('./features/proyectos/tracker-list/tracker-list').then(m => m.TrackerListComponent),
         canActivate: [permissionGuard],
+        canDeactivate: [cambiosPendientesGuard],
         data: { permiso: 'proyectos' }
       },
       {

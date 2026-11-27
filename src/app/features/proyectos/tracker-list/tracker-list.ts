@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostListener } from '@angular/core';
+import { ConCambiosPendientes, confirmarDescartarCambios } from '../../../core/guards/cambios-pendientes.guard';
 import { CommonModule, CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
@@ -15,7 +16,7 @@ import { Observable, map, forkJoin } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './tracker-list.html'
 })
-export class TrackerListComponent implements OnInit {
+export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private trackerService = inject(TrackerService);
@@ -65,7 +66,7 @@ export class TrackerListComponent implements OnInit {
       this.trackerService.archivarProyecto(p.id, usuario.id).subscribe({
         next: () => {
           Swal.fire({ icon: 'success', title: 'Proyecto archivado', timer: 1500, showConfirmButton: false });
-          this.cerrarPanel();
+          this.cerrarPanel(true);
           this.cargarProyectos(this.lineaActiva());
         },
         error: (err) => {
@@ -124,7 +125,7 @@ export class TrackerListComponent implements OnInit {
       this.trackerService.eliminarProyectoDefinitivo(p.id).subscribe({
         next: () => {
           Swal.fire({ icon: 'success', title: 'Proyecto eliminado', timer: 1500, showConfirmButton: false });
-          this.cerrarPanel();
+          this.cerrarPanel(true);
           this.cargarProyectos(this.lineaActiva());
           if (this.viendoArchivados()) this.cargarProyectosArchivados();
         },
@@ -482,7 +483,26 @@ export class TrackerListComponent implements OnInit {
       this.cargarSubFlujos(proyecto.id);
   }
 
-  cerrarPanel() {
+  /** Hay un formulario abierto con cambios sin guardar (lo usan el guard de ruta y el aviso del navegador). */
+  tieneCambiosSinGuardar(): boolean {
+    return (this.panelAbierto() && !!this.actualizarForm?.dirty)
+      || (this.modalAbierto() && !!this.proyectoForm?.dirty)
+      || (this.modalOTAbierto() && !!this.otForm?.dirty)
+      || (this.modalAnticipoAbierto() && !!this.anticipoForm?.dirty)
+      || (this.modalPagoAbierto() && !!this.pagoForm?.dirty)
+      || (this.modalReqAbierto() && !!this.reqForm?.dirty)
+      || (this.modalAnticipoDirectoAbierto() && !!this.anticipoDirectoForm?.dirty)
+      || (this.modalCorteFacturacionAbierto() && !!this.corteFacturacionForm?.dirty);
+  }
+
+  /** Al cerrar o recargar la pestaña con cambios sin guardar, el navegador pide confirmación. */
+  @HostListener('window:beforeunload', ['$event'])
+  avisarAntesDeSalir(evento: BeforeUnloadEvent) {
+    if (this.tieneCambiosSinGuardar()) { evento.preventDefault(); evento.returnValue = ''; }
+  }
+
+  async cerrarPanel(forzar = false) {
+    if (!forzar && this.actualizarForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.panelAbierto.set(false);
     setTimeout(() => this.proyectoSeleccionado.set(null), 300);
   }
@@ -718,7 +738,8 @@ export class TrackerListComponent implements OnInit {
     this.modalAbierto.set(true);
   }
 
-  cerrarModal() {
+  async cerrarModal(forzar = false) {
+    if (!forzar && this.proyectoForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalAbierto.set(false);
   }
 
@@ -753,7 +774,7 @@ export class TrackerListComponent implements OnInit {
     this.trackerService.crearProyecto(inputData).subscribe({
       next: () => {
         this.guardando.set(false);
-        this.cerrarModal();
+        this.cerrarModal(true);
         Swal.fire({ icon: 'success', title: '¡Proyecto Creado!', text: 'El proyecto ya está en el Tracker.', confirmButtonColor: '#1e3a8a', timer: 2000 });
         this.cargarProyectos(this.lineaActiva());
       },
@@ -1111,7 +1132,8 @@ export class TrackerListComponent implements OnInit {
     }
   }
 
-  cerrarModalOT() {
+  async cerrarModalOT(forzar = false) {
+    if (!forzar && this.otForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalOTAbierto.set(false);
   }
 
@@ -1158,7 +1180,7 @@ export class TrackerListComponent implements OnInit {
     this.trackerService.crearOrdenTrabajo(inputData).subscribe({
       next: (nuevaOt) => {
         this.guardandoOT.set(false);
-        this.cerrarModalOT();
+        this.cerrarModalOT(true);
 
         Swal.fire({
           icon: 'success',
@@ -1193,7 +1215,8 @@ export class TrackerListComponent implements OnInit {
     this.modalAnticipoAbierto.set(true);
   }
 
-  cerrarModalAnticipo() {
+  async cerrarModalAnticipo(forzar = false) {
+    if (!forzar && this.anticipoForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalAnticipoAbierto.set(false);
     setTimeout(() => this.otSeleccionadaParaAnticipo.set(null), 300);
   }
@@ -1222,7 +1245,7 @@ export class TrackerListComponent implements OnInit {
     this.trackerService.solicitarAnticipo(inputData).subscribe({
       next: (nuevoAnticipo) => {
         this.guardandoAnticipo.set(false);
-        this.cerrarModalAnticipo();
+        this.cerrarModalAnticipo(true);
 
         Swal.fire({
           icon: 'success',
@@ -1256,7 +1279,8 @@ export class TrackerListComponent implements OnInit {
     this.modalPagoAbierto.set(true);
   }
 
-  cerrarModalPago() {
+  async cerrarModalPago(forzar = false) {
+    if (!forzar && this.pagoForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalPagoAbierto.set(false);
     setTimeout(() => this.anticipoSeleccionado.set(null), 300);
   }
@@ -1278,7 +1302,7 @@ export class TrackerListComponent implements OnInit {
     this.trackerService.pagarAnticipo(ant.id, idEgreso).subscribe({
       next: () => {
         this.guardandoPago.set(false);
-        this.cerrarModalPago();
+        this.cerrarModalPago(true);
 
         Swal.fire({
           icon: 'success',
@@ -1311,7 +1335,8 @@ export class TrackerListComponent implements OnInit {
     this.modalReqAbierto.set(true);
   }
 
-  cerrarModalReq() {
+  async cerrarModalReq(forzar = false) {
+    if (!forzar && this.reqForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalReqAbierto.set(false);
   }
 
@@ -1337,7 +1362,7 @@ export class TrackerListComponent implements OnInit {
     this.trackerService.crearRequisicion(inputData).subscribe({
       next: (nuevaReq) => {
         this.guardandoReq.set(false);
-        this.cerrarModalReq();
+        this.cerrarModalReq(true);
 
         Swal.fire({
           icon: 'success',
@@ -1731,7 +1756,8 @@ export class TrackerListComponent implements OnInit {
     this.modalAnticipoDirectoAbierto.set(true);
   }
 
-  cerrarModalAnticipoDirecto() {
+  async cerrarModalAnticipoDirecto(forzar = false) {
+    if (!forzar && this.anticipoDirectoForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalAnticipoDirectoAbierto.set(false);
     this.proyectoParaAnticipo.set(null);
   }
@@ -1781,7 +1807,8 @@ export class TrackerListComponent implements OnInit {
     this.modalCorteFacturacionAbierto.set(true);
   }
 
-  cerrarModalCorteFacturacion() {
+  async cerrarModalCorteFacturacion(forzar = false) {
+    if (!forzar && this.corteFacturacionForm?.dirty && !(await confirmarDescartarCambios())) return;
     this.modalCorteFacturacionAbierto.set(false);
     this.proyectoParaCorte.set(null);
   }
