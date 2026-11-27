@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom, inject } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, inject, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
@@ -24,6 +24,9 @@ import Swal from 'sweetalert2';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Desde Angular 21 las apps arrancan sin zone.js (zoneless) si no se indica lo contrario.
+    // Esta app actualiza la pantalla con zone.js (subscribe, setTimeout, etc.), así que se mantiene explícito.
+    provideZoneChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withXhr()),
     provideCharts(withDefaultRegisterables()),
