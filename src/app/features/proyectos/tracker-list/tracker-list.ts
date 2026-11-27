@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostListener, viewChild } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, ChangeDetectionStrategy, HostListener, viewChild } from '@angular/core';
 import { ConCambiosPendientes } from '../../../core/guards/cambios-pendientes.guard';
 import { CommonModule, CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
@@ -37,6 +37,34 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     + (this.mostrarFinalizados() ? 1 : 0)
     + (this.viendoArchivados() ? 1 : 0)
   );
+
+  // --- Filtros guardados: cada usuario recupera sus últimos filtros en cada división ---
+  private claveFiltros(linea: string): string {
+    return `rms_tracker_filtros_${this.authService.usuarioActual()?.email ?? 'anonimo'}_${linea}`;
+  }
+
+  /** Carga los filtros guardados de la división (o los deja en "todos" si no hay). */
+  private restaurarFiltros(linea: string) {
+    let f: any = {};
+    try { f = JSON.parse(localStorage.getItem(this.claveFiltros(linea)) || '{}') || {}; } catch { f = {}; }
+    this.filtroEstado.set(typeof f.estado === 'string' ? f.estado : 'todos');
+    this.filtroResponsable.set(typeof f.responsable === 'string' ? f.responsable : 'todos');
+    this.filtroCliente.set(typeof f.cliente === 'string' ? f.cliente : 'todos');
+    this.mostrarFinalizados.set(f.finalizados === true);
+  }
+
+  /** Cada cambio de filtro se guarda para la división activa. */
+  private guardarFiltros = effect(() => {
+    const linea = this.lineaActiva();
+    const filtros = {
+      estado: this.filtroEstado(),
+      responsable: this.filtroResponsable(),
+      cliente: this.filtroCliente(),
+      finalizados: this.mostrarFinalizados()
+    };
+    if (!linea) return;
+    try { localStorage.setItem(this.claveFiltros(linea), JSON.stringify(filtros)); } catch { /* sin almacenamiento: no se guardan */ }
+  });
 
   // --- Archivar / Eliminar proyectos (punto 17) ---
   public viendoArchivados   = signal<boolean>(false);
@@ -345,6 +373,7 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
         return;
       }
 
+      this.restaurarFiltros(linea);
       this.lineaActiva.set(linea);
       this.configVisual.set(this.temas[linea] || this.temas['civiles']);
       this.cargarProyectos(linea);
