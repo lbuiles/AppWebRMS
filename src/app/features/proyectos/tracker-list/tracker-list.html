@@ -732,7 +732,7 @@
                             <div class="flex items-center gap-2">
                               @if (!contratistaModoLibre()) {
                                 <select class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
-                                        [disabled]="actualizarForm.get('contratista')?.disabled"
+                                        [disabled]="$safeNavigationMigration(actualizarForm.get('contratista')?.disabled)"
                                         [value]="actualizarForm.get('contratista')?.value || ''"
                                         (change)="onSeleccionarContratistaProyecto($event)">
                                   <option value="">Seleccionar contratista registrado...</option>
@@ -865,7 +865,7 @@
                                 <p class="text-[9px] text-slate-400">Compromiso del colaborador</p>
                                 <!-- Indicador de desviación en tiempo real -->
                                 @if (actualizarForm.get('fechaTentativaFin')?.value) {
-                                  @let diasDesv = calcularDiasDesviacion(actualizarForm.get('fechaTentativaFin')?.value);
+                                  @let diasDesv = calcularDiasDesviacion($safeNavigationMigration(actualizarForm.get('fechaTentativaFin')?.value));
                                   <span class="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full w-fit"
                                         [class]="diasDesv > 0 ? 'bg-red-50 text-red-600' : diasDesv < 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'">
                                     @if (diasDesv > 0) {
@@ -1447,7 +1447,7 @@
                     {{ actualizarForm.get('numeroOC')?.value || '—' }}
                   </p>
                   <p class="text-3xl font-mono font-black mt-2 relative z-10 text-indigo-700">
-                    {{ actualizarForm.get('valorOC')?.value | currency:'COP':'symbol-narrow':'1.0-0' }}
+                    {{ $safeNavigationMigration(actualizarForm.get('valorOC')?.value) | currency:'COP':'symbol-narrow':'1.0-0' }}
                   </p>
                   <p class="text-[9px] text-slate-400 mt-1 relative z-10">Valor contratado con el cliente</p>
                 </div>
@@ -1466,7 +1466,7 @@
                          [style.width.%]="porcentajeFacturacion"></div>
                   </div>
                   <div class="flex justify-between mt-2">
-                    <span class="text-[9px] text-slate-400">Facturado: <strong class="text-emerald-600">{{ actualizarForm.get('valorFacturado')?.value | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></span>
+                    <span class="text-[9px] text-slate-400">Facturado: <strong class="text-emerald-600">{{ $safeNavigationMigration(actualizarForm.get('valorFacturado')?.value) | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></span>
                     <span class="text-[9px] text-slate-400">Saldo: <strong class="text-amber-600">{{ saldoPorFacturar | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></span>
                   </div>
                 </div>
@@ -1475,11 +1475,11 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div class="bg-orange-50 border border-orange-100 rounded-xl p-3">
                     <p class="text-[9px] font-black text-orange-500 uppercase tracking-wider mb-1">Gastos REQ</p>
-                    <p class="text-base font-black text-orange-700">{{ actualizarForm.get('valorGasto')?.value | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                    <p class="text-base font-black text-orange-700">{{ $safeNavigationMigration(actualizarForm.get('valorGasto')?.value) | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
                   </div>
                   <div class="bg-purple-50 border border-purple-100 rounded-xl p-3">
                     <p class="text-[9px] font-black text-purple-500 uppercase tracking-wider mb-1">Costos OTs</p>
-                    <p class="text-base font-black text-purple-700">{{ actualizarForm.get('costoRealTotal')?.value | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                    <p class="text-base font-black text-purple-700">{{ $safeNavigationMigration(actualizarForm.get('costoRealTotal')?.value) | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
                   </div>
                   <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <p class="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-1">Costo Total</p>
@@ -1598,7 +1598,7 @@
                          class="w-full border border-emerald-300 bg-white rounded-lg px-3 py-2 text-sm font-black text-emerald-800 focus:ring-2 focus:ring-emerald-300 focus:outline-none shadow-inner text-right disabled:bg-emerald-50 disabled:cursor-not-allowed">
                   @if (proyectoSeleccionado()?.valorFacturado) {
                     <p class="text-[9px] text-emerald-500 mt-1">
-                      Último guardado: <strong>{{ proyectoSeleccionado()?.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+                      Último guardado: <strong>{{ $safeNavigationMigration(proyectoSeleccionado()?.valorFacturado) | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
                     </p>
                   }
                   @if (!actualizarForm.get('valorFacturado')?.disabled) {
@@ -1977,7 +1977,7 @@
       <div class="p-6 space-y-5">
         <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
           <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Tope Máximo (Valor OT)</p>
-          <p class="text-sm font-black text-slate-800">{{ otSeleccionadaParaAnticipo()?.valorTotal | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+          <p class="text-sm font-black text-slate-800">{{ $safeNavigationMigration(otSeleccionadaParaAnticipo()?.valorTotal) | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
         </div>
 
         <div>
@@ -2009,7 +2009,7 @@
           </div>
           <div>
             <h3 class="text-sm font-black text-emerald-900">Registrar Pago (ERP)</h3>
-            <p class="text-[10px] font-bold text-emerald-600/70">Monto: {{ anticipoSeleccionado()?.valorAnticipo | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+            <p class="text-[10px] font-bold text-emerald-600/70">Monto: {{ $safeNavigationMigration(anticipoSeleccionado()?.valorAnticipo) | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
           </div>
         </div>
       </div>

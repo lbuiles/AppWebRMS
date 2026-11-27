@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
@@ -16,6 +16,7 @@ export interface Factura {
   standalone: true,
   // ¡Muy importante importar BaseChartDirective para que el gráfico funcione!
   imports: [BaseChartDirective, CurrencyPipe, DatePipe],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './finanzas.html'
 })
 export class FinanzasComponent {

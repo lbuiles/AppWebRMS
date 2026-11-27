@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { SidebarComponent } from '../sidebar/sidebar';
@@ -10,6 +10,7 @@ import { MenuService } from '../../services/menu';
   standalone: true,
   imports: [RouterOutlet, SidebarComponent, HeaderComponent, CommonModule, AsyncPipe],
   templateUrl: './main-layout.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './main-layout.scss'
 })
 export class MainLayoutComponent {

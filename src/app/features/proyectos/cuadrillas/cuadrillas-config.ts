@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, input, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import {
@@ -10,7 +10,8 @@ import {
 @Component({
   selector: 'app-cuadrillas-config',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
 

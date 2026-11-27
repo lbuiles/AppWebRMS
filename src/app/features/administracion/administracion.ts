@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MenuService } from '../../services/menu'; // Ajusta la ruta según tu proyecto
 import { AuthService } from '../../core/auth/auth.service';
@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
   selector: 'app-administracion',
   standalone: true,
   imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './administracion.html'
 })
 export class AdministracionComponent implements OnInit {

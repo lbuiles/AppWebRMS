@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
 export interface Capacitacion {
@@ -19,6 +19,7 @@ export interface AlertaSST {
   selector: 'app-gestion-humana',
   standalone: true,
   imports: [DatePipe], // Importamos el pipe de fechas
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './gestion-humana.html'
 })
 export class GestionHumanaComponent {

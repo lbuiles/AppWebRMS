@@ -1,5 +1,5 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+
 import { MenuService } from '../../../services/menu';
 import { UsuarioService } from '../../../core/services/usuario';
 import Swal from 'sweetalert2';
@@ -7,8 +7,9 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-diccionario',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './diccionario.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './diccionario.scss'
 })
 export class Diccionario implements OnInit {

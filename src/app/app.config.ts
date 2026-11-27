@@ -2,7 +2,7 @@ import { ApplicationConfig, importProvidersFrom, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 import { environment } from '../environments/environment';
 
@@ -10,7 +10,8 @@ import {
   SocialLoginModule,
   SocialAuthServiceConfig,
   GoogleLoginProvider,
-  SocialAuthService
+  SocialAuthService,
+  SOCIAL_AUTH_CONFIG
 } from '@abacritt/angularx-social-login';
 
 import { provideApollo } from 'apollo-angular';
@@ -24,12 +25,13 @@ import Swal from 'sweetalert2';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(),
+    provideHttpClient(withXhr()),
     provideCharts(withDefaultRegisterables()),
     importProvidersFrom(SocialLoginModule),
 
     {
-      provide: 'SocialAuthServiceConfig',
+      // angularx-social-login 2.6+ usa un InjectionToken en lugar del string 'SocialAuthServiceConfig'
+      provide: SOCIAL_AUTH_CONFIG,
       useValue: {
         autoLogin: false,
         providers: [

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 export interface Ticket {
   codigoSitio: string;
@@ -13,6 +13,7 @@ export interface Ticket {
   selector: 'app-tickets',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './tickets.html'
 })
 export class TicketsComponent {

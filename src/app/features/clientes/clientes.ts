@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { UbicacionService } from '../../core/services/ubicacion';
@@ -32,6 +32,7 @@ const MULTI_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\s*
   selector: 'app-clientes',
   standalone: true,
   imports: [ReactiveFormsModule, NgClass],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './clientes.html'
 })
 export class ClientesComponent implements OnInit {

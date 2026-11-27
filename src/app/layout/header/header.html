@@ -36,7 +36,7 @@
 
       <div class="w-10 h-10 rounded-full border-2 border-[#ffb31c] shadow-sm overflow-hidden bg-gray-100 flex items-center justify-center transition-transform group-hover:scale-105">
         @if (authService.usuarioActual()?.fotoUrl) {
-          <img [src]="authService.usuarioActual()?.fotoUrl"
+          <img [src]="$safeNavigationMigration(authService.usuarioActual()?.fotoUrl)"
                referrerpolicy="no-referrer"
                alt="Perfil"
                class="w-full h-full object-cover">
