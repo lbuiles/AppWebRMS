@@ -3,6 +3,7 @@ import { Apollo, gql } from 'apollo-angular';
 import { Observable, map } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { codigosError, mensajeError } from '../errores';
 
 // ============================================================
 // INTERFACES
@@ -534,10 +535,8 @@ export class CuadrillaService {
 
 /** ¿El error de Apollo es el aviso de cruce horario? */
 export function esCruceHorario(err: any): boolean {
-  return err?.graphQLErrors?.some((e: any) => e?.extensions?.code === 'CRUCE_HORARIO') === true;
+  return codigosError(err).includes('CRUCE_HORARIO');
 }
 
-/** Mensaje legible de un error de Apollo/GraphQL. */
-export function mensajeError(err: any, porDefecto = 'No se pudo completar la operación.'): string {
-  return err?.graphQLErrors?.[0]?.message || err?.message || porDefecto;
-}
+/** Mensaje legible de un error de Apollo/GraphQL (se mantiene aquí por compatibilidad). */
+export { mensajeError };

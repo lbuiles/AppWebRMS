@@ -132,6 +132,25 @@ test('Ctrl+K busca un proyecto desde cualquier pantalla y abre su panel', async 
   await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue('Subestación de prueba');
 });
 
+test('la compilación trae lo necesario para instalarse como aplicación (PWA)', async ({ request }) => {
+  const manifest = await (await request.get('/manifest.webmanifest')).json();
+  expect(manifest.short_name).toBe('RMS ERP');
+  expect(manifest.icons.some((i: any) => i.purpose === 'maskable')).toBe(true);
+  expect((await request.get('/ngsw-worker.js')).ok()).toBe(true);
+  const ngsw = await (await request.get('/ngsw.json')).json();
+  expect(ngsw.navigationUrls.some((u: any) => String(u.regex).includes('api'))).toBe(true);
+  expect((await request.get('/icons/icon-192.png')).ok()).toBe(true);
+});
+
+test('un error de sesión vencida (401) lleva al inicio de sesión', async ({ page }) => {
+  await prepararSesion(page);
+  await page.route('**/api/graphql', route => route.fulfill({ status: 401, body: '' }));
+  await page.goto('/proyectos/energia');
+  await expect(page.getByText('Sesión vencida')).toBeVisible();
+  await page.getByRole('button', { name: 'OK' }).click();
+  await expect(page).toHaveURL(/\/login/);
+});
+
 test.describe('en celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

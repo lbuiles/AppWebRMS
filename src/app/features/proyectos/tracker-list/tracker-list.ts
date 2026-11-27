@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { CrearProyectoModalComponent } from './crear-proyecto-modal/crear-proyecto-modal';
 import { CorteFacturacionModalComponent } from './corte-facturacion-modal/corte-facturacion-modal';
 import { ProyectoPanelComponent } from './proyecto-panel/proyecto-panel';
+import { mensajeError } from '../../../core/errores';
 
 @Component({
   selector: 'app-tracker-list',
@@ -166,7 +167,7 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
           if (this.viendoArchivados()) this.cargarProyectosArchivados();
         },
         error: (err) => {
-          const mensaje = err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar el proyecto.';
+          const mensaje = mensajeError(err, 'No se pudo eliminar el proyecto.');
           Swal.fire({ icon: 'error', title: 'No se puede eliminar', text: mensaje });
         }
       });

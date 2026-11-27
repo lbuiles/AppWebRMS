@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { environment } from '../../../environments/environment';
 import { ArchivoService } from '../../core/services/archivo';
 import Swal from 'sweetalert2';
+import { mensajeError } from '../../core/errores';
 
 const TIPOS_DOCUMENTO_CP = [
   { value: 'RUT', label: 'RUT' },
@@ -495,10 +496,7 @@ export class ContratistasComponent implements OnInit {
       error: (err) => {
         this.guardando.set(false);
         console.error('ERROR COMPLETO:', JSON.stringify(err, null, 2));
-        const msg = err?.graphQLErrors?.[0]?.message
-          || err?.networkError?.error?.errors?.[0]?.message
-          || err?.message
-          || 'No se pudo guardar.';
+        const msg = mensajeError(err, 'No se pudo guardar.');
         Swal.fire('Error al guardar', msg, 'error');
       }
     });

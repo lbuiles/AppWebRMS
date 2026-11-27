@@ -76,7 +76,7 @@
               </td>
 
               <td class="p-4 text-center">
-                <button (click)="toggleEstado(u)"
+                <button [attr.aria-label]="u.estado === 'ACTIVO' ? 'Desactivar usuario ' + u.nombre : 'Activar usuario ' + u.nombre" (click)="toggleEstado(u)"
                         [disabled]="!authService.hasPermission('admin.usuarios.editar')"
                         [class]="u.estado === 'ACTIVO' ? 'bg-emerald-500' : 'bg-gray-300'"
                         [class.opacity-50]="!authService.hasPermission('admin.usuarios.editar')"
@@ -113,7 +113,7 @@
 
         <div class="p-6 border-b flex justify-between items-center bg-gray-50">
           <h3 class="text-xl font-black text-gray-900">{{ isEditing ? 'Editar Perfil' : 'Nuevo Colaborador' }}</h3>
-          <button (click)="cerrarModal()" class="text-gray-400 hover:text-red-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"></path></svg></button>
+          <button aria-label="Cerrar" (click)="cerrarModal()" class="text-gray-400 hover:text-red-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"></path></svg></button>
         </div>
 
         <div class="p-6 overflow-y-auto space-y-8 custom-scrollbar text-left">
