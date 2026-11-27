@@ -1,38 +1,20 @@
 import { Routes } from '@angular/router';
 import { authGuard, publicGuard, permissionGuard } from './core/auth/auth.guard';
 
-// Componentes
-import { LoginComponent } from './features/login/login';
+// Componentes: el layout se carga de inmediato; cada pantalla se descarga al entrar a su ruta (lazy loading)
 import { MainLayoutComponent } from './layout/main-layout/main-layout';
-import { DashboardComponent } from './features/dashboard/dashboard';
-import { TicketsComponent } from './features/tickets/tickets';
-import { ProyectosComponent } from './features/proyectos/proyectos';
-import { TareasComponent } from './features/tareas/tareas';
-import { TareasReportesComponent } from './features/tareas/tareas-reportes/tareas-reportes'; // ← NUEVO
-import { FinanzasComponent } from './features/finanzas/finanzas';
-import { GestionHumanaComponent } from './features/gestion-humana/gestion-humana';
-import { LandingComponent } from './features/landing/landing';
-import { AdministracionComponent } from './features/administracion/administracion';
-import { ClientesComponent } from './features/clientes/clientes';
-import { UsuariosComponent } from './features/administracion/usuarios/usuarios';
-import { Diccionario } from './features/administracion/diccionario/diccionario';
-import { ContratistasComponent } from './features/contratistas/contratistas';
-import { TrackerListComponent } from './features/proyectos/tracker-list/tracker-list';
-import { GerencialComponent } from './features/proyectos/gerencial/gerencial';
-import { ConfigCuadrillasComponent } from './features/administracion/config-cuadrillas/config-cuadrillas';
-import { CuadrillasComponent } from './features/proyectos/cuadrillas/cuadrillas';
 
 export const routes: Routes = [
   // --- ZONA PÚBLICA ---
   {
     path: '',
-    component: LandingComponent,
+    loadComponent: () => import('./features/landing/landing').then(m => m.LandingComponent),
     pathMatch: 'full',
     canActivate: [publicGuard]
   },
   {
     path: 'login',
-    component: LoginComponent,
+    loadComponent: () => import('./features/login/login').then(m => m.LoginComponent),
     canActivate: [publicGuard]
   },
 
@@ -42,89 +24,90 @@ export const routes: Routes = [
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: 'panel', component: DashboardComponent },
+      { path: 'panel', loadComponent: () => import('./features/dashboard/dashboard').then(m => m.DashboardComponent) },
       {
         path: 'administracion',
-        component: AdministracionComponent,
+        loadComponent: () => import('./features/administracion/administracion').then(m => m.AdministracionComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'admin' }
       },
       {
         path: 'config-cuadrillas',
-        component: ConfigCuadrillasComponent,
+        loadComponent: () => import('./features/administracion/config-cuadrillas/config-cuadrillas').then(m => m.ConfigCuadrillasComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'proyectos.cuadrillas.config' }
       },
       {
         path: 'diccionario',
-        component: Diccionario,
+        loadComponent: () => import('./features/administracion/diccionario/diccionario').then(m => m.Diccionario),
         canActivate: [permissionGuard],
         data: { permiso: 'admin' }
       },
       {
         path: 'usuarios',
-        component: UsuariosComponent,
+        loadComponent: () => import('./features/administracion/usuarios/usuarios').then(m => m.UsuariosComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'admin.usuarios.leer' }
       },
       {
         path: 'clientes',
-        component: ClientesComponent,
+        loadComponent: () => import('./features/clientes/clientes').then(m => m.ClientesComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'admin.clientes.leer' }
       },
       {
         path: 'contratistas',
-        component: ContratistasComponent,
+        loadComponent: () => import('./features/contratistas/contratistas').then(m => m.ContratistasComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'admin.contratistas.leer' }
       },
       {
         path: 'proyectos',
-        component: ProyectosComponent,
+        loadComponent: () => import('./features/proyectos/proyectos').then(m => m.ProyectosComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'proyectos' }
       },
       {
         path: 'proyectos/todas',
-        component: GerencialComponent,
+        loadComponent: () => import('./features/proyectos/gerencial/gerencial').then(m => m.GerencialComponent),
+        canActivate: [permissionGuard],
         data: { permiso: 'proyectos.gerente' }
       },
       {
         path: 'proyectos/cuadrillas',
-        component: CuadrillasComponent,
+        loadComponent: () => import('./features/proyectos/cuadrillas/cuadrillas').then(m => m.CuadrillasComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'proyectos.cuadrillas.ver' }
       },
       {
         path: 'proyectos/:linea',
-        component: TrackerListComponent,
+        loadComponent: () => import('./features/proyectos/tracker-list/tracker-list').then(m => m.TrackerListComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'proyectos' }
       },
       {
         path: 'finanzas',
-        component: FinanzasComponent,
+        loadComponent: () => import('./features/finanzas/finanzas').then(m => m.FinanzasComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'finanzas' }
       },
       {
         path: 'gestion-humana',
-        component: GestionHumanaComponent,
+        loadComponent: () => import('./features/gestion-humana/gestion-humana').then(m => m.GestionHumanaComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'gestionhumana' }
       },
-      { path: 'tickets', component: TicketsComponent },
+      { path: 'tickets', loadComponent: () => import('./features/tickets/tickets').then(m => m.TicketsComponent) },
       {
         path: 'tareas',
-        component: TareasComponent,
+        loadComponent: () => import('./features/tareas/tareas').then(m => m.TareasComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'tareas.ver' }
       },
       // ── NUEVO ───────────────────────────────────────────────
       {
         path: 'tareas/reportes',
-        component: TareasReportesComponent,
+        loadComponent: () => import('./features/tareas/tareas-reportes/tareas-reportes').then(m => m.TareasReportesComponent),
         canActivate: [permissionGuard],
         data: { permiso: 'tareas.reportes' }
       }

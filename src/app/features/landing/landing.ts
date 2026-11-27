@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
@@ -8,6 +8,7 @@ import emailjs from '@emailjs/browser';
   selector: 'app-landing',
   standalone: true,
   imports: [RouterLink, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './landing.html'
 })
 export class LandingComponent {

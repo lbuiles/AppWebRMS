@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
@@ -12,6 +12,7 @@ import { Observable, map, forkJoin } from 'rxjs';
   selector: 'app-tracker-list',
   standalone: true,
   imports: [CommonModule, RouterLink, CurrencyPipe, TitleCasePipe, ReactiveFormsModule, FormsModule, CurrencyMaskDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './tracker-list.html'
 })
 export class TrackerListComponent implements OnInit {

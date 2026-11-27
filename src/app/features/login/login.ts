@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { GoogleSigninButtonModule, SocialAuthService, GoogleLoginProvider } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service';
@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
   selector: 'app-login',
   standalone: true,
   imports: [GoogleSigninButtonModule, RouterLink],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './login.html'
 })
 export class LoginComponent implements OnInit, OnDestroy {
@@ -22,7 +23,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.authSub = this.googleAuth.authState.subscribe(async (user) => {
       // Si ya hay una autenticación en curso, ignorar emisiones adicionales
-      if (!user || this.autenticando) return;
+      // Sin idToken (p. ej. sesión sin el flujo de Google Sign-In) no hay nada que validar en el servidor
+      if (!user || !user.idToken || this.autenticando) return;
 
       this.autenticando = true;
 
@@ -43,7 +45,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         // Si falla (permisos, red, etc.) se usará el avatar de iniciales
       }
 
-      const exito = await this.rmsAuth.autenticarConServidor(user.idToken, fotoUrl);
+      const exito = await this.rmsAuth.autenticarConServidor(user.idToken!, fotoUrl);
 
       if (exito) {
         this.router.navigate(['/panel']);

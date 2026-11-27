@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +18,7 @@ interface UsuarioData {
   selector: 'app-usuarios',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './usuarios.html'
 })
 export class UsuariosComponent implements OnInit {

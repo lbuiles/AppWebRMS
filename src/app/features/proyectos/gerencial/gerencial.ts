@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { TrackerService } from '../../../core/services/tracker';
@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/auth/auth.service';
   selector: 'app-gerencial',
   standalone: true,
   imports: [CurrencyPipe, DatePipe, NgClass, RouterLink],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './gerencial.html'
 })
 export class GerencialComponent implements OnInit {

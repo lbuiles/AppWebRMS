@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
@@ -10,6 +10,7 @@ import { AuthService } from '../../core/auth/auth.service';
   selector: 'app-dashboard',
   standalone: true,
   imports: [BaseChartDirective, CurrencyPipe, CommonModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './dashboard.html'
 })
 export class DashboardComponent implements OnInit {

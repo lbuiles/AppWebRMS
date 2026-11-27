@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ContratistaService } from '../../core/services/contratista';
@@ -24,6 +24,7 @@ const TIPOS_DOCUMENTO_CP = [
   selector: 'app-contratistas',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './contratistas.html',
 })
 export class ContratistasComponent implements OnInit {

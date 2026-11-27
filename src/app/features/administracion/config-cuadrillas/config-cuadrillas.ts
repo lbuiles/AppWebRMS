@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CuadrillaService, CuadrillaTecnico } from '../../../core/services/cuadrilla';
 import { CuadrillasConfigComponent } from '../../proyectos/cuadrillas/cuadrillas-config';
@@ -8,6 +8,7 @@ import { CuadrillasConfigComponent } from '../../proyectos/cuadrillas/cuadrillas
   selector: 'app-config-cuadrillas',
   standalone: true,
   imports: [RouterLink, CuadrillasConfigComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
 <div class="p-6 max-w-7xl mx-auto space-y-4">
   <div class="border-b border-gray-200 pb-4">

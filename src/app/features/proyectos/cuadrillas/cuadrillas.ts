@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -57,6 +57,7 @@ const COLOR_ESTADO: Record<string, string> = {
   selector: 'app-cuadrillas',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, CuadrillasKpiComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './cuadrillas.html',
 })
 export class CuadrillasComponent implements OnInit {

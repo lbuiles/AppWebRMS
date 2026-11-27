@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CurrencyPipe, NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -20,6 +20,7 @@ export interface CategoriaProyecto {
   selector: 'app-proyectos',
   standalone: true,
   imports: [CurrencyPipe, RouterLink, NgClass],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './proyectos.html'
 })
 export class ProyectosComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { MenuService } from '../../services/menu';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
@@ -8,6 +8,7 @@ import { AuthService } from '../../core/auth/auth.service'; // Tu servicio
   selector: 'app-header',
   standalone: true,
   imports: [], // Si usas @if no necesitas NgIf
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './header.html'
 })
 export class HeaderComponent {

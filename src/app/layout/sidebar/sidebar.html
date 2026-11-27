@@ -58,7 +58,7 @@
     @if (verDetalleVersion()) {
       <div class="mb-2 space-y-1 rounded-lg bg-gray-800/70 p-2 text-gray-400">
         <div><span class="text-gray-300">Web:</span> {{ fechaVersion(version.web.fecha) }} · {{ version.web.commit || '—' }}</div>
-        <div><span class="text-gray-300">API:</span> {{ fechaVersion(version.api()?.fecha) }} · {{ version.api()?.commit || '—' }}</div>
+        <div><span class="text-gray-300">API:</span> {{ fechaVersion($safeNavigationMigration(version.api()?.fecha)) }} · {{ version.api()?.commit || '—' }}</div>
       </div>
     }
     <div class="flex items-center justify-between gap-2">

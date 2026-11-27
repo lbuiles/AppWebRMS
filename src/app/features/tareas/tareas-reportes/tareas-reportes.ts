@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -83,6 +83,7 @@ function addWeeks(d: Date, n: number): Date {
   selector: 'app-tareas-reportes',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, NgApexchartsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './tareas-reportes.html'
 })
 export class TareasReportesComponent implements OnInit {

@@ -1,5 +1,5 @@
-import { Component, inject, input, signal, effect, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, input, signal, effect, computed, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import {
@@ -10,7 +10,8 @@ import {
 @Component({
   selector: 'app-cuadrillas-kpi',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
 <div class="space-y-4">
   <div class="flex flex-wrap gap-2 bg-white rounded-xl border border-gray-200 p-3">
