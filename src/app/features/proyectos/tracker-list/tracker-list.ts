@@ -29,6 +29,15 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   public filtroResponsable = signal<string>('todos');
   public filtroCliente = signal<string>('todos');
 
+  /** Celular: los filtros se muestran solo al tocar el botón "Filtros". */
+  public filtrosAbiertos = signal<boolean>(false);
+  /** Cuántos filtros o vistas especiales están activos (se muestra en el botón "Filtros"). */
+  public filtrosActivos = computed(() =>
+    [this.filtroEstado(), this.filtroResponsable(), this.filtroCliente()].filter(f => f !== 'todos').length
+    + (this.mostrarFinalizados() ? 1 : 0)
+    + (this.viendoArchivados() ? 1 : 0)
+  );
+
   // --- Archivar / Eliminar proyectos (punto 17) ---
   public viendoArchivados   = signal<boolean>(false);
   public proyectosArchivados = signal<any[]>([]);
