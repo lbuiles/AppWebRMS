@@ -118,6 +118,20 @@ test('el Tracker recuerda los filtros de cada división', async ({ page }) => {
   await expect(page.locator('select').filter({ hasText: 'Pendiente' }).first()).toHaveValue('PENDIENTE');
 });
 
+test('Ctrl+K busca un proyecto desde cualquier pantalla y abre su panel', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/panel');
+  await expect(page.getByText('USUARIO PRUEBAS').first()).toBeVisible();
+  await page.keyboard.press('Control+k');
+  const campo = page.getByRole('dialog', { name: 'Buscar proyecto' }).getByRole('combobox');
+  await expect(campo).toBeFocused();
+  await campo.fill('subestacion');           // sin tilde también encuentra
+  await expect(page.getByRole('option', { name: /E-001/ })).toBeVisible();
+  await campo.press('Enter');
+  await expect(page).toHaveURL(/\/proyectos\/energia$/);
+  await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue('Subestación de prueba');
+});
+
 test.describe('en celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

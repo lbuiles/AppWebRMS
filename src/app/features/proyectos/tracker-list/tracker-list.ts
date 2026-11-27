@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, effect, ChangeDetectionStrategy, HostListener, viewChild } from '@angular/core';
-import { ConCambiosPendientes } from '../../../core/guards/cambios-pendientes.guard';
+import { ConCambiosPendientes, confirmarDescartarCambios } from '../../../core/guards/cambios-pendientes.guard';
 import { CommonModule, CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { TrackerService } from '../../../core/services/tracker';
@@ -379,6 +379,39 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       this.cargarProyectos(linea);
       this.cargarDatosFormulario();
     });
+
+    // Búsqueda global: /proyectos/<linea>?proyecto=<id> abre el panel de ese proyecto
+    this.route.queryParamMap.subscribe(q => {
+      const id = q.get('proyecto');
+      if (id) this.proyectoPendiente.set(id);
+    });
+  }
+
+  /** Proyecto pedido desde la búsqueda global, a la espera de que cargue la lista. */
+  private proyectoPendiente = signal<string | null>(null);
+
+  private abrirPendiente = effect(() => {
+    const id = this.proyectoPendiente();
+    if (!id || this.cargando()) return;
+    const proyecto = this.proyectos().find(p => p.id === id);
+    this.proyectoPendiente.set(null);
+    // Se quita ?proyecto= de la dirección para que recargar no vuelva a abrirlo
+    this.router.navigate([], { relativeTo: this.route, queryParams: { proyecto: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    if (proyecto) {
+      this.abrirDesdeBusqueda(proyecto);
+    } else {
+      Swal.fire({ icon: 'info', title: 'Proyecto no encontrado', text: 'El proyecto no está en esta división o fue archivado.', confirmButtonColor: '#1e3a8a' });
+    }
+  });
+
+  private async abrirDesdeBusqueda(proyecto: any) {
+    if (this.panelAbierto() && this.proyectoSeleccionado()?.id === proyecto.id) return;
+    if (this.tieneCambiosSinGuardar() && !(await confirmarDescartarCambios())) return;
+    this.modalAbierto.set(false);
+    this.cerrarModalCorteFacturacion();
+    // Se cierra y vuelve a abrir para que el panel cargue el proyecto nuevo desde cero
+    this.panelAbierto.set(false);
+    setTimeout(() => this.abrirPanel(proyecto));
   }
 
   // --- FUNCIONES MATEMÁTICAS PARA LAS ALERTAS ---

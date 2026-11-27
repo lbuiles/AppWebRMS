@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
-import { Observable, map } from 'rxjs';
+import { Observable, filter, map } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 
 // ==========================================
@@ -105,6 +105,17 @@ const REACTIVAR_PROYECTO = gql`
 const ELIMINAR_PROYECTO_DEFINITIVO = gql`
   mutation EliminarProyectoDefinitivo($id: UUID!) {
     eliminarProyectoDefinitivo(id: $id)
+  }
+`;
+
+// Búsqueda global (Ctrl+K): solo lo necesario para listar y abrir un proyecto
+const BUSCAR_PROYECTOS = gql`
+  query BuscarProyectos {
+    proyectos(where: { archivado: { neq: true } }, order: { fechaAsignacion: DESC }) {
+      id codigo nombre estado lineaNegocio
+      cliente { razonSocial }
+      responsable { id nombre }
+    }
   }
 `;
 
@@ -483,12 +494,24 @@ export class TrackerService {
     }).pipe(map((r: any) => r.data?.proyectos || []));
   }
 
+  /** Lista ligera de proyectos no archivados para la búsqueda global. */
+  buscarProyectos(): Observable<any[]> {
+    return this.apollo.query({
+      query: BUSCAR_PROYECTOS,
+      fetchPolicy: 'network-only'
+    }).pipe(map((r: any) => r.data?.proyectos || []));
+  }
+
   getProyectosPorLinea(lineaNegocio: string): Observable<any[]> {
     return this.apollo.watchQuery<any>({
       query: GET_PROYECTOS_POR_LINEA,
       variables: { linea: lineaNegocio },
       fetchPolicy: 'network-only'
-    }).valueChanges.pipe(map(result => result.data?.proyectos || []));
+    }).valueChanges.pipe(
+      // Apollo 4 emite primero un estado "cargando" sin datos: se ignora para no mostrar una lista vacía
+      filter((result: any) => !result.loading || !!result.data?.proyectos),
+      map((result: any) => result.data?.proyectos || [])
+    );
   }
 
   getDatosParaFormulario(): Observable<{clientes: any[], usuarios: any[], contratistas: any[]}> {
