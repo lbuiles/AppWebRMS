@@ -3,11 +3,12 @@ import { Router } from '@angular/router';
 import { MenuService } from '../../services/menu';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service'; // Tu servicio
+import { BusquedaGlobalComponent } from '../busqueda-global/busqueda-global';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [], // Si usas @if no necesitas NgIf
+  imports: [BusquedaGlobalComponent],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './header.html'
 })

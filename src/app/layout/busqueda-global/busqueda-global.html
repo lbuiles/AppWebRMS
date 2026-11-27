@@ -1,0 +1,61 @@
+@if (disponible) {
+  <button type="button" (click)="abrir()" aria-label="Buscar proyecto"
+          class="flex items-center gap-2 p-2 md:px-3 md:py-2 rounded-xl text-gray-400 md:text-gray-500 md:bg-gray-50 md:border md:border-gray-200 hover:text-[#1e3a8a] hover:bg-gray-100 transition-colors">
+    <svg class="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+    <span class="hidden md:inline text-sm">Buscar proyecto</span>
+    <kbd class="hidden lg:inline text-[10px] font-semibold text-gray-400 border border-gray-200 bg-white rounded px-1.5 py-0.5">{{ esMac ? '⌘' : 'Ctrl' }} K</kbd>
+  </button>
+}
+
+@if (abierta()) {
+  <div class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-start justify-center p-3 pt-[10vh]" (click)="cerrar()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden" (click)="$event.stopPropagation()"
+         role="dialog" aria-modal="true" aria-label="Buscar proyecto">
+
+      <div class="flex items-center gap-3 px-4 border-b border-slate-100">
+        <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+        <input #campo type="search" [value]="texto()" (input)="escribir($any($event.target).value)" (keydown)="teclas($event)"
+               placeholder="Código, nombre o cliente del proyecto…" autocomplete="off"
+               role="combobox" aria-controls="busqueda-resultados" [attr.aria-expanded]="resultados().length > 0"
+               [attr.aria-activedescendant]="resultados().length ? 'busqueda-op-' + seleccion() : null"
+               class="flex-1 py-4 text-sm text-slate-800 outline-none bg-transparent">
+        <button type="button" (click)="cerrar()" class="text-[10px] font-semibold text-slate-400 border border-slate-200 rounded px-1.5 py-0.5 hover:text-slate-600">Esc</button>
+      </div>
+
+      <div class="max-h-[60vh] overflow-y-auto">
+        @if (cargando()) {
+          <p class="px-4 py-6 text-sm text-slate-400 text-center">Cargando proyectos…</p>
+        } @else if (error()) {
+          <p class="px-4 py-6 text-sm text-red-500 text-center">No se pudieron cargar los proyectos. Cierra e intenta de nuevo.</p>
+        } @else if (!texto().trim()) {
+          <p class="px-4 py-6 text-sm text-slate-400 text-center">Escribe para buscar entre tus proyectos.</p>
+        } @else if (!resultados().length) {
+          <p class="px-4 py-6 text-sm text-slate-400 text-center">No hay proyectos que coincidan con «{{ texto() }}».</p>
+        } @else {
+          <ul id="busqueda-resultados" role="listbox" class="py-2">
+            @for (p of resultados(); track p.id; let i = $index) {
+              <li [id]="'busqueda-op-' + i" role="option" [attr.aria-selected]="i === seleccion()"
+                  (click)="ir(p)" (mouseenter)="seleccion.set(i)"
+                  class="mx-2 px-3 py-2.5 rounded-xl cursor-pointer flex items-center gap-3"
+                  [ngClass]="i === seleccion() ? 'bg-slate-100' : ''">
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm text-slate-800 truncate"><span class="font-bold text-slate-500 mr-1.5">{{ p.codigo }}</span>{{ p.nombre }}</p>
+                  <p class="text-[11px] text-slate-400 truncate">{{ p.cliente?.razonSocial || 'Sin cliente' }} · {{ estado(p.estado) }}</p>
+                </div>
+                <span class="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded" [ngClass]="lineas[clave(p)].color">
+                  {{ lineas[clave(p)].titulo }}
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="hidden md:flex items-center gap-4 px-4 py-2 border-t border-slate-100 text-[10px] text-slate-400">
+        <span><kbd class="font-semibold">↑ ↓</kbd> moverse</span>
+        <span><kbd class="font-semibold">Enter</kbd> abrir</span>
+        <span><kbd class="font-semibold">Esc</kbd> cerrar</span>
+      </div>
+    </div>
+  </div>
+}
