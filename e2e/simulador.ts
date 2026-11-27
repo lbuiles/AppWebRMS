@@ -50,6 +50,7 @@ const RESPUESTAS: Record<string, unknown> = {
   ] },
   GetProyectos: { proyectos: [PROYECTO] },
   GetProyectosArchivados: { proyectos: [] },
+  CrearProyecto: { addProyecto: { id: '40000000-0000-0000-0000-000000000001', codigo: 'E-999', nombre: 'Proyecto nuevo', estado: 'PENDIENTE', lineaNegocio: 'energia' } },
   AddCorteFacturacion: { addCorteFacturacion: { id: '30000000-0000-0000-0000-000000000001', proyectoId: PROYECTO.id, valorCorte: 150000,
     numeroFactura: 'FV-PRUEBA-1', observaciones: null, estado: 'REGISTRADO', fechaCorte: '2026-11-27T00:00:00.000Z',
     registradoPor: { id: USUARIO.id, nombre: USUARIO.nombre } } },

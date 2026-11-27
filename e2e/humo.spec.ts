@@ -76,6 +76,22 @@ test('Crear Proyecto abre su ventana y avisa al cancelar con datos escritos', as
   await expect(codigo).toBeHidden();
 });
 
+test('Crear Proyecto envía los campos vacíos como null (la API espera Guid?, no "")', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/proyectos/energia');
+  await page.getByRole('button', { name: 'Crear Proyecto' }).click();
+  await page.locator('[formcontrolname="codigo"]').fill('E-999');
+  await page.locator('[formcontrolname="nombre"]').fill('Proyecto nuevo');
+  await page.locator('[formcontrolname="clienteNombre"]').fill('Cliente de prueba');
+  const peticion = page.waitForRequest(r => r.url().includes('/api/graphql') && r.postDataJSON()?.operationName === 'CrearProyecto');
+  await page.getByRole('button', { name: 'Guardar Proyecto' }).click();
+  const input = (await peticion).postDataJSON().variables.input;
+  expect(input.responsableId).toBeNull();
+  expect(Object.values(input)).not.toContain('');
+  expect(input.lineaNegocio).toBe('energia');
+  await expect(page.getByText('¡Proyecto Creado!')).toBeVisible();
+});
+
 test('registra un corte de facturación desde el panel del proyecto', async ({ page }) => {
   const operaciones = await prepararSesion(page);
   await page.goto('/proyectos/energia');

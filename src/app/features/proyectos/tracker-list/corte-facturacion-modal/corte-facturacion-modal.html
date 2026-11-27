@@ -1,0 +1,106 @@
+@let p = proyecto();
+<div class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100" [ngClass]="configVisual().bgClaro">
+      <div>
+        <h3 class="text-sm font-black text-slate-800">Cortes de Facturación</h3>
+        <p class="text-[11px] text-slate-500 mt-0.5">{{ p.codigo }} · {{ p.nombre }}</p>
+      </div>
+      <button type="button" (click)="cancelar()" class="text-slate-400 hover:text-red-500 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+
+      <p class="text-[11px] text-slate-400 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        Usa esta opción cuando el proyecto se factura al cliente en varios cortes o actas parciales.
+        Cada corte registrado se suma automáticamente al <strong>Total Facturado</strong> del proyecto.
+      </p>
+
+      <!-- Formulario nuevo corte -->
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-4" [formGroup]="corteFacturacionForm">
+        <p class="text-[10px] font-medium text-slate-400 mb-3">Registrar Corte de Facturación</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Valor del Corte <span class="text-red-500">*</span></label>
+            <input type="number" formControlName="valorCorte" min="1" placeholder="$ 0"
+                   class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Número de Factura</label>
+            <input type="text" formControlName="numeroFactura" placeholder="Ej: FV-2026-001"
+                   class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Observaciones</label>
+            <textarea formControlName="observaciones" rows="2" placeholder="Ej: Acta de avance N°2..."
+                      class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+          </div>
+        </div>
+        <div class="mt-3 flex justify-end">
+          <button type="button" (click)="guardarCorteFacturacion()"
+                  [disabled]="corteFacturacionForm.invalid"
+                  class="text-xs font-bold px-5 py-2 rounded-lg text-white transition-colors disabled:opacity-50"
+                  [ngClass]="configVisual().bgColor">
+            Registrar Corte
+          </button>
+        </div>
+      </div>
+
+      <!-- Listado de cortes existentes -->
+      @if (cortes().length > 0) {
+        <div>
+          <p class="text-[10px] font-medium text-slate-400 mb-3">
+            Historial de Cortes ·
+            <span class="text-emerald-600 font-bold">Total: {{ totalCortesActivos | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </p>
+          <div class="space-y-2">
+            @for (c of cortes(); track c.id) {
+              <div class="flex items-center gap-3 p-3 rounded-xl border"
+                   [ngClass]="c.estado === 'ANULADO' ? 'bg-red-50 border-red-100 opacity-60' : 'bg-emerald-50 border-emerald-200'">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <p class="font-bold text-slate-800 text-xs">
+                      {{ c.valorCorte | currency:'COP':'symbol-narrow':'1.0-0' }}
+                    </p>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded uppercase"
+                          [ngClass]="c.estado === 'ANULADO' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'">
+                      {{ c.estado }}
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500">
+                    {{ c.fechaCorte | date:'dd/MM/yyyy' }}
+                    @if (c.numeroFactura) { · Factura {{ c.numeroFactura }} }
+                    · Registrado por {{ c.registradoPor?.nombre }}
+                  </p>
+                  @if (c.observaciones) {
+                    <p class="text-[10px] text-slate-400 italic">{{ c.observaciones }}</p>
+                  }
+                </div>
+                <!-- Acciones según estado -->
+                <div class="flex gap-1 shrink-0 items-center">
+                  @if (c.estado !== 'ANULADO') {
+                    <button type="button" (click)="anularCorteFacturacionConfirm(c)"
+                            class="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition-colors">
+                      Anular
+                    </button>
+                  }
+                  <button type="button" (click)="eliminarCorteFacturacionConfirm(c)"
+                          class="text-red-400 hover:text-red-600 transition-colors p-1" title="Eliminar">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <p class="text-xs text-slate-400 text-center py-4 italic">No hay cortes de facturación registrados para este proyecto.</p>
+      }
+
+    </div>
+  </div>
+</div>
