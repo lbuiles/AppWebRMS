@@ -104,6 +104,20 @@ test('registra un corte de facturación desde el panel del proyecto', async ({ p
   await expect(page.getByText('FV-PRUEBA-1').first()).toBeVisible();
 });
 
+test('el Tracker recuerda los filtros de cada división', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/proyectos/energia');
+  const estado = page.locator('select').filter({ hasText: 'Todos los estados' });
+  await estado.selectOption('PENDIENTE');
+  await page.reload();
+  await expect(page.locator('select').filter({ hasText: 'Pendiente' }).first()).toHaveValue('PENDIENTE');
+  // Otra división conserva sus propios filtros (aquí, ninguno)
+  await page.goto('/proyectos/civiles');
+  await expect(page.locator('select').filter({ hasText: 'Todos los estados' }).first()).toHaveValue('todos');
+  await page.goto('/proyectos/energia');
+  await expect(page.locator('select').filter({ hasText: 'Pendiente' }).first()).toHaveValue('PENDIENTE');
+});
+
 test.describe('en celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
