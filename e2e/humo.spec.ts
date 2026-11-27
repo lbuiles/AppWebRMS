@@ -62,3 +62,28 @@ test('el panel del proyecto avisa antes de descartar cambios sin guardar', async
   await page.getByRole('button', { name: 'Descartar cambios' }).click();
   await expect(page).toHaveURL(/\/proyectos$/);
 });
+
+test('Crear Proyecto abre su ventana y avisa al cancelar con datos escritos', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/proyectos/energia');
+  await page.getByRole('button', { name: 'Crear Proyecto' }).click();
+  const codigo = page.locator('[formcontrolname="codigo"]');
+  await expect(codigo).toBeVisible();
+  await codigo.fill('E-999');
+  await page.getByRole('button', { name: 'Cancelar' }).first().click();
+  await expect(page.getByText('Cambios sin guardar')).toBeVisible();
+  await page.getByRole('button', { name: 'Descartar cambios' }).click();
+  await expect(codigo).toBeHidden();
+});
+
+test('registra un corte de facturación desde el panel del proyecto', async ({ page }) => {
+  const operaciones = await prepararSesion(page);
+  await page.goto('/proyectos/energia');
+  await page.getByText('Subestación de prueba').first().click();
+  await page.getByRole('button', { name: /Agregar Corte de Facturación/ }).first().click();
+  await page.locator('[formcontrolname="valorCorte"]').fill('150000');
+  await page.locator('[formcontrolname="numeroFactura"]').fill('FV-PRUEBA-1');
+  await page.getByRole('button', { name: 'Registrar Corte' }).click();
+  await expect.poll(() => operaciones.includes('AddCorteFacturacion')).toBe(true);
+  await expect(page.getByText('FV-PRUEBA-1').first()).toBeVisible();
+});
