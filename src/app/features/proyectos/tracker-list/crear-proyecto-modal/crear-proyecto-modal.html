@@ -1,0 +1,116 @@
+<form [formGroup]="proyectoForm" (ngSubmit)="guardarProyecto()" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity animate-fade-in p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden transform transition-all animate-slide-up">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0" [ngClass]="configVisual().bgClaro">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-white rounded-lg shadow-subtle-card" [ngClass]="configVisual().textoColor">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        </div>
+        <h3 class="text-lg font-black text-slate-800">Registrar Nuevo Proyecto</h3>
+      </div>
+      <button type="button" (click)="cancelar()" class="text-slate-400 hover:text-red-500 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <div class="p-6 overflow-y-auto flex-1">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Código de Proyecto <span class="text-red-500">*</span></label>
+          <input type="text" formControlName="codigo" placeholder="Ej: RMS-2024-001"
+                 class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors"
+                 [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Valor Presupuestado al Cliente</label>
+          <input type="text" appCurrencyMask formControlName="valorOC" placeholder="$ 0"
+                 class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:outline-none transition-colors"
+                 [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre de la Actividad / Proyecto <span class="text-red-500">*</span></label>
+          <input type="text" formControlName="nombre" placeholder="Descripción corta del proyecto..."
+                 class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors"
+                 [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente Asignado <span class="text-red-500">*</span></label>
+            <button type="button" (click)="toggleClienteLibre()"
+                    class="text-[9px] font-bold px-2 py-1 rounded-lg border transition-colors"
+                    [ngClass]="clienteLibre() ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'">
+              {{ clienteLibre() ? '← Usar lista' : '✎ Texto libre' }}
+            </button>
+          </div>
+          @if (!clienteLibre()) {
+            <select formControlName="clienteId"
+                    class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:outline-none transition-colors cursor-pointer"
+                    [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
+              <option value="">Seleccione un cliente...</option>
+              @for (c of listas().clientes; track c.id) { <option [value]="c.id">{{ c.razonSocial }}</option> }
+            </select>
+          } @else {
+            <input type="text" formControlName="clienteNombre"
+                   placeholder="Ej: Empresa XYZ S.A.S."
+                   class="w-full border border-amber-200 rounded-lg px-4 py-2.5 text-sm bg-amber-50/40 focus:bg-white focus:ring-2 focus:outline-none transition-colors"
+                   [ngClass]="'focus:ring-amber-200 focus:border-amber-400'">
+            <p class="text-[9px] text-amber-600 mt-1">El cliente se creará con este nombre si no existe en el sistema.</p>
+          }
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Supervisor Cliente</label>
+          <input type="text" formControlName="supervisorCliente" placeholder="Nombre de quien autoriza..."
+                 class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors"
+                 [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            Director / Gerente de Proyectos
+          </label>
+          <select formControlName="responsableId"
+                  class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:outline-none transition-colors cursor-pointer"
+                  [ngClass]="'focus:ring-' + configVisual().bgColor.replace('bg-', '') + '/20 focus:border-' + configVisual().bgColor.replace('bg-', '')">
+            <option value="">Sin asignar por ahora</option>
+            @for (u of listas().usuarios; track u.id) { <option [value]="u.id">{{ u.nombre }}</option> }
+          </select>
+          <p class="text-[9px] text-slate-400 mt-1">El técnico o contratista que ejecuta la obra se asigna en los Preliminares.</p>
+        </div>
+      </div>
+
+      <!-- Fechas clave -->
+      <div class="mt-5 pt-4 border-t border-slate-100">
+        <p class="text-[11px] font-medium text-slate-400 mb-3">Fechas de Configuración Inicial</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Fecha de Asignación <span class="text-red-500">*</span>
+            </label>
+            <input type="date" formControlName="fechaAsignacion"
+                   class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors">
+            <p class="text-[9px] text-slate-400 mt-1">Fecha en que el cliente asignó el proyecto.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Fecha Respuesta al Cliente
+            </label>
+            <input type="date" formControlName="fechaRespuestaCliente"
+                   class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:outline-none transition-colors">
+            <p class="text-[9px] text-slate-400 mt-1">Si ya fue enviada, regístrala aquí para calcular el SLA.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer fijo del modal — siempre visible sin importar el tamaño de pantalla -->
+    <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 shrink-0 bg-white">
+      <button type="button" (click)="cancelar()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors">
+        Cancelar
+      </button>
+      <button type="submit" [disabled]="proyectoForm.invalid || guardando()"
+              [ngClass]="configVisual().bgColor"
+              class="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-subtle-card hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+        @if (guardando()) { Guardando... } @else { Guardar Proyecto }
+      </button>
+    </div>
+  </div>
+</form>

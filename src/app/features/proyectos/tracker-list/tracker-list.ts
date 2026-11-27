@@ -1,18 +1,18 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostListener } from '@angular/core';
-import { ConCambiosPendientes, confirmarDescartarCambios } from '../../../core/guards/cambios-pendientes.guard';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostListener, viewChild } from '@angular/core';
+import { ConCambiosPendientes } from '../../../core/guards/cambios-pendientes.guard';
 import { CommonModule, CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { TrackerService } from '../../../core/services/tracker';
 import { AuthService } from '../../../core/auth/auth.service';
 import Swal from 'sweetalert2';
-import { CurrencyMaskDirective } from '../../../core/directives/currency-mask';
-import { Observable, map, forkJoin } from 'rxjs';
+import { CrearProyectoModalComponent } from './crear-proyecto-modal/crear-proyecto-modal';
+import { CorteFacturacionModalComponent } from './corte-facturacion-modal/corte-facturacion-modal';
+import { ProyectoPanelComponent } from './proyecto-panel/proyecto-panel';
 
 @Component({
   selector: 'app-tracker-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, CurrencyPipe, TitleCasePipe, ReactiveFormsModule, FormsModule, CurrencyMaskDirective],
+  imports: [CommonModule, RouterLink, CurrencyPipe, TitleCasePipe, CrearProyectoModalComponent, CorteFacturacionModalComponent, ProyectoPanelComponent],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './tracker-list.html'
 })
@@ -21,7 +21,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   private router = inject(Router);
   private trackerService = inject(TrackerService);
   private authService = inject(AuthService);
-  private fb = inject(FormBuilder);
 
   // Señales de la tabla
   public lineaActiva = signal<string>('');
@@ -66,7 +65,7 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       this.trackerService.archivarProyecto(p.id, usuario.id).subscribe({
         next: () => {
           Swal.fire({ icon: 'success', title: 'Proyecto archivado', timer: 1500, showConfirmButton: false });
-          this.cerrarPanel(true);
+          this.cerrarPanel();
           this.cargarProyectos(this.lineaActiva());
         },
         error: (err) => {
@@ -125,7 +124,7 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       this.trackerService.eliminarProyectoDefinitivo(p.id).subscribe({
         next: () => {
           Swal.fire({ icon: 'success', title: 'Proyecto eliminado', timer: 1500, showConfirmButton: false });
-          this.cerrarPanel(true);
+          this.cerrarPanel();
           this.cargarProyectos(this.lineaActiva());
           if (this.viendoArchivados()) this.cargarProyectosArchivados();
         },
@@ -139,31 +138,20 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   public anticiposDirectos = signal<any[]>([]);
   public modalCorteFacturacionAbierto = signal<boolean>(false);
   public proyectoParaCorte = signal<any | null>(null);
-  public corteFacturacionForm!: FormGroup;
-  public cortesFacturacion = signal<any[]>([]);
+  private corteModal = viewChild(CorteFacturacionModalComponent);
+  private crearProyectoModal = viewChild(CrearProyectoModalComponent);
+  private panelProyecto = viewChild(ProyectoPanelComponent);
   public configVisual = signal<any>({});
   public proyectos = signal<any[]>([]);
   public cargando = signal<boolean>(true);
 
   // Señales y variables del Modal
   public modalAbierto = signal<boolean>(false);
-  public guardando = signal<boolean>(false);
   public listasFormulario = signal<{clientes: any[], usuarios: any[], contratistas: any[]}>({ clientes: [], usuarios: [], contratistas: [] });
-  public proyectoForm!: FormGroup;
   public panelAbierto = signal<boolean>(false);
   public proyectoSeleccionado = signal<any>(null);
 
-
-  public actualizando = signal<boolean>(false);
-  public actualizarForm!: FormGroup;
-
-  public vistaPanel = signal<'resumen' | 'resumen_general' | 'detalles' | 'bitacora' | 'compras' | 'control'>('resumen');
-  public nuevaObservacion = signal<string>('');
-  public guardandoObs = signal<boolean>(false);
   public esAdminFase = signal<boolean>(false);
-  public requisiciones = signal<any[]>([]);
-  public ordenesTrabajo = signal<any[]>([]);
-  public cargandoSubFlujos = signal<boolean>(false);
 
   // ==========================================
   // SEÑALES Y CÁLCULOS PARA EL DASHBOARD DE ALERTAS
@@ -277,7 +265,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     return { aTiempo, retraso, pendiente };
   });
 
-
   public kpiEjecucionVencida = computed(() =>
     this.proyectosConAlertas().filter(p =>
       p._alertas.some((a: any) => a.icono === 'ti-clock-exclamation')
@@ -327,8 +314,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   };
 
   ngOnInit() {
-    this.inicializarFormulario();
-
     this.esAdminFase.set(
       this.authService.hasPermission('proyectos.fase.administrativa') ||
       this.authService.hasPermission('proyectos.editar')
@@ -359,27 +344,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   }
 
   // --- FUNCIONES MATEMÁTICAS PARA LAS ALERTAS ---
-  // Retorna el nombre del ejecutor desde la primera OT activa del proyecto
-  obtenerEjecutorDesdeOT(p: any): string | null {
-    const ots = p.ordenesTrabajo || this.ordenesTrabajo() || [];
-    if (!ots.length) return null;
-    const ot = ots[0];
-    if (ot.tecnicoInterno?.nombre) return ot.tecnicoInterno.nombre;
-    if (ot.contratistaNombre) return ot.contratistaNombre;
-    return null;
-  }
-
-
-  /**
-   * Calcula cuántos días han pasado desde la fecha tentativa de fin hasta hoy.
-   * Positivo = retraso, Negativo = adelanto, 0 = en fecha.
-   */
-  calcularDiasDesviacion(fechaTentativa: string | null): number {
-    if (!fechaTentativa) return 0;
-    const tentativa = new Date(fechaTentativa + 'T00:00:00').setHours(0, 0, 0, 0);
-    const hoy = new Date().setHours(0, 0, 0, 0);
-    return Math.floor((hoy - tentativa) / (1000 * 60 * 60 * 24));
-  }
 
   calcularDiasDiferencia(fechaInicial: string | null, fechaFinal: string | null): number | null {
     if (!fechaInicial || !fechaFinal) return null;
@@ -387,14 +351,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     const f2 = new Date(fechaFinal).setHours(0,0,0,0);
     const diffTime = Math.abs(f2 - f1);
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  }
-
-  /** Diferencia con signo: positivo = real fue después de tentativa (retraso), negativo = adelanto */
-  calcularDesviacionFecha(fechaTentativa: string | null, fechaReal: string | null): number {
-    if (!fechaTentativa || !fechaReal) return 0;
-    const t = new Date(fechaTentativa).setHours(0,0,0,0);
-    const r = new Date(fechaReal).setHours(0,0,0,0);
-    return Math.floor((r - t) / (1000 * 60 * 60 * 24));
   }
 
   obtenerEstadoSLA(p: any) {
@@ -408,7 +364,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       return { texto: 'Con Retraso', badge: 'bg-red-100 text-red-700 border-red-200', estado: 'retraso', dias: dias };
     }
   }
-
 
   obtenerClaseEstado(estado: string): string {
     switch (estado) {
@@ -432,19 +387,15 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   }
 
   abrirPanel(proyecto: any) {
-      this.proyectoSeleccionado.set(proyecto);
-      this.vistaPanel.set('resumen');
-      this.panelAbierto.set(true);
-
-      this.cargarFormularioPanel();
-      this.cargarSubFlujos(proyecto.id);
+    this.proyectoSeleccionado.set(proyecto);
+    this.panelAbierto.set(true);
   }
 
   /** Hay un formulario abierto con cambios sin guardar (lo usan el guard de ruta y el aviso del navegador). */
   tieneCambiosSinGuardar(): boolean {
-    return (this.panelAbierto() && !!this.actualizarForm?.dirty)
-      || (this.modalAbierto() && !!this.proyectoForm?.dirty)
-      || (this.modalCorteFacturacionAbierto() && !!this.corteFacturacionForm?.dirty);
+    return !!this.panelProyecto()?.tieneCambios()
+      || !!this.crearProyectoModal()?.tieneCambios()
+      || !!this.corteModal()?.tieneCambios();
   }
 
   /** Al cerrar o recargar la pestaña con cambios sin guardar, el navegador pide confirmación. */
@@ -453,10 +404,14 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     if (this.tieneCambiosSinGuardar()) { evento.preventDefault(); evento.returnValue = ''; }
   }
 
-  async cerrarPanel(forzar = false) {
-    if (!forzar && this.actualizarForm?.dirty && !(await confirmarDescartarCambios())) return;
+  cerrarPanel() {
     this.panelAbierto.set(false);
-    setTimeout(() => this.proyectoSeleccionado.set(null), 300);
+    this.proyectoSeleccionado.set(null);
+  }
+
+  /** Refleja en la lista un cambio local hecho desde el panel. */
+  reemplazarProyecto(proyecto: any) {
+    this.proyectos.update(lista => lista.map(p => p.id === proyecto.id ? proyecto : p));
   }
 
   // --- MÉTODOS DE DATOS ---
@@ -535,703 +490,41 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     });
   }
 
-  cargarSubFlujos(proyectoId: string) {
-    this.cargandoSubFlujos.set(true);
-
-    forkJoin({
-      reqs: this.trackerService.getRequisicionesPorProyecto(proyectoId),
-      ots: this.trackerService.getOrdenesTrabajoPorProyecto(proyectoId)
-    }).subscribe({
-      next: (data) => {
-        this.requisiciones.set(data.reqs);
-        this.ordenesTrabajo.set(data.ots);
-        this.cargandoSubFlujos.set(false);
-      },
-      error: (err) => {
-        console.error('Error al cargar sub-flujos', err);
-        this.cargandoSubFlujos.set(false);
-      }
-    });
-  }
-
   cargarDatosFormulario() {
     this.trackerService.getDatosParaFormulario().subscribe(datos => {
       this.listasFormulario.set(datos);
     });
   }
 
-  enviarObservacion() {
-    const texto = this.nuevaObservacion().trim();
-    if (!texto) return;
-
-    const proyecto = this.proyectoSeleccionado();
-    const usuario = this.authService.usuarioActual();
-
-    if (!proyecto || !usuario?.id) {
-      Swal.fire('Error', 'No se pudo identificar tu usuario. Cierra sesión y vuelve a entrar.', 'error');
-      return;
-    }
-
-    this.guardandoObs.set(true);
-
-    this.trackerService.agregarObservacion(proyecto.id, usuario.id, texto).subscribe({
-      next: (nuevaObs) => {
-        const observacionesActualizadas = [nuevaObs, ...(proyecto.observaciones || [])];
-        const proyectoActualizado = { ...proyecto, observaciones: observacionesActualizadas };
-
-        this.proyectoSeleccionado.set(proyectoActualizado);
-        this.proyectos.update(lista =>
-          lista.map(p => p.id === proyecto.id ? proyectoActualizado : p)
-        );
-
-        this.nuevaObservacion.set('');
-        this.guardandoObs.set(false);
-      },
-      error: (err) => {
-        console.error(err);
-        this.guardandoObs.set(false);
-        Swal.fire('Error', 'No se pudo guardar la observación.', 'error');
-      }
-    });
-  }
-
-  // Signal para alternar entre selector de clientes y texto libre
-  public clienteLibre = signal<boolean>(true); // Default: texto libre (sin dropdown)
-
-  // Contratista en el flujo de proyecto: false = seleccionar de los ya registrados, true = texto libre
-  public contratistaModoLibre = signal<boolean>(false);
-
-  onSeleccionarContratistaProyecto(event: Event) {
-    const val = (event.target as HTMLSelectElement).value;
-    if (val === '__OTRO__') {
-      this.contratistaModoLibre.set(true);
-      this.actualizarForm.get('contratista')?.setValue('');
-      return;
-    }
-    this.actualizarForm.get('contratista')?.setValue(val);
-  }
-
-  toggleClienteLibre() {
-    const nuevo = !this.clienteLibre();
-    this.clienteLibre.set(nuevo);
-    const ctrl = this.proyectoForm.get('clienteId');
-    const ctrlNombre = this.proyectoForm.get('clienteNombre');
-    if (nuevo) {
-      // Texto libre: quitar validación obligatoria del select
-      ctrl?.clearValidators(); ctrl?.setValue(''); ctrl?.updateValueAndValidity();
-      ctrlNombre?.setValidators(Validators.required); ctrlNombre?.updateValueAndValidity();
-    } else {
-      // Selector: restaurar validación
-      ctrlNombre?.clearValidators(); ctrlNombre?.setValue(''); ctrlNombre?.updateValueAndValidity();
-      ctrl?.setValidators(Validators.required); ctrl?.updateValueAndValidity();
-    }
-  }
-
-  // --- MÉTODOS DEL MODAL ---
-  inicializarFormulario() {
-    this.proyectoForm = this.fb.group({
-      codigo: ['', Validators.required],
-      nombre: ['', Validators.required],
-      clienteId: ['', Validators.required],
-      clienteNombre: [''],
-      supervisorCliente: [''],
-      responsableId: [''],
-      valorOC: [0, [Validators.required, Validators.min(0)]],
-      fechaAsignacion: [this.formatToDateInput(new Date().toISOString())],
-      fechaRespuestaCliente: [null]
-    });
-
-
-    this.corteFacturacionForm = this.fb.group({
-      valorCorte:    [0, [Validators.required, Validators.min(1)]],
-      numeroFactura: [''],
-      observaciones: ['']
-    });
-
-  }
-
+  // --- MODAL CREAR PROYECTO (componente CrearProyectoModalComponent) ---
   abrirModal() {
-    this.clienteLibre.set(true); // Default: texto libre, sin dropdown
-    // Con texto libre, clienteNombre es requerido; clienteId no
-    const ctrl = this.proyectoForm.get('clienteId');
-    const ctrlNombre = this.proyectoForm.get('clienteNombre');
-    ctrl?.clearValidators();
-    ctrlNombre?.setValidators(Validators.required);
-    this.proyectoForm.reset({ valorOC: 0 });
     this.modalAbierto.set(true);
   }
 
-  async cerrarModal(forzar = false) {
-    if (!forzar && this.proyectoForm?.dirty && !(await confirmarDescartarCambios())) return;
-    this.modalAbierto.set(false);
-  }
-
-  guardarProyecto() {
-    if (this.proyectoForm.invalid) {
-      this.proyectoForm.markAllAsTouched();
-      return;
-    }
-
-    this.guardando.set(true);
-
-    const rawForm = { ...this.proyectoForm.value };
-
-    // Limpiar el campo no usado según el modo del selector de cliente
-    if (this.clienteLibre()) {
-      delete rawForm['clienteId'];
-    } else {
-      delete rawForm['clienteNombre'];
-    }
-
-    const inputData = {
-      ...rawForm,
-      fechaAsignacion: this.proyectoForm.get('fechaAsignacion')?.value
-        ? new Date(this.proyectoForm.get('fechaAsignacion')?.value + 'T00:00:00Z').toISOString()
-        : new Date().toISOString(),
-      fechaRespuestaCliente: this.proyectoForm.get('fechaRespuestaCliente')?.value
-        ? new Date(this.proyectoForm.get('fechaRespuestaCliente')?.value + 'T00:00:00Z').toISOString()
-        : null,
-      lineaNegocio: this.lineaActiva()
-    };
-
-    this.trackerService.crearProyecto(inputData).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.cerrarModal(true);
-        Swal.fire({ icon: 'success', title: '¡Proyecto Creado!', text: 'El proyecto ya está en el Tracker.', confirmButtonColor: '#1e3a8a', timer: 2000 });
-        this.cargarProyectos(this.lineaActiva());
-      },
-      error: (err) => {
-        this.guardando.set(false);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Hubo un problema al crear el proyecto.' });
-        console.error(err);
-      }
-    });
-  }
-
-  hoy(): string {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  private formatToDateInput(dateString: string | null | undefined): string {
-    if (!dateString) return '';
-    return new Date(dateString).toISOString().split('T')[0];
-  }
-
-  cargarFormularioPanel() {
-    const p = this.proyectoSeleccionado();
-    if (!p) return;
-
-    const contratistasRegistrados = this.listasFormulario().contratistas || [];
-    const nombreContratistaActual = (p.contratista || '').trim();
-    const coincideConRegistrado = !nombreContratistaActual || contratistasRegistrados.some(
-      (c: any) => (c.razonSocial || c.nombreCompleto || '').trim() === nombreContratistaActual
-    );
-    this.contratistaModoLibre.set(!coincideConRegistrado);
-
-    this.actualizarForm = this.fb.group({
-      nombre: [p.nombre, Validators.required],
-      responsableId: [p.responsable?.id || ''],
-      supervisorCliente: [p.supervisorCliente || ''],
-      contratista: [p.contratista || ''],
-      ejecutorInternoId: [p.ejecutorInterno?.id || p.ejecutorInternoId || ''],
-      polizas: [p.polizas || ''],
-      centroDeCostos: [p.centroDeCostos || ''],
-      numeroOC: [p.numeroOC || ''],
-      valorOC: [p.valorOC || 0, [Validators.required, Validators.min(0)]],
-      valorFacturado: [p.valorFacturado || 0, Validators.min(0)],
-      valorGasto: [p.valorGasto || 0, Validators.min(0)],
-      costoRealTotal: [p.costoRealTotal || 0, Validators.min(0)],
-      fechaRespuestaCliente: [this.formatToDateInput(p.fechaRespuestaCliente)],
-      requierePermisos: [!!p.fechaSolicitudPermisos],
-      sinOcAun: [p.numeroOC?.toUpperCase() === 'PENDIENTE'],
-      fechaSolicitudPermisos: [this.formatToDateInput(p.fechaSolicitudPermisos)],
-      fechaVisitaTecnica: [this.formatToDateInput(p.fechaVisitaTecnica)],
-      fechaEnvioPermiso: [this.formatToDateInput(p.fechaEnvioPermiso)],
-      fechaAprobacionPermisos: [this.formatToDateInput(p.fechaAprobacionPermisos)],
-      fechaEnvioPresupuesto: [this.formatToDateInput(p.fechaEnvioPresupuesto)],
-      fechaAprobacionPresupuesto: [this.formatToDateInput(p.fechaAprobacionPresupuesto)],
-      fechaInicioActividades: [this.formatToDateInput(p.fechaInicioActividades)],
-      fechaInicioObra: [this.formatToDateInput(p.fechaInicioObra)],
-      fechaTentativaFin: [this.formatToDateInput(p.fechaTentativaFin)],
-      fechaFinalizacionActividades: [this.formatToDateInput(p.fechaFinalizacionActividades)],
-      cierreTecnicoAprobado: [p.cierreTecnicoAprobado || false],
-      dossierEntregado: [p.dossierEntregado || false],
-      liquidacionTerminada: [p.liquidacionTerminada || false],
-      facturacionCompletada: [p.facturacionCompletada || false]
-    });
-
-    const esSuperAdmin = this.authService.hasPermission('proyectos.editar');
-    const esAdminFase = this.authService.hasPermission('proyectos.fase.administrativa') || esSuperAdmin;
-    const esOperativoFase = this.authService.hasPermission('proyectos.fase.operativa') || esSuperAdmin;
-
-    // ==========================================
-    // CANDADO MAESTRO (Modo Solo Lectura)
-    // ==========================================
-    const estaCerrado = p.estado === 'FINALIZADO_TOTAL' || p.estado === 'Cancelado' || p.estado === 'Incumplimiento';
-
-    if (estaCerrado) {
-      // Bloquea absolutamente todo el formulario
-      this.actualizarForm.disable();
-    } else {
-      // Bloqueos regulares de operación normal basados en permisos
-      if (!esAdminFase) {
-        const camposAdmin = [
-          'numeroOC', 'valorOC', 'valorFacturado',
-          'contratista', 'ejecutorInternoId', 'polizas', 'centroDeCostos',
-          'cierreTecnicoAprobado', 'dossierEntregado', 'liquidacionTerminada', 'facturacionCompletada'
-        ];
-        camposAdmin.forEach(c => this.actualizarForm.get(c)?.disable());
-      }
-
-      if (!esOperativoFase) {
-        const camposOperativos = [
-          'fechaRespuestaCliente', 'fechaSolicitudPermisos', 'fechaVisitaTecnica', 'fechaEnvioPermiso',
-          'fechaAprobacionPermisos', 'fechaEnvioPresupuesto', 'fechaAprobacionPresupuesto',
-          'fechaInicioActividades', 'fechaInicioObra', 'fechaTentativaFin', 'fechaFinalizacionActividades'
-        ];
-        camposOperativos.forEach(c => this.actualizarForm.get(c)?.disable());
-      }
-      // valorGasto y costoRealTotal ahora son editables manualmente
-    }
-  }
-
-
-  /** Cambia el modo del campo OC/PO: normal (número), pendiente (sin OC aún), noAplica */
-  setModoOC(modo: 'normal' | 'pendiente' | 'noAplica') {
-    const ctrlNumero = this.actualizarForm.get('numeroOC');
-    const ctrlSinOc  = this.actualizarForm.get('sinOcAun');
-    if (!ctrlNumero || !ctrlSinOc) return;
-
-    if (modo === 'normal') {
-      ctrlSinOc.setValue(false);
-      // Limpia el valor si era un marcador especial
-      const val = (ctrlNumero.value || '').toString().toUpperCase();
-      if (val === 'PENDIENTE' || val === 'NO_APLICA') ctrlNumero.setValue('');
-    } else if (modo === 'pendiente') {
-      ctrlSinOc.setValue(true);
-      ctrlNumero.setValue('PENDIENTE');
-    } else {
-      ctrlSinOc.setValue(false);
-      ctrlNumero.setValue('NO_APLICA');
-    }
-  }
-
-  /**
-   * Guarda solo el Nombre del Proyecto, sin depender de la validez del resto
-   * del formulario gigante de actualización (que tiene muchos otros campos
-   * requeridos en otras secciones/pestañas). Antes, el botón "Guardar" junto
-   * al nombre llamaba a guardarActualizacion(), que fallaba silenciosamente
-   * si cualquier otro campo del formulario estaba incompleto.
-   */
-  guardarNombreProyecto() {
-    const ctrlNombre = this.actualizarForm.get('nombre');
-    if (!ctrlNombre || !ctrlNombre.value?.trim()) {
-      ctrlNombre?.markAsTouched();
-      Swal.fire({ icon: 'warning', title: 'Nombre requerido', text: 'El nombre del proyecto no puede quedar vacío.' });
-      return;
-    }
-
-    const p = this.proyectoSeleccionado();
-    if (!p) return;
-
-    this.actualizando.set(true);
-    this.trackerService.actualizarNombreProyecto(p.id, ctrlNombre.value.trim()).subscribe({
-      next: () => {
-        this.actualizando.set(false);
-        Swal.fire({ icon: 'success', title: 'Nombre actualizado', timer: 1500, showConfirmButton: false });
-        this.proyectoSeleccionado.set({ ...p, nombre: ctrlNombre.value.trim() });
-        this.cargarProyectos(this.lineaActiva());
-      },
-      error: (err) => {
-        this.actualizando.set(false);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar el nombre del proyecto.' });
-        console.error(err);
-      }
-    });
-  }
-
-  guardarActualizacion() {
-    if (this.actualizarForm.invalid) {
-      this.actualizarForm.markAllAsTouched();
-      return;
-    }
-
-    const p = this.proyectoSeleccionado();
-    this.actualizando.set(true);
-
-    const dataCruda = this.actualizarForm.getRawValue();
-    const inputLimpio: any = {};
-
-    // Campos solo locales — no existen en ProyectoUpdateInput
-    const camposLocales = ['requierePermisos', 'sinOcAun'];
-
-    for (const key in dataCruda) {
-      if (camposLocales.includes(key)) continue;
-      const valor = dataCruda[key];
-      if (valor === '' || valor === null) {
-        inputLimpio[key] = null;
-      }
-      else if (key.startsWith('fecha') && typeof valor === 'string' && valor.length === 10) {
-        inputLimpio[key] = `${valor}T00:00:00.000Z`;
-      }
-      else {
-        inputLimpio[key] = valor;
-      }
-    }
-
-    this.trackerService.actualizarProyecto(p.id, inputLimpio).subscribe({
-      next: (resultado) => {
-        this.actualizando.set(false);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Tracker Actualizado',
-          text: 'El estado y las fechas se actualizaron correctamente.',
-          confirmButtonColor: '#1e3a8a',
-          timer: 2000
-        });
-
-        this.cargarProyectos(this.lineaActiva());
-        this.proyectoSeleccionado.set({ ...p, ...resultado });
-
-        // Volvemos a evaluar el formulario por si cambió de estado a FINALIZADO
-        this.cargarFormularioPanel();
-      },
-      error: (err) => {
-        this.actualizando.set(false);
-        console.error('Error completo:', err);
-
-        let mensajeServidor = '';
-
-        if (err.graphQLErrors && err.graphQLErrors.length > 0) {
-          mensajeServidor = err.graphQLErrors[0].message;
-        } else if (err.message) {
-          mensajeServidor = err.message;
-        }
-
-        const errorStr = JSON.stringify(err).toLowerCase();
-
-        if (errorStr.includes('not authorized') || errorStr.includes('permission')) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Acceso Denegado',
-            text: 'No tienes permisos para modificar estos campos.',
-            confirmButtonColor: '#ef4444'
-          });
-        }
-        else if (mensajeServidor) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Validación de Auditoría',
-            text: mensajeServidor,
-            confirmButtonColor: '#f59e0b'
-          });
-        }
-        else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo actualizar el Tracker. Por favor, intenta de nuevo.',
-            confirmButtonColor: '#ef4444'
-          });
-        }
-      }
-    });
-  }
-
-  // ==========================================
-  // REVERSIÓN DE CIERRE DE OBRA
-  // ==========================================
-  async revertirCierreObra() {
-    const result = await Swal.fire({
-      title: '¿Revertir el cierre de obra?',
-      html: `Se borrará la <b>fecha de finalización de actividades</b>.<br>
-             El proyecto volverá a estado <b>En Ejecución</b> y podrás corregir la información.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, revertir',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d97706',
-      cancelButtonColor: '#64748b'
-    });
-
-    if (!result.isConfirmed) return;
-
-    // Re-habilitar el formulario en caso de que esté deshabilitado (FINALIZADO_TOTAL)
-    this.actualizarForm.enable();
-
-    // Limpiar solo la fecha de finalización de actividades
-    this.actualizarForm.patchValue({ fechaFinalizacionActividades: '' });
-
-    this.guardarActualizacion();
-  }
-
-  async revertirCierreCompleto() {
-    const result = await Swal.fire({
-      title: '¿Revertir cierre completo?',
-      html: `Se borrarán la <b>fecha de finalización</b> y todos los <b>ítems documentales</b> marcados.<br>
-             El proyecto quedará pendiente de cierre nuevamente.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, revertir todo',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#64748b'
-    });
-
-    if (!result.isConfirmed) return;
-
-    // Re-habilitar el formulario (FINALIZADO_TOTAL lo deshabilita por completo)
-    this.actualizarForm.enable();
-
-    // Limpiar fecha de fin + todos los ítems de cierre
-    this.actualizarForm.patchValue({
-      fechaFinalizacionActividades: '',
-      cierreTecnicoAprobado: false,
-      dossierEntregado: false,
-      liquidacionTerminada: false,
-      facturacionCompletada: false
-    });
-
-    this.guardarActualizacion();
-  }
-
-
-  // ==========================================
-  // CÁLCULOS FINANCIEROS EN TIEMPO REAL
-  // ==========================================
-  get utilidadBruta(): number {
-    if (!this.actualizarForm) return 0;
-    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
-    const gastoMateriales = this.actualizarForm.get('valorGasto')?.value || 0;
-    const costoOTs = this.actualizarForm.get('costoRealTotal')?.value || 0;
-
-    return facturado - (gastoMateriales + costoOTs);
-  }
-
-  get margenUtilidad(): number {
-    if (!this.actualizarForm) return 0;
-    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
-    if (facturado === 0) return 0;
-    return (this.utilidadBruta / facturado) * 100;
-  }
-
-  // ==========================================
-  // BACKLOG #6 — Panel de Control PO
-  // ==========================================
-
-  /** Porcentaje del PO (valorOC) ya facturado */
-  get porcentajeFacturacion(): number {
-    if (!this.actualizarForm) return 0;
-    const po = this.actualizarForm.get('valorOC')?.value || 0;
-    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
-    if (po === 0) return 0;
-    return Math.min((facturado / po) * 100, 100);
-  }
-
-  /** Saldo pendiente de facturar contra el PO */
-  get saldoPorFacturar(): number {
-    if (!this.actualizarForm) return 0;
-    const po = this.actualizarForm.get('valorOC')?.value || 0;
-    const facturado = this.actualizarForm.get('valorFacturado')?.value || 0;
-    return Math.max(po - facturado, 0);
-  }
-
-  /** Costo total acumulado (REQ + OTs) */
-  get costoTotalAcumulado(): number {
-    if (!this.actualizarForm) return 0;
-    return (this.actualizarForm.get('valorGasto')?.value || 0)
-         + (this.actualizarForm.get('costoRealTotal')?.value || 0);
-  }
-
-  // ==========================================
-  // VALIDACIÓN PRE-CIERRE (Paso 4 - FINALIZADO_TOTAL)
-  // Espeja los 8 candados del backend para auditoría final
-  // ==========================================
-  get itemsAuditoriaCierre(): { label: string; ok: boolean; critico: boolean }[] {
-    const f = this.actualizarForm;
-    const p = this.proyectoSeleccionado();
-    if (!f || !p) return [];
-
-    const ots  = this.ordenesTrabajo();
-    const reqs = this.requisiciones();
-
-    // Requisiciones sin cerrar (estados reales del backend)
-    const reqSinCerrar = reqs.filter(
-      (r: any) => r.estado !== 'CERRADA' && r.estado !== 'Rechazado'
-    );
-
-    // Anticipos directos pendientes (módulo ANT independiente)
-    const antDirectosPendientes = (p.anticiposDirectos || []).filter(
-      (a: any) => a.estado === 'SOLICITADO' || a.estado === 'APROBADO'
-    );
-
-    // Permisos: son opcionales — solo valida si el proyecto los requiere
-    const requierePermisos = !!f.get('requierePermisos')?.value;
-
-    return [
-      // --- Checkboxes manuales de cierre ---
-      {
-        label: 'Cierre Técnico en Terreno aprobado',
-        ok: !!f.get('cierreTecnicoAprobado')?.value,
-        critico: true
-      },
-      {
-        label: 'Dossier / Informe entregado al cliente',
-        ok: !!f.get('dossierEntregado')?.value,
-        critico: true
-      },
-      {
-        label: 'Liquidación de contratistas terminada',
-        ok: !!f.get('liquidacionTerminada')?.value,
-        critico: true
-      },
-      {
-        label: 'Facturación emitida al cliente',
-        ok: !!f.get('facturacionCompletada')?.value,
-        critico: true
-      },
-      // --- Datos obligatorios ---
-      {
-        label: 'Centro de Costos (ID WorldOffice) registrado',
-        ok: !!f.get('centroDeCostos')?.value?.trim(),
-        critico: true
-      },
-      {
-        label: 'Respuesta a cliente (SLA) registrada',
-        ok: !!p.fechaRespuestaCliente,
-        critico: true
-      },
-      {
-        label: 'Estado de pólizas definido',
-        ok: !!f.get('polizas')?.value && f.get('polizas')?.value !== '',
-        critico: true
-      },
-      // --- Autorización / Acceso (solo si el proyecto lo requiere) ---
-      ...( requierePermisos ? [
-        {
-          label: 'Fecha de visita técnica registrada',
-          ok: !!p.fechaVisitaTecnica,
-          critico: false
-        },
-        {
-          label: 'Aprobación de permisos registrada',
-          ok: !!p.fechaAprobacionPermisos,
-          critico: false
-        }
-      ] : [
-        {
-          label: 'Autorización / Acceso: No requiere permisos',
-          ok: true,
-          critico: false
-        }
-      ]),
-      // --- Sub-flujos financieros ---
-      {
-        label: reqSinCerrar.length === 0
-          ? 'Todas las requisiciones cerradas ✓'
-          : `${reqSinCerrar.length} requisición(es) sin cerrar: ${reqSinCerrar.map((r: any) => r.consecutivo).join(', ')}`,
-        ok: reqSinCerrar.length === 0,
-        critico: true
-      },
-      {
-        label: antDirectosPendientes.length === 0
-          ? 'Sin anticipos directos pendientes ✓'
-          : `${antDirectosPendientes.length} anticipo(s) directo(s) sin resolver (pagar o rechazar)`,
-        ok: antDirectosPendientes.length === 0,
-        critico: true
-      },
-    ];
-  }
-
-  get puedeAuditoriaCierre(): boolean {
-    return this.itemsAuditoriaCierre.every(item => item.ok);
-  }
-
-  get itemsCierreOk(): number {
-    return this.itemsAuditoriaCierre.filter(i => i.ok).length;
-  }
-  get puedeIniciarObra(): boolean {
-    // Las pólizas son informativas: se muestra advertencia si están pendientes
-    // pero NO bloquean el inicio de obra (decisión de negocio — Bug #4).
-    return !!this.actualizarForm;
-  }
-
-
-  // Advertencia de OC sin registrar (no bloquea pero avisa)
-  get advertenciaOC(): string {
-    const numeroOC = this.actualizarForm?.get('numeroOC')?.value;
-    if (!numeroOC?.trim() || numeroOC.trim().toUpperCase() === 'PENDIENTE')
-      return 'Inicio de obra sin OC del cliente registrada. Recuerda registrarla cuando esté disponible.';
-    return '';
-  }
-
-  get razonesBloqueoInicio(): string[] {
-    if (!this.actualizarForm) return [];
-    const razones: string[] = [];
-    // Las pólizas ya no bloquean el inicio, solo se muestran como advertencia
-    const polizas = this.actualizarForm.get('polizas')?.value;
-    if (!polizas || polizas === 'Requiere - Pendiente')
-      razones.push('Advertencia: Las pólizas aún están pendientes. Recuerda actualizarlas.');
-    return razones;
-  }
-
-  // ==========================================
-  // VALIDACIÓN PRE-FIN DE OBRA
-  // Espeja los candados del backend para FINALIZADO_PARCIAL
-  // Los datos ya están cargados en los signals ordenesTrabajo() y requisiciones()
-  // ==========================================
-  get razonesBloqueoFinalizacion(): string[] {
-    const razones: string[] = [];
-    const fechaFin = this.actualizarForm?.get('fechaFinalizacionActividades')?.value;
-
-    if (!fechaFin) return razones;
-
-    // 1. Requisiciones incompletas (si existen, deben cerrarse o rechazarse)
-    const reqIncompletas = this.requisiciones().filter(
-      (r: any) => r.estado !== 'CERRADA' && r.estado !== 'Rechazado'
-    );
-    if (reqIncompletas.length > 0)
-      razones.push(
-        `${reqIncompletas.length} Requisición(es) sin cerrar: ${reqIncompletas.map((r: any) => `${r.consecutivo} (${r.estado})`).join(', ')}.`
-      );
-
-    // 2. Anticipos directos pendientes (SOLICITADO o APROBADO sin pagar)
-    const p = this.proyectoSeleccionado();
-    const antPendientes = (p?.anticiposDirectos || []).filter(
-      (a: any) => a.estado === 'SOLICITADO' || a.estado === 'APROBADO'
-    );
-    if (antPendientes.length > 0)
-      razones.push(
-        `${antPendientes.length} Anticipo(s) directo(s) sin completar — deben pagarse o rechazarse antes del cierre.`
-      );
-
-    return razones;
-  }
-
-  get puedeFinalizarObra(): boolean {
-    const fechaFin = this.actualizarForm?.get('fechaFinalizacionActividades')?.value;
-    return !!fechaFin && this.razonesBloqueoFinalizacion.length === 0;
-  }
-
-
-  // ── Cortes de Facturación ──
+  // --- MODAL CORTES DE FACTURACIÓN (componente CorteFacturacionModalComponent) ---
   abrirModalCorteFacturacion(p: any) {
     this.proyectoParaCorte.set(p);
-    this.cortesFacturacion.set(p.cortesFacturacion || []);
-    this.corteFacturacionForm.reset({ valorCorte: 0 });
     this.modalCorteFacturacionAbierto.set(true);
   }
 
-  async cerrarModalCorteFacturacion(forzar = false) {
-    if (!forzar && this.corteFacturacionForm?.dirty && !(await confirmarDescartarCambios())) return;
+  cerrarModalCorteFacturacion() {
     this.modalCorteFacturacionAbierto.set(false);
     this.proyectoParaCorte.set(null);
+  }
+
+  /** Suma el corte recién registrado al proyecto en la lista, sin recargar. */
+  alAgregarCorte(proyectoId: any, corte: any) {
+    this.proyectos.update(ps => ps.map(proj => {
+      if (proj.id !== proyectoId) return proj;
+      const cortes = [corte, ...(proj.cortesFacturacion || [])];
+      return {
+        ...proj,
+        cortesFacturacion: cortes,
+        valorFacturado: cortes
+          .filter((c: any) => c.estado !== 'ANULADO')
+          .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0)
+      };
+    }));
   }
 
   descargandoExcel = signal<boolean>(false);
@@ -1258,93 +551,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
           Swal.fire('Error', 'No se pudo generar el archivo Excel.', 'error');
         }
       }
-    });
-  }
-
-  get totalCortesActivos(): number {
-    return this.cortesFacturacion()
-      .filter((c: any) => c.estado !== 'ANULADO')
-      .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0);
-  }
-
-  guardarCorteFacturacion() {
-    if (this.corteFacturacionForm.invalid) {
-      this.corteFacturacionForm.markAllAsTouched();
-      return;
-    }
-    const p = this.proyectoParaCorte();
-    const usuario = this.authService.usuarioActual();
-    const raw = this.corteFacturacionForm.value;
-    this.trackerService.addCorteFacturacion({
-      proyectoId:      p.id,
-      registradoPorId: usuario?.id,
-      valorCorte:      raw.valorCorte,
-      numeroFactura:   raw.numeroFactura || null,
-      observaciones:   raw.observaciones || null
-    }).subscribe({
-      next: (res) => {
-        this.cortesFacturacion.update(a => [res, ...a]);
-        this.corteFacturacionForm.reset({ valorCorte: 0 });
-        const pCorte = this.proyectoParaCorte();
-        if (pCorte) {
-          this.proyectos.update(ps => ps.map(proj =>
-            proj.id === pCorte.id
-              ? {
-                  ...proj,
-                  cortesFacturacion: [res, ...(proj.cortesFacturacion || [])],
-                  valorFacturado: [res, ...(proj.cortesFacturacion || [])]
-                    .filter((c: any) => c.estado !== 'ANULADO')
-                    .reduce((sum: number, c: any) => sum + (c.valorCorte || 0), 0)
-                }
-              : proj
-          ));
-        }
-        Swal.fire({ icon: 'success', title: 'Corte de facturación registrado', timer: 2000, showConfirmButton: false });
-      },
-      error: (err) => {
-        const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo registrar el corte de facturación.';
-        Swal.fire('Error', msg, 'error');
-      }
-    });
-  }
-
-  anularCorteFacturacionConfirm(corte: any) {
-    Swal.fire({
-      title: '¿Anular corte de facturación?',
-      text: `El corte de ${corte.valorCorte?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} se marcará como anulado y se descontará del total facturado.`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'Sí, anular', confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      this.trackerService.anularCorteFacturacion(corte.id).subscribe({
-        next: () => {
-          this.cortesFacturacion.update(a => a.map((x: any) => x.id === corte.id ? { ...x, estado: 'ANULADO' } : x));
-          this.cargarProyectos(this.lineaActiva());
-          Swal.fire({ icon: 'success', title: 'Corte anulado', timer: 1500, showConfirmButton: false });
-        },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo anular.', 'error')
-      });
-    });
-  }
-
-  eliminarCorteFacturacionConfirm(corte: any) {
-    Swal.fire({
-      title: '¿Eliminar corte de facturación?',
-      text: `El corte de ${corte.valorCorte?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} será eliminado permanentemente.`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar', confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      this.trackerService.eliminarCorteFacturacion(corte.id).subscribe({
-        next: () => {
-          this.cortesFacturacion.update(a => a.filter((x: any) => x.id !== corte.id));
-          this.cargarProyectos(this.lineaActiva());
-          Swal.fire({ icon: 'success', title: 'Corte eliminado', timer: 1500, showConfirmButton: false });
-        },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
-      });
     });
   }
 
@@ -1379,7 +585,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       }
     });
   }
-
 
   rechazarAnticipoDirecto(anticipo: any) {
     this.trackerService.rechazarAnticipoDirecto(anticipo.id).subscribe({
