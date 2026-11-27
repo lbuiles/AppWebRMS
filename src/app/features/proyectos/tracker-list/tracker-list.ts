@@ -136,10 +136,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       });
     });
   }
-  public modalAnticipoDirectoAbierto = signal<boolean>(false);
-  public contratistaSeleccionadoOT = signal<any | null>(null);
-  public proyectoParaAnticipo = signal<any | null>(null);
-  public anticipoDirectoForm!: FormGroup;
   public anticiposDirectos = signal<any[]>([]);
   public modalCorteFacturacionAbierto = signal<boolean>(false);
   public proyectoParaCorte = signal<any | null>(null);
@@ -156,26 +152,8 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   public proyectoForm!: FormGroup;
   public panelAbierto = signal<boolean>(false);
   public proyectoSeleccionado = signal<any>(null);
-  public modalOTAbierto = signal<boolean>(false);
-  public guardandoOT = signal<boolean>(false);
-  public otForm!: FormGroup;
-  public modalAnticipoAbierto = signal<boolean>(false);
-  public guardandoAnticipo = signal<boolean>(false);
-  public anticipoForm!: FormGroup;
-  public otSeleccionadaParaAnticipo = signal<any>(null);
 
-  // --- VARIABLES PARA PAGO DE ANTICIPO (ERP) ---
-  public modalPagoAbierto = signal<boolean>(false);
-  public guardandoPago = signal<boolean>(false);
-  public pagoForm!: FormGroup;
-  public anticipoSeleccionado = signal<any>(null);
 
-  // --- VARIABLES PARA REQUISICIONES ---
-  public modalReqAbierto = signal<boolean>(false);
-  public guardandoReq = signal<boolean>(false);
-  public reqForm!: FormGroup;
-
-  public modalActualizarAbierto = signal<boolean>(false);
   public actualizando = signal<boolean>(false);
   public actualizarForm!: FormGroup;
 
@@ -299,9 +277,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     return { aTiempo, retraso, pendiente };
   });
 
-  public kpiOC = computed(() =>
-    this.proyectos().filter(p => this.obtenerAlertaOC(p).estado === 'sin_oc').length
-  );
 
   public kpiEjecucionVencida = computed(() =>
     this.proyectosConAlertas().filter(p =>
@@ -394,14 +369,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     return null;
   }
 
-  obtenerSLA(p: any): string {
-    const respuesta = p.fechaRespuestaCliente || this.actualizarForm?.get('fechaRespuestaCliente')?.value;
-    const dias = this.calcularDiasDiferencia(p.fechaAsignacion, respuesta);
-    if (dias === null) return '—';
-    if (dias <= 1) return `${dias} día ✓`;
-    if (dias <= 2) return `${dias} días ⚠`;
-    return `${dias} días ✗`;
-  }
 
   /**
    * Calcula cuántos días han pasado desde la fecha tentativa de fin hasta hoy.
@@ -442,16 +409,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     }
   }
 
-  obtenerAlertaOC(p: any) {
-    if (p.fechaInicioActividades) {
-      if (p.numeroOC && p.numeroOC.trim() !== '') {
-        return { texto: 'Inicio Normal', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', estado: 'normal' };
-      } else {
-        return { texto: '¡INICIO SIN OC!', badge: 'bg-red-100 text-red-800 font-black border-red-300 shadow-sm', estado: 'sin_oc' };
-      }
-    }
-    return { texto: 'Pendiente', badge: 'bg-slate-100 text-slate-500 border-slate-200', estado: 'pendiente' };
-  }
 
   obtenerClaseEstado(estado: string): string {
     switch (estado) {
@@ -487,11 +444,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   tieneCambiosSinGuardar(): boolean {
     return (this.panelAbierto() && !!this.actualizarForm?.dirty)
       || (this.modalAbierto() && !!this.proyectoForm?.dirty)
-      || (this.modalOTAbierto() && !!this.otForm?.dirty)
-      || (this.modalAnticipoAbierto() && !!this.anticipoForm?.dirty)
-      || (this.modalPagoAbierto() && !!this.pagoForm?.dirty)
-      || (this.modalReqAbierto() && !!this.reqForm?.dirty)
-      || (this.modalAnticipoDirectoAbierto() && !!this.anticipoDirectoForm?.dirty)
       || (this.modalCorteFacturacionAbierto() && !!this.corteFacturacionForm?.dirty);
   }
 
@@ -689,30 +641,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       fechaRespuestaCliente: [null]
     });
 
-    this.otForm = this.fb.group({
-      consecutivo: ['', Validators.required],
-      contratistaId: [''],       // Selector del módulo de Contratistas
-      contratistaNombre: [''],   // Se rellena automáticamente al seleccionar
-      contratistaNit: [''],      // Se rellena automáticamente al seleccionar
-      tecnicoInternoId: [''],
-      valorTotal: [0, Validators.min(0)],
-      alcanceServicio: ['', Validators.required]
-    });
-
-    this.anticipoForm = this.fb.group({
-      valorAnticipo: [0, [Validators.required, Validators.min(1)]]
-    });
-
-    this.pagoForm = this.fb.group({
-      idEgresoWorldOffice: ['', Validators.required]
-    });
-
-    this.anticipoDirectoForm = this.fb.group({
-      valorAnticipo: [0, [Validators.required, Validators.min(1)]],
-      concepto:      ['', Validators.required],
-      beneficiario:  [''],
-      observaciones: ['']
-    });
 
     this.corteFacturacionForm = this.fb.group({
       valorCorte:    [0, [Validators.required, Validators.min(1)]],
@@ -720,11 +648,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       observaciones: ['']
     });
 
-    this.reqForm = this.fb.group({
-      consecutivo: ['', Validators.required],
-
-      observaciones: ['', Validators.required]
-    });
   }
 
   abrirModal() {
@@ -877,9 +800,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     }
   }
 
-  cerrarModalActualizar() {
-    this.modalActualizarAbierto.set(false);
-  }
 
   /** Cambia el modo del campo OC/PO: normal (número), pendiente (sin OC aún), noAplica */
   setModoOC(modo: 'normal' | 'pendiente' | 'noAplica') {
@@ -1081,435 +1001,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     this.guardarActualizacion();
   }
 
-  // ==========================================
-  // MÉTODOS DEL MODAL OT
-  // ==========================================
-  abrirModalOT() {
-    this.otForm.reset({ valorTotal: 0 });
-    this.contratistaSeleccionadoOT.set(null);
-    // Cargar sub-flujos si no están cargados aún (cuando se abre desde la tabla sin panel)
-    const p = this.proyectoSeleccionado();
-    if (p && this.ordenesTrabajo().length === 0) {
-      this.trackerService.getOrdenesTrabajoPorProyecto(p.id).subscribe(ots => this.ordenesTrabajo.set(ots));
-    }
-    this.modalOTAbierto.set(true);
-  }
-
-  onContratistaIdChange(event: Event) {
-    const id = (event.target as HTMLSelectElement).value;
-    if (!id) {
-      this.contratistaSeleccionadoOT.set(null);
-      this.otForm.get('contratistaNombre')?.setValue('');
-      this.otForm.get('contratistaNit')?.setValue('');
-      return;
-    }
-    const lista = this.listasFormulario().contratistas || [];
-    const c = lista.find((x: any) => x.id === id);
-    if (c) {
-      this.contratistaSeleccionadoOT.set(c);
-      const nombre = c.razonSocial || c.nombreCompleto || '';
-      const nit = c.nit || c.numeroDocumento || '';
-      this.otForm.get('contratistaNombre')?.setValue(nombre);
-      this.otForm.get('contratistaNit')?.setValue(nit);
-      // Limpiar técnico interno
-      this.otForm.get('tecnicoInternoId')?.setValue('');
-    }
-  }
-
-  // Exclusión mutua: al seleccionar técnico interno, limpia contratista y viceversa
-  onTecnicoInternoChange(event: Event) {
-    const val = (event.target as HTMLSelectElement).value;
-    if (val) {
-      this.otForm.get('contratistaNombre')?.setValue('');
-      this.otForm.get('contratistaNit')?.setValue('');
-    }
-  }
-
-  onContratistaNombreChange(event: Event) {
-    const val = (event.target as HTMLInputElement).value;
-    if (val.trim()) {
-      this.otForm.get('tecnicoInternoId')?.setValue('');
-    }
-  }
-
-  async cerrarModalOT(forzar = false) {
-    if (!forzar && this.otForm?.dirty && !(await confirmarDescartarCambios())) return;
-    this.modalOTAbierto.set(false);
-  }
-
-  guardarOT() {
-    if (this.otForm.invalid) {
-      this.otForm.markAllAsTouched();
-      return;
-    }
-
-    const p = this.proyectoSeleccionado();
-    const usuario = this.authService.usuarioActual();
-    if (!p || !usuario?.id) return;
-
-    const esTecnicoInterno = !!this.otForm.get('tecnicoInternoId')?.value;
-    const esContratista = !!this.otForm.get('contratistaNombre')?.value?.trim();
-    const valorTotal = this.otForm.get('valorTotal')?.value || 0;
-
-    // Validación ejecutor: debe tener uno
-    if (!esTecnicoInterno && !esContratista) {
-      Swal.fire('Falta el ejecutor', 'Debes asignar un Técnico Interno o un Contratista Externo.', 'warning');
-      return;
-    }
-
-    // Valor obligatorio solo para contratistas externos
-    if (esContratista && valorTotal <= 0) {
-      Swal.fire('Valor requerido', 'El Valor Total de la OT es obligatorio para contratistas externos.', 'warning');
-      return;
-    }
-
-    this.guardandoOT.set(true);
-
-    const { contratistaId, ...otFormValues } = this.otForm.value;
-
-    const inputData = {
-      proyectoId: p.id,
-      creadorId: usuario.id,
-      ...otFormValues,
-      // HotChocolate exige null para UUID opcionales, no string vacío
-      tecnicoInternoId: otFormValues.tecnicoInternoId || null,
-      contratistaNombre: otFormValues.contratistaNombre || null,
-      contratistaNit: otFormValues.contratistaNit || null,
-    };
-
-    this.trackerService.crearOrdenTrabajo(inputData).subscribe({
-      next: (nuevaOt) => {
-        this.guardandoOT.set(false);
-        this.cerrarModalOT(true);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'OT Emitida',
-          text: `La orden de trabajo ${nuevaOt.consecutivo} se creó correctamente.`,
-          confirmButtonColor: '#10b981',
-          timer: 2500
-        });
-
-        this.ordenesTrabajo.update(ots => [nuevaOt, ...ots]);
-        // Actualizar contador en la tabla de proyectos
-        this.proyectos.update(ps => ps.map(proj =>
-          proj.id === p.id
-            ? { ...proj, ordenesTrabajo: [nuevaOt, ...(proj.ordenesTrabajo || [])] }
-            : proj
-        ));
-      },
-      error: (err) => {
-        this.guardandoOT.set(false);
-        console.error(err);
-        Swal.fire('Error', 'No se pudo emitir la Orden de Trabajo.', 'error');
-      }
-    });
-  }
-
-  // ==========================================
-  // MÉTODOS DEL MODAL ANTICIPOS
-  // ==========================================
-  abrirModalAnticipo(ot: any) {
-    this.otSeleccionadaParaAnticipo.set(ot);
-    this.anticipoForm.reset({ valorAnticipo: 0 });
-    this.modalAnticipoAbierto.set(true);
-  }
-
-  async cerrarModalAnticipo(forzar = false) {
-    if (!forzar && this.anticipoForm?.dirty && !(await confirmarDescartarCambios())) return;
-    this.modalAnticipoAbierto.set(false);
-    setTimeout(() => this.otSeleccionadaParaAnticipo.set(null), 300);
-  }
-
-  guardarAnticipo() {
-    if (this.anticipoForm.invalid) {
-      this.anticipoForm.markAllAsTouched();
-      return;
-    }
-
-    const p = this.proyectoSeleccionado();
-    const ot = this.otSeleccionadaParaAnticipo();
-    const usuario = this.authService.usuarioActual();
-
-    if (!p || !ot || !usuario?.id) return;
-
-    this.guardandoAnticipo.set(true);
-
-    const inputData = {
-      proyectoId: p.id,
-      ordenTrabajoId: ot.id,
-      solicitanteId: usuario.id,
-      valorAnticipo: this.anticipoForm.get('valorAnticipo')?.value
-    };
-
-    this.trackerService.solicitarAnticipo(inputData).subscribe({
-      next: (nuevoAnticipo) => {
-        this.guardandoAnticipo.set(false);
-        this.cerrarModalAnticipo(true);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Anticipo Solicitado',
-          text: 'La solicitud ha sido enviada para aprobación.',
-          confirmButtonColor: '#10b981',
-          timer: 2000
-        });
-
-        this.cargarSubFlujos(p.id);
-      },
-      error: (err) => {
-        this.guardandoAnticipo.set(false);
-
-        let mensajeError = 'No se pudo solicitar el anticipo.';
-        if (err.graphQLErrors && err.graphQLErrors.length > 0) {
-          mensajeError = err.graphQLErrors[0].message;
-        }
-
-        Swal.fire({ icon: 'error', title: 'Alerta Financiera', text: mensajeError });
-      }
-    });
-  }
-
-  // ==========================================
-  // MÉTODOS DEL MODAL DE PAGO (WORLDOFFICE)
-  // ==========================================
-  abrirModalPago(anticipo: any) {
-    this.anticipoSeleccionado.set(anticipo);
-    this.pagoForm.reset();
-    this.modalPagoAbierto.set(true);
-  }
-
-  async cerrarModalPago(forzar = false) {
-    if (!forzar && this.pagoForm?.dirty && !(await confirmarDescartarCambios())) return;
-    this.modalPagoAbierto.set(false);
-    setTimeout(() => this.anticipoSeleccionado.set(null), 300);
-  }
-
-  guardarPago() {
-    if (this.pagoForm.invalid) {
-      this.pagoForm.markAllAsTouched();
-      return;
-    }
-
-    const ant = this.anticipoSeleccionado();
-    const p = this.proyectoSeleccionado();
-
-    if (!ant || !p) return;
-
-    this.guardandoPago.set(true);
-    const idEgreso = this.pagoForm.get('idEgresoWorldOffice')?.value;
-
-    this.trackerService.pagarAnticipo(ant.id, idEgreso).subscribe({
-      next: () => {
-        this.guardandoPago.set(false);
-        this.cerrarModalPago(true);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Pago Registrado',
-          text: 'El anticipo quedó vinculado a WorldOffice y marcado como PAGADO.',
-          confirmButtonColor: '#10b981',
-          timer: 2500
-        });
-
-        this.cargarSubFlujos(p.id);
-      },
-      error: (err) => {
-        this.guardandoPago.set(false);
-        console.error(err);
-        Swal.fire('Error', 'No se pudo registrar el pago. Asegúrate de tener permisos administrativos.', 'error');
-      }
-    });
-  }
-
-  // ==========================================
-  // MÉTODOS DEL MODAL REQUISICIONES
-  // ==========================================
-  abrirModalReq() {
-    this.reqForm.reset();
-    // Cargar sub-flujos si no están cargados aún (cuando se abre desde la tabla sin panel)
-    const p = this.proyectoSeleccionado();
-    if (p && this.requisiciones().length === 0) {
-      this.trackerService.getRequisicionesPorProyecto(p.id).subscribe(reqs => this.requisiciones.set(reqs));
-    }
-    this.modalReqAbierto.set(true);
-  }
-
-  async cerrarModalReq(forzar = false) {
-    if (!forzar && this.reqForm?.dirty && !(await confirmarDescartarCambios())) return;
-    this.modalReqAbierto.set(false);
-  }
-
-  guardarReq() {
-    if (this.reqForm.invalid) {
-      this.reqForm.markAllAsTouched();
-      return;
-    }
-
-    const p = this.proyectoSeleccionado();
-    const usuario = this.authService.usuarioActual();
-
-    if (!p || !usuario?.id) return;
-
-    this.guardandoReq.set(true);
-
-    const inputData = {
-      proyectoId: p.id,
-      solicitanteId: usuario.id,
-      ...this.reqForm.value
-    };
-
-    this.trackerService.crearRequisicion(inputData).subscribe({
-      next: (nuevaReq) => {
-        this.guardandoReq.set(false);
-        this.cerrarModalReq(true);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Requisición Creada',
-          text: `La solicitud ${nuevaReq.consecutivo} ha sido enviada para aprobación.`,
-          confirmButtonColor: '#2563eb',
-          timer: 2500
-        });
-
-        this.requisiciones.update(reqs => [nuevaReq, ...reqs]);
-        // Actualizar contador en la tabla de proyectos
-        const pReq = this.proyectoSeleccionado();
-        if (pReq) {
-          this.proyectos.update(ps => ps.map(proj =>
-            proj.id === pReq.id
-              ? { ...proj, requisiciones: [nuevaReq, ...(proj.requisiciones || [])] }
-              : proj
-          ));
-        }
-      },
-      error: (err) => {
-        this.guardandoReq.set(false);
-        console.error(err);
-        Swal.fire('Error', 'No se pudo crear la requisición.', 'error');
-      }
-    });
-  }
-
-  aprobarReq(req: any) {
-    const usuario = this.authService.usuarioActual();
-    if (!usuario?.id) return;
-
-    Swal.fire({
-      title: '¿Aprobar Requisición?',
-      text: `¿Confirmas la requisición ${req.consecutivo}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#2563eb',
-      cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'Sí, Aprobar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-
-        Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-        this.trackerService.aprobarRequisicion(req.id, usuario.id).subscribe({
-          next: (res) => {
-            Swal.fire({
-              icon: 'success',
-              title: res.estado === 'En Compras' ? '✓ Aprobada — En Compras' : '✓ Aprobada — Pendiente Gerencia',
-              text: res.estado === 'En Compras'
-                ? 'La requisición fue aprobada y pasó a Coordinación de Compras.'
-                : 'El valor supera $1.000.000. Se notificó a Gerencia para su aprobación final.',
-              timer: 3000
-            });
-
-            const p = this.proyectoSeleccionado();
-            if (p) this.cargarSubFlujos(p.id);
-          },
-          error: (err) => {
-            console.error(err);
-            Swal.fire('Error', 'No se pudo aprobar la requisición.', 'error');
-          }
-        });
-      }
-    });
-  }
-
-  comprarReq(req: any) {
-    const usuario = this.authService.usuarioActual();
-    if (!usuario) return;
-
-    Swal.fire({
-      title: `Registrar compra — ${req.consecutivo}`,
-      html: `
-        <p style="font-size:12px;color:#64748b;margin-bottom:12px">
-          Valor estimado: <b>${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(req.valorEstimado)}</b>
-        </p>
-        <input id="swal-oc" class="swal2-input" placeholder="No. OC al proveedor (obligatorio)" style="font-size:13px">
-        <input id="swal-valor" type="number" class="swal2-input" placeholder="Valor real de compra (obligatorio)" style="font-size:13px">
-      `,
-      showCancelButton: true,
-      confirmButtonText: 'Registrar compra',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0ea5e9',
-      preConfirm: () => {
-        const oc = (document.getElementById('swal-oc') as HTMLInputElement).value.trim();
-        const valor = parseFloat((document.getElementById('swal-valor') as HTMLInputElement).value);
-        if (!oc) { Swal.showValidationMessage('El número de OC es obligatorio'); return; }
-        if (!valor || valor <= 0) { Swal.showValidationMessage('El valor real debe ser mayor a cero'); return; }
-        return { oc, valor };
-      }
-    }).then((result) => {
-      if (result.isConfirmed && result.value) {
-        this.trackerService.comprarRequisicion(req.id, result.value.oc, result.value.valor, usuario.id).subscribe({
-          next: (res) => {
-            Swal.fire({ icon: 'success', title: 'Compra registrada', text: `OC: ${res.numeroOCCompra} — Estado: ${res.estado}`, timer: 3000 });
-            const p = this.proyectoSeleccionado();
-            if (p) this.cargarSubFlujos(p.id);
-          },
-          error: (err) => {
-            const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo registrar la compra.';
-            Swal.fire('Error', msg, 'error');
-          }
-        });
-      }
-    });
-  }
-
-  recibirReq(req: any) {
-    const usuario = this.authService.usuarioActual();
-    if (!usuario) return;
-
-    Swal.fire({
-      title: `Confirmar recibo — ${req.consecutivo}`,
-      html: `
-        <p style="font-size:12px;color:#64748b;margin-bottom:12px">
-        OC Compra: <b>${req.numeroOCCompra ?? 'N/A'}</b> · Valor: <b>${req.valorRealCompra
-          ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(req.valorRealCompra)
-          : 'N/A'}</b>
-        </p>
-        <textarea id="swal-obs" class="swal2-textarea" placeholder="Observaciones del recibo (opcional)" style="font-size:13px;height:80px"></textarea>
-      `,
-      showCancelButton: true,
-      confirmButtonText: 'Confirmar recibo',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#10b981',
-      preConfirm: () => {
-        const obs = (document.getElementById('swal-obs') as HTMLTextAreaElement).value.trim();
-        return { obs };
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.trackerService.recibirRequisicion(req.id, usuario.id, result.value?.obs).subscribe({
-          next: () => {
-            Swal.fire({ icon: 'success', title: '¡Material recibido!', text: 'La requisición quedó CERRADA.', timer: 3000 });
-            const p = this.proyectoSeleccionado();
-            if (p) this.cargarSubFlujos(p.id);
-          },
-          error: (err) => {
-            const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo confirmar el recibo.';
-            Swal.fire('Error', msg, 'error');
-          }
-        });
-      }
-    });
-  }
 
   // ==========================================
   // CÁLCULOS FINANCIEROS EN TIEMPO REAL
@@ -1671,17 +1162,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     return !!this.actualizarForm;
   }
 
-  /**
-   * Backlog #3 — Fecha de inicio manual.
-   * Si el campo está vacío usa la fecha de hoy, luego guarda.
-   */
-  async iniciarObra() {
-    const ctrl = this.actualizarForm.get('fechaInicioActividades');
-    if (!ctrl?.value) {
-      ctrl?.setValue(this.hoy());
-    }
-    await this.guardarActualizacion();
-  }
 
   // Advertencia de OC sin registrar (no bloquea pero avisa)
   get advertenciaOC(): string {
@@ -1739,65 +1219,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     return !!fechaFin && this.razonesBloqueoFinalizacion.length === 0;
   }
 
-  // ── Anticipos Directos ──
-  abrirModalAnticipoDirecto(p: any) {
-    this.proyectoParaAnticipo.set(p);
-    this.anticiposDirectos.set(p.anticiposDirectos || []);
-
-    // Autocompletar beneficiario con contratista de la primera OT activa
-    const ots = p.ordenesTrabajo || [];
-    const otConContratista = ots.find((o: any) => o.contratistaNombre?.trim());
-    const beneficiarioPredeterminado = otConContratista?.contratistaNombre || '';
-
-    this.anticipoDirectoForm.reset({
-      valorAnticipo: 0,
-      beneficiario: beneficiarioPredeterminado
-    });
-    this.modalAnticipoDirectoAbierto.set(true);
-  }
-
-  async cerrarModalAnticipoDirecto(forzar = false) {
-    if (!forzar && this.anticipoDirectoForm?.dirty && !(await confirmarDescartarCambios())) return;
-    this.modalAnticipoDirectoAbierto.set(false);
-    this.proyectoParaAnticipo.set(null);
-  }
-
-  guardarAnticipoDirecto() {
-    if (this.anticipoDirectoForm.invalid) {
-      this.anticipoDirectoForm.markAllAsTouched();
-      return;
-    }
-    const p = this.proyectoParaAnticipo();
-    const usuario = this.authService.usuarioActual();
-    const raw = this.anticipoDirectoForm.value;
-    this.trackerService.addAnticipoDirecto({
-      proyectoId:    p.id,
-      solicitanteId: usuario?.id,
-      valorAnticipo: raw.valorAnticipo,
-      concepto:      raw.concepto,
-      beneficiario:  raw.beneficiario || null,
-      observaciones: raw.observaciones || null
-    }).subscribe({
-      next: (res) => {
-        this.anticiposDirectos.update(a => [res, ...a]);
-        this.anticipoDirectoForm.reset({ valorAnticipo: 0 });
-        // Actualizar contador en la tabla de proyectos
-        const pAnt = this.proyectoParaAnticipo();
-        if (pAnt) {
-          this.proyectos.update(ps => ps.map(proj =>
-            proj.id === pAnt.id
-              ? { ...proj, anticiposDirectos: [res, ...(proj.anticiposDirectos || [])] }
-              : proj
-          ));
-        }
-        Swal.fire({ icon: 'success', title: 'Anticipo solicitado', timer: 2000, showConfirmButton: false });
-      },
-      error: (err) => {
-        const msg = err?.graphQLErrors?.[0]?.message || 'No se pudo crear el anticipo.';
-        Swal.fire('Error', msg, 'error');
-      }
-    });
-  }
 
   // ── Cortes de Facturación ──
   abrirModalCorteFacturacion(p: any) {
@@ -1959,88 +1380,6 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
     });
   }
 
-  eliminarOT(ot: any) {
-    Swal.fire({
-      title: '¿Eliminar OT?',
-      text: `La orden ${ot.consecutivo} será eliminada permanentemente.`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar', confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      this.trackerService.eliminarOrdenTrabajo(ot.id).subscribe({
-        next: () => {
-          this.ordenesTrabajo.update(a => a.filter((x: any) => x.id !== ot.id));
-          this.cargarProyectos(this.lineaActiva());
-          Swal.fire({ icon: 'success', title: 'OT eliminada', timer: 1500, showConfirmButton: false });
-        },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
-      });
-    });
-  }
-
-  despachoInterno(req: any) {
-    Swal.fire({
-      title: '¿Despacho Interno?',
-      text: 'El material se tomará del inventario propio. La requisición pasará directamente a "Por Entregar" sin generar OC de compra.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, despacho interno',
-      confirmButtonColor: '#1e3a8a',
-      cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      const usuario = this.authService.usuarioActual();
-      if (!usuario?.id) return;
-      this.trackerService.despachoInternoRequisicion(req.id, usuario.id).subscribe({
-        next: (res) => {
-          this.requisiciones.update(a => a.map((x: any) => x.id === req.id ? { ...x, ...res } : x));
-          Swal.fire({ icon: 'success', title: 'Despacho interno registrado', text: 'La requisición está lista para entrega.', timer: 2500, showConfirmButton: false });
-        },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo procesar.', 'error')
-      });
-    });
-  }
-
-  eliminarReq(req: any) {
-    Swal.fire({
-      title: '¿Eliminar Requisición?',
-      text: `La requisición ${req.consecutivo} será eliminada permanentemente.`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar', confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      this.trackerService.eliminarRequisicion(req.id).subscribe({
-        next: () => {
-          this.requisiciones.update(a => a.filter((x: any) => x.id !== req.id));
-          this.cargarProyectos(this.lineaActiva());
-          Swal.fire({ icon: 'success', title: 'Requisición eliminada', timer: 1500, showConfirmButton: false });
-        },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
-      });
-    });
-  }
-
-  eliminarAnticipoDirectoConfirm(anticipo: any) {
-    Swal.fire({
-      title: '¿Eliminar Anticipo?',
-      text: `El anticipo de ${anticipo.valorAnticipo?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} será eliminado.`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar', confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Cancelar'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      this.trackerService.eliminarAnticipoDirecto(anticipo.id).subscribe({
-        next: () => {
-          this.anticiposDirectos.update(a => a.filter((x: any) => x.id !== anticipo.id));
-          this.cargarProyectos(this.lineaActiva());
-          Swal.fire({ icon: 'success', title: 'Anticipo eliminado', timer: 1500, showConfirmButton: false });
-        },
-        error: (err) => Swal.fire('Error', err?.graphQLErrors?.[0]?.message || 'No se pudo eliminar.', 'error')
-      });
-    });
-  }
 
   rechazarAnticipoDirecto(anticipo: any) {
     this.trackerService.rechazarAnticipoDirecto(anticipo.id).subscribe({
