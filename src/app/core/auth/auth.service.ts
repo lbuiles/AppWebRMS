@@ -34,10 +34,8 @@ export class AuthService {
 
     if (usuarioGuardado) {
       try {
-        // Verificar si el token de Google ya expiró antes de restaurar la sesión.
-        // Los ID tokens de Google duran ~1 hora; si expiró, el primer llamado al
-        // API falla con AUTH_NOT_AUTHENTICATED y la UX se ve como "error intermitente".
-        // Detectarlo aquí permite redirigir al login de inmediato.
+        // Verificar si el token de sesión ya expiró antes de restaurarla (el token RMS dura
+        // 12 horas y se renueva solo mientras la app está abierta; ver programarRenovacion).
         if (tokenGuardado) {
           const payload = this.decodeJwtPayload(tokenGuardado);
           const exp     = payload['exp'] as number | undefined;
@@ -47,6 +45,7 @@ export class AuthService {
             this.cerrarSesion();
           } else {
             this.usuarioActual.set(JSON.parse(usuarioGuardado));
+            this.programarRenovacion();
           }
         } else {
           // Sin token almacenado → sesión incompleta, limpiar
@@ -100,7 +99,16 @@ export class AuthService {
         `
       };
 
-      const headers = new HttpHeaders().set('Authorization', `Bearer ${googleToken}`);
+      // 1. Canjear el token de Google (dura ~1 hora) por el token de sesión RMS (12 horas, renovable)
+      const sesion: any = await firstValueFrom(
+        this.http.post(`${environment.restUrl}/auth/sesion`, {}, {
+          headers: new HttpHeaders().set('Authorization', `Bearer ${googleToken}`)
+        })
+      );
+      const tokenSesion: string | undefined = sesion?.token;
+      if (!tokenSesion) throw new Error('SIN_SESION');
+
+      const headers = new HttpHeaders().set('Authorization', `Bearer ${tokenSesion}`);
 
       const response: any = await firstValueFrom(
         this.http.post(this.API_URL, body, { headers })
@@ -133,7 +141,8 @@ export class AuthService {
       // 3. Guardar estado
       this.usuarioActual.set(usuarioProcesado);
       localStorage.setItem('rms_user', JSON.stringify(usuarioProcesado));
-      localStorage.setItem('rms_token', googleToken);
+      localStorage.setItem('rms_token', tokenSesion);
+      this.programarRenovacion();
 
       Swal.close();
       return true;
@@ -154,6 +163,51 @@ export class AuthService {
       });
 
       return false;
+    }
+  }
+
+  // --- RENOVACIÓN DE LA SESIÓN ---
+
+  private temporizadorRenovacion?: ReturnType<typeof setInterval>;
+  private renovando = false;
+
+  /** Revisa cada 5 minutos (y al volver a la pestaña) si el token está por vencer. */
+  private programarRenovacion() {
+    clearInterval(this.temporizadorRenovacion);
+    this.temporizadorRenovacion = setInterval(() => this.renovarSiHaceFalta(), 5 * 60_000);
+    if (!this.escuchandoVisibilidad) {
+      this.escuchandoVisibilidad = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') this.renovarSiHaceFalta();
+      });
+    }
+    this.renovarSiHaceFalta();
+  }
+  private escuchandoVisibilidad = false;
+
+  /** Pide un token nuevo cuando al actual le quedan menos de 2 horas. */
+  private async renovarSiHaceFalta() {
+    const token = localStorage.getItem('rms_token');
+    if (!token || this.renovando || !this.usuarioActual()) return;
+
+    const payload = this.decodeJwtPayload(token);
+    // Un token de Google guardado antes de este cambio no se renueva: al vencer, se inicia sesión de nuevo
+    if (payload['iss'] !== 'rms-erp') return;
+    const restante = (payload['exp'] as number) - Math.floor(Date.now() / 1000);
+    if (!(restante > 0 && restante < 2 * 3600)) return;
+
+    this.renovando = true;
+    try {
+      const r: any = await firstValueFrom(
+        this.http.post(`${environment.restUrl}/auth/renovar`, {}, {
+          headers: new HttpHeaders().set('Authorization', `Bearer ${token}`)
+        })
+      );
+      if (r?.token) localStorage.setItem('rms_token', r.token);
+    } catch {
+      // Si falla (sin red, usuario inactivado), se reintenta en el próximo ciclo; al vencer, el API pide login
+    } finally {
+      this.renovando = false;
     }
   }
 
@@ -185,6 +239,7 @@ export class AuthService {
    * Cierra la sesión y limpia el almacenamiento
    */
   public cerrarSesion() {
+    clearInterval(this.temporizadorRenovacion);
     this.usuarioActual.set(null);
     localStorage.removeItem('rms_user');
     localStorage.removeItem('rms_token');
