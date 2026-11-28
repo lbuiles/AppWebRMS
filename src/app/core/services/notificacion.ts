@@ -11,6 +11,12 @@ export interface NotificacionDto {
   fechaCreacion: string;
 }
 
+/** Tipos que genera el Tracker de proyectos (EntidadId = Id del proyecto). */
+export const TIPOS_PROYECTO = ['proy_asignado', 'proy_estado', 'proy_bitacora', 'proy_alerta'];
+
+export const esNotificacionDeProyecto = (n: NotificacionDto) => TIPOS_PROYECTO.includes(n.tipo);
+export const esNotificacionDeTarea = (n: NotificacionDto) => !esNotificacionDeProyecto(n);
+
 const GET_MIS_NOTIFICACIONES = gql`
   query GetMisNotificaciones {
     misNotificaciones {

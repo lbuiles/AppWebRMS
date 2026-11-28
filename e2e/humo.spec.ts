@@ -151,6 +151,20 @@ test('un error de sesión vencida (401) lleva al inicio de sesión', async ({ pa
   await expect(page).toHaveURL(/\/login/);
 });
 
+test('la campana muestra las notificaciones sin leer y abre el proyecto', async ({ page }) => {
+  const operaciones = await prepararSesion(page);
+  await page.goto('/panel');
+  const campana = page.getByRole('button', { name: 'Notificaciones: 1 sin leer' });
+  await expect(campana).toBeVisible();
+  await campana.click();
+  const panel = page.getByRole('dialog', { name: 'Notificaciones' });
+  await expect(panel.getByText('hace 1 día').or(panel.getByText('ayer'))).toBeVisible();
+  await panel.getByRole('button', { name: /Te asignaron como responsable del proyecto E-001/ }).click();
+  await expect(page).toHaveURL(/\/proyectos\/energia$/);
+  await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue('Subestación de prueba');
+  expect(operaciones).toContain('MarcarNotificacionLeida');
+});
+
 test.describe('en celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

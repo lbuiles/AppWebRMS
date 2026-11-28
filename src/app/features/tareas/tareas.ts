@@ -8,8 +8,9 @@ import { filter } from 'rxjs/operators';
 // Drag & Drop: API nativa HTML5 — sin dependencia de @angular/cdk
 import { TareaService, Tarea, EstadoTarea, TareaComentario, ReporteSemanalDto, CumplimientoPersonaDto } from '../../core/services/tarea';
 import { AuthService } from '../../core/auth/auth.service';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UsuarioService } from '../../core/services/usuario';
-import { NotificacionService, NotificacionDto } from '../../core/services/notificacion';
+import { NotificacionService, esNotificacionDeTarea } from '../../core/services/notificacion';
 import Swal from 'sweetalert2';
 
 // ─────────────────────────────────────────────────────────
@@ -68,6 +69,8 @@ export class TareasComponent implements OnInit {
   public  authService         = inject(AuthService);
   private usuarioService      = inject(UsuarioService);
   private notificacionService = inject(NotificacionService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private fb                  = inject(FormBuilder);
   private destroyRef          = inject(DestroyRef);
 
@@ -88,8 +91,8 @@ export class TareasComponent implements OnInit {
         }
       });
 
-    // Cargar notificaciones al inicio y hacer polling cada 30 segundos
-    // (solo cuando la pestaña está activa para no desperdiciar recursos)
+    // Revisa las notificaciones de tareas cada minuto para refrescar el tablero
+    // cuando alguien crea, mueve o elimina una tarea (solo con la pestaña activa)
     this.cargarNotificaciones();
     interval(60_000)
       .pipe(
@@ -212,13 +215,6 @@ export class TareasComponent implements OnInit {
   public draggingTarea        = signal<Tarea | null>(null);
   public draggingOverEstadoId = signal<number | null>(null);
 
-  // ── Notificaciones ────────────────────────────────────────
-  public notificaciones  = signal<NotificacionDto[]>([]);
-  public cargandoNotifs  = signal<boolean>(false);
-  public notifAbiertas   = signal<boolean>(false);
-  public notifNoLeidas       = computed(() => this.notificaciones().filter(n => !n.leida).length);
-  public tieneNotifLeidas    = computed(() => this.notificaciones().some(n => n.leida));
-
   // ── Modales ───────────────────────────────────────────────
   // -- Nueva / Editar tarea --
   public modalTareaAbierto = signal<boolean>(false);
@@ -275,6 +271,14 @@ export class TareasComponent implements OnInit {
     this.cargarEstados();
     this.cargarTareas();
     this.cargarUsuarios();
+
+    // La campana del encabezado abre una tarea con /tareas?tarea=<id>
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(q => {
+      const id = q.get('tarea');
+      if (!id) return;
+      this.router.navigate([], { relativeTo: this.route, queryParams: { tarea: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      this.abrirTareaPorId(id);
+    });
   }
 
   private initForms(): void {
@@ -797,103 +801,35 @@ export class TareasComponent implements OnInit {
   }
 
   // ── Notificaciones ────────────────────────────────────────
+  // La campana está en el encabezado (layout/campana-notificaciones). Aquí solo se revisan
+  // las notificaciones de tareas para refrescar el tablero cuando llega una nueva.
 
   cargarNotificaciones(): void {
-    this.cargandoNotifs.set(true);
     this.notificacionService.getMisNotificaciones().subscribe({
-      next: list => {
-        this.cargandoNotifs.set(false);
-
-        // Detectar si llegaron notificaciones nuevas desde el último poll
+      next: todas => {
+        const list = todas.filter(n => esNotificacionDeTarea(n));
         const esPrimeraCarga = this.notifIdsAnteriores.size === 0;
         const hayNuevas = !esPrimeraCarga && list.some(n => !this.notifIdsAnteriores.has(n.id));
-
-        this.notificaciones.set(list);
         this.notifIdsAnteriores = new Set(list.map(n => n.id));
-
-        // Si hay notificaciones nuevas (creación o eliminación de tarea),
-        // refrescar el kanban automáticamente para que refleje el estado real.
-        if (hayNuevas) {
-          this.cargarTareas();
-        }
-      },
-      error: () => { this.cargandoNotifs.set(false); }
-    });
-  }
-
-  toggleNotificaciones(): void {
-    const abrir = !this.notifAbiertas();
-    this.notifAbiertas.set(abrir);
-    if (abrir) this.cargarNotificaciones();
-  }
-
-  marcarLeida(n: NotificacionDto, event: Event): void {
-    event.stopPropagation();
-    if (n.leida) return;
-    this.notificacionService.marcarLeida(n.id).subscribe({
-      next: () => {
-        this.notificaciones.update(arr =>
-          arr.map(x => x.id === n.id ? { ...x, leida: true } : x)
-        );
+        if (hayNuevas) this.cargarTareas();
       },
       error: () => {}
     });
   }
 
-  marcarTodasLeidas(): void {
-    this.notificacionService.marcarTodasLeidas().subscribe({
-      next: () => {
-        this.notificaciones.update(arr => arr.map(x => ({ ...x, leida: true })));
-      },
-      error: () => {}
-    });
-  }
-
-  abrirTareaDesdNotif(n: NotificacionDto): void {
-    this.notifAbiertas.set(false);
-
-    // Marcar como leída siempre (incluso notificaciones de eliminación sin entidadId)
-    if (!n.leida) {
-      this.notificacionService.marcarLeida(n.id).subscribe();
-      this.notificaciones.update(arr =>
-        arr.map(x => x.id === n.id ? { ...x, leida: true } : x)
-      );
-    }
-
-    // Notificaciones de eliminación no tienen tarea asociada → sólo marcar leída
-    if (!n.entidadId) return;
-
-    this.tareaService.getTarea(String(n.entidadId)).subscribe({
+  /** Abre el panel de detalle de una tarea (desde la campana: /tareas?tarea=<id>). */
+  abrirTareaPorId(id: string): void {
+    this.tareaService.getTarea(id).subscribe({
       next: t => {
         if (t) {
           // Recargar el tablero de la semana actualmente visible
           // (semanaActual NO se modifica, así se evita cargar la semana incorrecta)
           this.cargarTareas();
-          // Abrir panel de detalle
           this.tareaDetalle.set(null);
           this.tabDetalle.set('info');
           this.panelAbierto.set(true);
           this.tareaDetalle.set(t);
         }
-      },
-      error: () => {}
-    });
-  }
-
-  eliminarNotificacion(n: NotificacionDto, event: Event): void {
-    event.stopPropagation();
-    this.notificacionService.eliminarNotificacion(n.id).subscribe({
-      next: ok => {
-        if (ok) this.notificaciones.update(arr => arr.filter(x => x.id !== n.id));
-      },
-      error: () => {}
-    });
-  }
-
-  eliminarTodasLeidas(): void {
-    this.notificacionService.eliminarNotificacionesLeidas().subscribe({
-      next: ok => {
-        if (ok) this.notificaciones.update(arr => arr.filter(x => !x.leida));
       },
       error: () => {}
     });
