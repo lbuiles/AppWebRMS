@@ -5,6 +5,7 @@ import { SocialAuthService } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service'; // Tu servicio
 import { BusquedaGlobalComponent } from '../busqueda-global/busqueda-global';
 import { CampanaNotificacionesComponent } from '../campana-notificaciones/campana-notificaciones';
+import { PushService } from '../../core/services/push';
 
 @Component({
   selector: 'app-header',
@@ -18,6 +19,7 @@ export class HeaderComponent {
   public authService = inject(AuthService); // <--- IMPORTANTE: Debe ser public para usarlo en el HTML
   private socialAuth = inject(SocialAuthService);
   private router = inject(Router);
+  private push = inject(PushService);
 
   constructor(public menuService: MenuService) {}
 
@@ -25,7 +27,9 @@ export class HeaderComponent {
     this.router.navigate(['/panel']);
   }
 
-  logout() {
+  async logout() {
+    // Antes de borrar el token: este navegador deja de recibir los avisos push de este usuario
+    await this.push.alCerrarSesion();
     this.socialAuth.signOut().catch(() => {});
     // Limpiamos LocalStorage
     localStorage.removeItem('rms_token');

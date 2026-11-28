@@ -165,6 +165,13 @@ test('la campana muestra las notificaciones sin leer y abre el proyecto', async 
   expect(operaciones).toContain('MarcarNotificacionLeida');
 });
 
+test('al tocar un aviso push (/panel?notificacion=<id>) se abre lo que corresponde', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/panel?notificacion=2');
+  await expect(page).toHaveURL(/\/proyectos\/energia$/);
+  await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue('Subestación de prueba');
+});
+
 test.describe('en celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

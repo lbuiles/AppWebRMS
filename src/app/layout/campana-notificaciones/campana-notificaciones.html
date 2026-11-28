@@ -58,6 +58,44 @@
           </ul>
         }
       </div>
+
+      <!-- Notificaciones push en este dispositivo -->
+      @if (push.estado() !== 'cargando' && push.estado() !== 'sin-configurar') {
+      <div class="px-4 py-3 border-t border-slate-100 bg-slate-50/60 text-[11px] text-slate-500">
+        @switch (push.estado()) {
+          @case ('activo') {
+            <div class="flex items-center justify-between gap-2">
+              <span class="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Avisos activos en este dispositivo
+              </span>
+              <span class="flex items-center gap-3 shrink-0">
+                <button type="button" (click)="probarPush($event)" class="font-semibold text-[#1e3a8a] hover:underline">Probar</button>
+                <button type="button" (click)="desactivarPush($event)" [disabled]="push.trabajando()" class="font-semibold text-slate-400 hover:text-red-500">Desactivar</button>
+              </span>
+            </div>
+          }
+          @case ('inactivo') {
+            <div class="flex items-center justify-between gap-2">
+              <span>Recibe avisos aunque el ERP esté cerrado.</span>
+              <button type="button" (click)="activarPush($event)" [disabled]="push.trabajando()"
+                      class="shrink-0 px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white font-semibold hover:bg-[#ffb31c] hover:text-[#1e3a8a] transition-colors disabled:opacity-50">
+                {{ push.trabajando() ? 'Activando…' : 'Activar en este dispositivo' }}
+              </button>
+            </div>
+          }
+          @case ('bloqueado') {
+            <span>Las notificaciones están bloqueadas en este navegador. Actívalas en el candado de la barra de direcciones.</span>
+          }
+          @case ('instalar-ios') {
+            <span>En iPhone, agrega el ERP a la pantalla de inicio (Compartir → Agregar a inicio) para recibir avisos.</span>
+          }
+          @case ('no-soportado') {
+            <span>Este navegador no permite avisos push (o es la versión de desarrollo).</span>
+          }
+          @default { }
+        }
+      </div>
+      }
     </div>
   }
 </div>
