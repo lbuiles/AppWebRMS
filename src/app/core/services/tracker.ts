@@ -510,6 +510,18 @@ export class TrackerService {
     }).pipe(map((r: any) => r.data?.proyectos?.[0] ?? null));
   }
 
+  /** Flujo de caja mes a mes (cortes de facturación y compras de requisiciones con fecha). */
+  getFlujoMensual(linea: string, estado: string): Observable<{ mes: string; facturado: number; gasto: number }[]> {
+    return this.apollo.query({
+      query: gql`
+        query FlujoMensual($linea: String, $estado: String) {
+          flujoMensual(linea: $linea, estado: $estado) { mes facturado gasto }
+        }`,
+      variables: { linea, estado },
+      fetchPolicy: 'network-only'
+    }).pipe(map((r: any) => r.data?.flujoMensual ?? []));
+  }
+
   /** Lista ligera de proyectos no archivados para la búsqueda global. */
   buscarProyectos(): Observable<any[]> {
     return this.apollo.query({
