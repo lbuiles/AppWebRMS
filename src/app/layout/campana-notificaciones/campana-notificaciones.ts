@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { interval, filter } from 'rxjs';
 import Swal from 'sweetalert2';
 import { NotificacionService, NotificacionDto, esNotificacionDeProyecto } from '../../core/services/notificacion';
 import { TrackerService } from '../../core/services/tracker';
 import { AuthService } from '../../core/auth/auth.service';
+import { PushService } from '../../core/services/push';
 
 interface EstiloTipo { icono: string; color: string; }
 
@@ -17,6 +18,7 @@ const ESTILOS: Record<string, EstiloTipo> = {
   proy_bitacora:   { icono: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z', color: 'bg-emerald-100 text-emerald-700' },
   asignacion:      { icono: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', color: 'bg-indigo-100 text-indigo-700' },
   estado_cambiado: { icono: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', color: 'bg-indigo-100 text-indigo-700' },
+  prueba:          { icono: 'M5 13l4 4L19 7', color: 'bg-emerald-100 text-emerald-700' },
   eliminacion:     { icono: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', color: 'bg-slate-100 text-slate-500' }
 };
 const ESTILO_DEFECTO: EstiloTipo = { icono: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'bg-slate-100 text-slate-500' };
@@ -39,6 +41,7 @@ export class CampanaNotificacionesComponent {
   private router = inject(Router);
   private host = inject(ElementRef<HTMLElement>);
   private destroyRef = inject(DestroyRef);
+  readonly push = inject(PushService);
 
   readonly notificaciones = signal<NotificacionDto[]>([]);
   readonly abierta = signal(false);
@@ -54,6 +57,52 @@ export class CampanaNotificacionesComponent {
     const alVolver = () => { if (!document.hidden) this.cargar(); };
     document.addEventListener('visibilitychange', alVolver);
     this.destroyRef.onDestroy(() => document.removeEventListener('visibilitychange', alVolver));
+
+    this.push.iniciar();
+
+    // Al tocar un aviso push el ERP abre /panel?notificacion=<id>: se abre como si se tocara en la campana
+    this.router.events
+      .pipe(takeUntilDestroyed(this.destroyRef), filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.abrirDesdeUrl());
+    this.abrirDesdeUrl();
+  }
+
+  private abrirDesdeUrl() {
+    const arbol = this.router.parseUrl(this.router.url);
+    const id = Number(arbol.queryParams['notificacion']);
+    if (!id) return;
+    this.router.navigate([], { queryParams: { notificacion: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    this.notificacionService.getMisNotificaciones().subscribe(lista => {
+      this.notificaciones.set(lista);
+      const n = lista.find(x => x.id === id);
+      if (n) this.abrir(n);
+    });
+  }
+
+  async activarPush(e: Event) {
+    e.stopPropagation();
+    const ok = await this.push.activar();
+    if (!ok && this.push.estado() === 'bloqueado') {
+      Swal.fire({ icon: 'info', title: 'Permiso bloqueado', confirmButtonColor: '#1e3a8a',
+        text: 'El navegador tiene bloqueadas las notificaciones de este sitio. Actívalas en el candado de la barra de direcciones y vuelve a intentarlo.' });
+    }
+  }
+
+  async desactivarPush(e: Event) {
+    e.stopPropagation();
+    await this.push.desactivar();
+  }
+
+  async probarPush(e: Event) {
+    e.stopPropagation();
+    try {
+      const dispositivos = await this.push.probar();
+      this.cargar();
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', timer: 4000, showConfirmButton: false,
+        title: 'Prueba enviada', text: `Debe llegar en unos segundos a ${dispositivos} dispositivo(s) suscrito(s).` });
+    } catch {
+      Swal.fire({ toast: true, position: 'top-end', icon: 'error', timer: 4000, showConfirmButton: false, title: 'No se pudo enviar la prueba' });
+    }
   }
 
   cargar() {
