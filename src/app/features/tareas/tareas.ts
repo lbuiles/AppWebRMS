@@ -6,7 +6,7 @@ import { skip } from 'rxjs/operators';
 import { interval } from 'rxjs';
 import { filter } from 'rxjs/operators';
 // Drag & Drop: API nativa HTML5 — sin dependencia de @angular/cdk
-import { TareaService, Tarea, EstadoTarea, TareaComentario, ReporteSemanalDto, CumplimientoPersonaDto } from '../../core/services/tarea';
+import { TareaService, Tarea, EstadoTarea, TareaPaso, PrioridadTarea, TareaComentario, ReporteSemanalDto, CumplimientoPersonaDto } from '../../core/services/tarea';
 import { AuthService } from '../../core/auth/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UsuarioService } from '../../core/services/usuario';
@@ -289,6 +289,9 @@ export class TareasComponent implements OnInit {
       semanaProgramada:       [formatDate(this.semanaActual()), Validators.required],
       fechaPresupuestoInicio: [''],
       fechaPresupuestoFin:    [''],
+      prioridad:              ['Media'],
+      etiquetas:              [''],   // separadas por coma
+      pasos:                  [''],   // una por línea (solo al crear)
     });
 
     this.estadoForm = this.fb.group({
@@ -297,6 +300,7 @@ export class TareasComponent implements OnInit {
       orden:           [0, Validators.required],
       esEstadoInicial: [false],
       esEstadoFinal:   [false],
+      limiteWip:       [null as number | null],
     });
   }
 
@@ -373,7 +377,18 @@ export class TareasComponent implements OnInit {
 
   esVencida(t: Tarea): boolean {
     if (!t.fechaPresupuestoFin || t.estado?.esEstadoFinal) return false;
-    return new Date(t.fechaPresupuestoFin) < new Date();
+    // Vence al terminar el día límite: una tarea que vence hoy todavía no está vencida
+    const fin = this.fechaDia(t.fechaPresupuestoFin); fin.setHours(23, 59, 59, 999);
+    return fin < new Date();
+  }
+
+  /**
+   * Fecha sin hora (fecha límite): se toma el día escrito ("2026-11-28...") en hora local.
+   * Con new Date() directo, una fecha guardada a medianoche UTC se vería como el día anterior en Colombia.
+   */
+  fechaDia(valor: string): Date {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor || '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(valor);
   }
 
   /**
@@ -386,6 +401,136 @@ export class TareasComponent implements OnInit {
     domSemana.setDate(domSemana.getDate() + 6); // domingo
     const finReal = new Date(t.fechaRealFinalizacion);
     return Math.max(0, Math.ceil((finReal.getTime() - domSemana.getTime()) / 86_400_000));
+  }
+
+  // ── Consecutivo, prioridad, etiquetas y avance ───────────
+  codigo(t: Tarea): string {
+    return t.consecutivo ? `RMS-${t.consecutivo}` : '';
+  }
+
+  etiquetas(t: Tarea): string[] {
+    return (t.etiquetas || '').split(',').map(e => e.trim()).filter(Boolean);
+  }
+
+  private textoAEtiquetas(texto: string): string[] {
+    return String(texto || '').split(/[,;]/).map(e => e.trim().replace(/^#/, '')).filter(Boolean);
+  }
+
+  /** Color estable por etiqueta (borde y texto suaves). */
+  claseEtiqueta(e: string): string {
+    const clases = ['bg-blue-50 text-blue-700 border-blue-200', 'bg-violet-50 text-violet-700 border-violet-200',
+      'bg-amber-50 text-amber-700 border-amber-200', 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'bg-pink-50 text-pink-700 border-pink-200', 'bg-cyan-50 text-cyan-700 border-cyan-200', 'bg-slate-50 text-slate-600 border-slate-200'];
+    let h = 0;
+    for (const c of e.toLowerCase()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return clases[h % clases.length];
+  }
+
+  readonly prioridades: { id: PrioridadTarea; etiqueta: string }[] = [
+    { id: 'Critica', etiqueta: 'Crítica' }, { id: 'Alta', etiqueta: 'Alta' }, { id: 'Media', etiqueta: 'Media' }, { id: 'Baja', etiqueta: 'Baja' }
+  ];
+
+  etiquetaPrioridad(p: string): string {
+    return this.prioridades.find(x => x.id === p)?.etiqueta ?? p;
+  }
+
+  /** Color del código de la tarea según la prioridad. */
+  colorPrioridad(p: string): string {
+    return p === 'Critica' ? '#dc2626' : p === 'Alta' ? '#ea580c' : p === 'Baja' ? '#64748b' : '#2563eb';
+  }
+
+  avance(t: Tarea): { hechos: number; total: number; pct: number } {
+    const total = t.pasos?.length ?? 0;
+    const hechos = (t.pasos ?? []).filter(p => p.completado).length;
+    return { hechos, total, pct: total ? Math.round((hechos / total) * 100) : 0 };
+  }
+
+  /** Tareas en la columna frente a su límite WIP (cuenta todas las de la semana, sin filtros). */
+  excedeWip(col: { estado: EstadoTarea; total: number }): boolean {
+    return !!col.estado.limiteWip && col.total > col.estado.limiteWip;
+  }
+
+  /** Antes de completar: si quedan pasos sin marcar, pregunta (no bloquea). */
+  private async confirmarPasosPendientes(t: Tarea): Promise<boolean> {
+    const { hechos, total } = this.avance(t);
+    const faltan = total - hechos;
+    if (!faltan) return true;
+    const r = await Swal.fire({
+      icon: 'warning',
+      title: 'Hay pasos sin completar',
+      html: `La tarea <b>#${this.codigo(t)}</b> tiene <b>${faltan} de ${total}</b> paso(s) sin marcar.<br>¿Quieres completarla de todas formas?`,
+      showCancelButton: true,
+      confirmButtonText: 'Completar de todas formas',
+      cancelButtonText: 'Revisar pasos',
+      confirmButtonColor: '#1e3a8a',
+      reverseButtons: true,
+      focusCancel: true
+    });
+    return r.isConfirmed;
+  }
+
+  // ── Lista de chequeo en el detalle ───────────────────────
+  public nuevoPaso = signal('');
+
+  private actualizarPasos(tareaId: string, fn: (pasos: TareaPaso[]) => TareaPaso[]) {
+    this.tareas.update(arr => arr.map(t => t.id === tareaId ? { ...t, pasos: fn(t.pasos ?? []) } : t));
+    const d = this.tareaDetalle();
+    if (d?.id === tareaId) this.tareaDetalle.set({ ...d, pasos: fn(d.pasos ?? []) });
+  }
+
+  agregarPaso(): void {
+    const t = this.tareaDetalle(); const texto = this.nuevoPaso().trim();
+    if (!t || !texto) return;
+    this.tareaService.addPaso(t.id, texto).subscribe({
+      next: p => { this.actualizarPasos(t.id, ps => [...ps, p]); this.nuevoPaso.set(''); },
+      error: err => Swal.fire({ icon: 'error', title: 'No se pudo agregar el paso', text: err?.message })
+    });
+  }
+
+  alternarPaso(p: TareaPaso): void {
+    const t = this.tareaDetalle(); if (!t) return;
+    this.actualizarPasos(t.id, ps => ps.map(x => x.id === p.id ? { ...x, completado: !x.completado } : x));
+    this.tareaService.togglePaso(p.id).subscribe({
+      error: () => this.actualizarPasos(t.id, ps => ps.map(x => x.id === p.id ? { ...x, completado: p.completado } : x))
+    });
+  }
+
+  quitarPaso(p: TareaPaso): void {
+    const t = this.tareaDetalle(); if (!t) return;
+    this.tareaService.deletePaso(p.id).subscribe(ok => { if (ok) this.actualizarPasos(t.id, ps => ps.filter(x => x.id !== p.id)); });
+  }
+
+  /** Categoría del estado, como en Azure DevOps: Nuevo / Activo / Cerrado. */
+  categoriaEstado(e: EstadoTarea | any): string {
+    return e?.esEstadoFinal ? 'Cerrado' : e?.esEstadoInicial ? 'Nuevo' : 'Activo';
+  }
+
+  /** Vence hoy o en los próximos 2 días (sin estar vencida ni cerrada). */
+  vencePronto(t: Tarea): boolean {
+    if (!t.fechaPresupuestoFin || t.estado?.esEstadoFinal || this.esVencida(t)) return false;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const dias = (this.fechaDia(t.fechaPresupuestoFin).getTime() - hoy.getTime()) / 86_400_000;
+    return dias <= 2;
+  }
+
+  /** "Hoy", "Mañana", "Hace 3 d" o la fecha corta. */
+  etiquetaFecha(t: Tarea): string {
+    if (!t.fechaPresupuestoFin) return '';
+    const fin = this.fechaDia(t.fechaPresupuestoFin);
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const d = Math.round((fin.getTime() - hoy.getTime()) / 86_400_000);
+    if (d === 0) return 'Hoy';
+    if (d === 1) return 'Mañana';
+    if (d < 0) return `Venció hace ${-d} d`;
+    return fin.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }).replace('.', '');
+  }
+
+  /** Color estable por persona para su avatar (como en Azure DevOps). */
+  colorPersona(id: string): string {
+    const colores = ['#4f46e5', '#0d9488', '#d97706', '#2563eb', '#db2777', '#7c3aed', '#059669', '#dc2626', '#0891b2', '#65a30d'];
+    let h = 0;
+    for (const c of id || '') h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return colores[h % colores.length];
   }
 
   iniciales(nombre: string): string {
@@ -435,7 +580,7 @@ export class TareasComponent implements OnInit {
     }
   }
 
-  onDropNative(event: DragEvent, estadoDestino: EstadoTarea): void {
+  async onDropNative(event: DragEvent, estadoDestino: EstadoTarea): Promise<void> {
     event.preventDefault();
     this.draggingOverEstadoId.set(null);
     const tarea = this.draggingTarea();
@@ -455,6 +600,7 @@ export class TareasComponent implements OnInit {
     }
 
     if (estadoDestino.esEstadoFinal) {
+      if (!(await this.confirmarPasosPendientes(tarea))) return;
       const hoy = new Date().toISOString().split('T')[0];
       Swal.fire({
         title: '¿Cuándo se completó esta tarea?',
@@ -489,6 +635,7 @@ export class TareasComponent implements OnInit {
     this.tareaForm.reset({
       estadoId: this.estados().find(e => e.esEstadoInicial)?.id ?? null,
       semanaProgramada: formatDate(this.semanaActual()),
+      prioridad: 'Media', etiquetas: '', pasos: '',
     });
     this.modalTareaAbierto.set(true);
   }
@@ -504,6 +651,9 @@ export class TareasComponent implements OnInit {
       semanaProgramada: formatDate(new Date(t.semanaProgramada)),
       fechaPresupuestoInicio: t.fechaPresupuestoInicio ? formatDate(new Date(t.fechaPresupuestoInicio)) : '',
       fechaPresupuestoFin: t.fechaPresupuestoFin ? formatDate(new Date(t.fechaPresupuestoFin)) : '',
+      prioridad: t.prioridad || 'Media',
+      etiquetas: this.etiquetas(t).join(', '),
+      pasos: '',
     });
     this.modalTareaAbierto.set(true);
   }
@@ -545,6 +695,8 @@ export class TareasComponent implements OnInit {
         descripcion: v.descripcion || undefined,
         fechaPresupuestoInicio: v.fechaPresupuestoInicio ? toIso(v.fechaPresupuestoInicio) : undefined,
         fechaPresupuestoFin: v.fechaPresupuestoFin ? toIso(v.fechaPresupuestoFin) : undefined,
+        prioridad: v.prioridad || 'Media',
+        etiquetas: this.textoAEtiquetas(v.etiquetas),
       }).subscribe({
         next: updated => {
           this.tareas.update(arr => arr.map(t => t.id === updated.id ? { ...t, ...updated } : t));
@@ -568,6 +720,9 @@ export class TareasComponent implements OnInit {
         fechaPresupuestoFin: v.fechaPresupuestoFin ? toIso(v.fechaPresupuestoFin) : undefined,
         creadoPorId: this.usuarioId,
         usuariosAsignados: this.asignadosSeleccionados(),
+        prioridad: v.prioridad || 'Media',
+        etiquetas: this.textoAEtiquetas(v.etiquetas),
+        pasos: String(v.pasos || '').split('\n').map((x: string) => x.trim()).filter(Boolean),
       }).subscribe({
         next: nueva => {
           // Solo agregar a la lista si pertenece a la semana actual
@@ -630,7 +785,7 @@ export class TareasComponent implements OnInit {
 
   // ── Cambiar estado desde el panel ─────────────────────────
 
-  cambiarEstadoDetalle(nuevoEstadoId: number): void {
+  async cambiarEstadoDetalle(nuevoEstadoId: number): Promise<void> {
     const t = this.tareaDetalle();
     if (!t || t.estadoId === nuevoEstadoId) return;
 
@@ -650,6 +805,7 @@ export class TareasComponent implements OnInit {
 
     // Si es estado final, pedir fecha real de completitud
     if (nuevoEstado?.esEstadoFinal) {
+      if (!(await this.confirmarPasosPendientes(t))) return;
       const hoy = new Date().toISOString().split('T')[0];
       Swal.fire({
         title: '¿Cuándo se completó esta tarea?',
@@ -839,13 +995,13 @@ export class TareasComponent implements OnInit {
 
   abrirNuevoEstado(): void {
     this.estadoEditando.set(null);
-    this.estadoForm.reset({ color: '#1e3a8a', orden: this.todosEstados().length, esEstadoInicial: false, esEstadoFinal: false });
+    this.estadoForm.reset({ color: '#1e3a8a', orden: this.todosEstados().length, esEstadoInicial: false, esEstadoFinal: false, limiteWip: null });
     this.modalEstadoAbierto.set(true);
   }
 
   abrirEditarEstado(e: EstadoTarea): void {
     this.estadoEditando.set(e);
-    this.estadoForm.patchValue({ nombre: e.nombre, color: e.color, orden: e.orden, esEstadoInicial: e.esEstadoInicial, esEstadoFinal: e.esEstadoFinal });
+    this.estadoForm.patchValue({ nombre: e.nombre, color: e.color, orden: e.orden, esEstadoInicial: e.esEstadoInicial, esEstadoFinal: e.esEstadoFinal, limiteWip: e.limiteWip ?? null });
     this.modalEstadoAbierto.set(true);
   }
 
@@ -856,7 +1012,7 @@ export class TareasComponent implements OnInit {
   guardarEstado(): void {
     if (this.estadoForm.invalid) return;
     this.guardandoEstado.set(true);
-    const v = this.estadoForm.value;
+    const v = { ...this.estadoForm.value, limiteWip: +this.estadoForm.value.limiteWip > 0 ? +this.estadoForm.value.limiteWip : null };
     const obs = this.estadoEditando()
       ? this.tareaService.updateEstado(this.estadoEditando()!.id, v)
       : this.tareaService.addEstado(v);

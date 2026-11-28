@@ -71,118 +71,321 @@
     </div>
   </div>
 
-  <!-- Gráficas -->
+  <!-- Gráficas (ApexCharts) -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-    <!-- Estado del portafolio -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col" style="height:300px">
-      <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Estado del portafolio</h3>
-      <div class="flex-1 relative min-h-0">
-        <canvas baseChart
-          [data]="estadosChartData()"
-          [options]="estadosOptions"
-          [type]="'doughnut'">
-        </canvas>
-      </div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+      <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Estado del portafolio</h3>
+      @let ce = chartEstados();
+      <apx-chart [series]="ce.series" [chart]="ce.chart" [labels]="ce.labels" [colors]="ce.colors"
+                 [legend]="ce.legend" [dataLabels]="ce.dataLabels" [stroke]="ce.stroke"
+                 [plotOptions]="ce.plotOptions" [tooltip]="ce.tooltip"></apx-chart>
     </div>
 
-    <!-- Por división -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col" style="height:300px">
-      <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Proyectos por división</h3>
-      <div class="flex-1 relative min-h-0">
-        <canvas baseChart
-          [data]="divisionChartData()"
-          [options]="divisionOptions"
-          [type]="'bar'">
-        </canvas>
-      </div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+      <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Proyectos por división</h3>
+      @let cd = chartDivision();
+      <apx-chart [series]="cd.series" [chart]="cd.chart" [plotOptions]="cd.plotOptions" [colors]="cd.colors"
+                 [dataLabels]="cd.dataLabels" [fill]="cd.fill" [xaxis]="cd.xaxis" [yaxis]="cd.yaxis" [legend]="cd.legend"
+                 [grid]="cd.grid" [tooltip]="cd.tooltip"></apx-chart>
     </div>
 
-    <!-- Facturado vs Presupuestado -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col" style="height:300px">
-      <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Top proyectos — presupuesto vs ejecución</h3>
-      <div class="flex-1 relative min-h-0">
-        <canvas baseChart
-          [data]="facturacionChartData()"
-          [options]="facturacionOptions"
-          [type]="'bar'">
-        </canvas>
-      </div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+      <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Top proyectos — % del PO facturado y gastado</h3>
+      @let ct = chartTop();
+      @if (ct.series[0].data.length) {
+        <apx-chart [series]="ct.series" [chart]="ct.chart" [plotOptions]="ct.plotOptions" [colors]="ct.colors"
+                   [dataLabels]="ct.dataLabels" [fill]="ct.fill" [xaxis]="ct.xaxis" [yaxis]="ct.yaxis" [legend]="ct.legend"
+                   [grid]="ct.grid" [tooltip]="ct.tooltip"></apx-chart>
+      } @else {
+        <p class="flex-1 flex items-center justify-center text-xs text-slate-400 py-16">Sin proyectos con valor PO para mostrar.</p>
+      }
     </div>
 
   </div>
 
-  <!-- Tabla de proyectos -->
+  <!-- Flujo financiero mes a mes: oculto por defecto -->
   <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="p-4 border-b border-slate-100 flex flex-wrap gap-2 justify-between items-center bg-slate-50/50">
-      <div>
-        <h3 class="text-sm font-bold text-slate-800">Desglose de Proyectos</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5">{{ tablaProyectos().length }} registros</p>
+    <button type="button" (click)="flujoVisible.set(!flujoVisible())"
+            class="w-full p-4 flex items-center gap-3 text-left hover:bg-slate-50 transition-colors"
+            [attr.aria-expanded]="flujoVisible()" aria-controls="flujo-financiero">
+      <span class="w-8 h-8 rounded-lg bg-blue-50 text-[#1e3a8a] flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 transition-transform" [class.rotate-90]="flujoVisible()" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+      </span>
+      <span class="min-w-0">
+        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Flujo financiero y tendencia</span>
+        <span class="block text-sm font-bold text-slate-800">Flujo de caja mes a mes (facturado frente a gasto real)</span>
+        @if (!flujoVisible()) { <span class="block text-[10px] text-slate-400 mt-0.5">Toca para ver la evolución mensual</span> }
+      </span>
+    </button>
+
+    @if (flujoVisible()) {
+      <div id="flujo-financiero" class="border-t border-slate-100 p-4 animate-fade-in">
+        <!-- División de la sección -->
+        <div class="flex gap-1.5 overflow-x-auto pb-1 mb-3" role="group" aria-label="División del flujo">
+          @for (d of divisionesFlujo; track d.id) {
+            <button type="button" (click)="elegirDivisionFlujo(d.id)" [attr.aria-pressed]="divisionFlujo() === d.id"
+                    class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-semibold transition-colors"
+                    [ngClass]="divisionFlujo() === d.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'">
+              <span class="w-2 h-2 rounded-full" [ngClass]="d.color"></span>{{ d.etiqueta }}
+            </button>
+          }
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <p class="text-[11px] text-slate-500">Evolución acumulada de lo facturado frente al gasto real y el margen operativo.</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[10px] font-bold px-2 py-1 rounded-lg border"
+                  [ngClass]="+flujoMargen() >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'">
+              ● Margen: {{ flujoMargen() }}%
+            </span>
+            @if (inflexion(); as inf) {
+              <span class="text-[10px] font-semibold px-2 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200">Inflexión: {{ inf }}</span>
+            }
+            <div class="flex bg-slate-100 rounded-lg p-0.5" role="group" aria-label="Rango de meses">
+              @for (r of rangos; track r.id) {
+                <button type="button" (click)="rangoFlujo.set(r.id)" [attr.aria-pressed]="rangoFlujo() === r.id"
+                        class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors"
+                        [ngClass]="rangoFlujo() === r.id ? 'bg-white text-[#1e3a8a] shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                  {{ r.etiqueta }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 min-w-0">
+            @if (flujoCargando()) {
+              <p class="h-[300px] flex items-center justify-center text-xs text-slate-400">Cargando flujo…</p>
+            } @else if (flujoError()) {
+              <p class="h-[300px] flex items-center justify-center text-xs text-red-500">No se pudo cargar el flujo. Cierra y vuelve a abrir la sección.</p>
+            } @else if (!flujo().meses.length) {
+              <p class="h-[300px] flex items-center justify-center text-xs text-slate-400 text-center px-6">Aún no hay cortes de facturación ni compras con fecha para estos filtros.</p>
+            } @else {
+              @let cf = chartFlujo();
+              <apx-chart [series]="cf.series" [chart]="cf.chart" [colors]="cf.colors" [stroke]="cf.stroke" [fill]="cf.fill"
+                         [markers]="cf.markers" [dataLabels]="cf.dataLabels" [xaxis]="cf.xaxis" [yaxis]="cf.yaxis"
+                         [legend]="cf.legend" [grid]="cf.grid" [tooltip]="cf.tooltip"></apx-chart>
+            }
+          </div>
+
+          <!-- Diagnóstico -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3 self-start">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Diagnóstico de tesorería</p>
+            @let maxV = (flujoFacturado() > flujoGastoTotal() ? flujoFacturado() : flujoGastoTotal()) || 1;
+            <div class="bg-white rounded-lg border border-slate-200 p-3">
+              <div class="flex justify-between text-xs"><span class="text-slate-600"><span class="text-blue-600">●</span> Facturación total</span><b class="text-slate-900">{{ pesosCortos(flujoFacturado()) }}</b></div>
+              <div class="h-1.5 bg-slate-100 rounded-full mt-2"><div class="h-1.5 bg-blue-600 rounded-full" [style.width.%]="flujoFacturado() / maxV * 100"></div></div>
+            </div>
+            <div class="bg-white rounded-lg border border-slate-200 p-3">
+              <div class="flex justify-between text-xs"><span class="text-slate-600"><span class="text-amber-500">●</span> Gasto ejecutado</span><b class="text-slate-900">{{ pesosCortos(flujoGastoTotal()) }}</b></div>
+              <div class="h-1.5 bg-slate-100 rounded-full mt-2"><div class="h-1.5 bg-amber-500 rounded-full" [style.width.%]="flujoGastoTotal() / maxV * 100"></div></div>
+            </div>
+            <div class="rounded-lg border p-3" [ngClass]="flujoUtilidad() >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold" [ngClass]="flujoUtilidad() >= 0 ? 'text-emerald-700' : 'text-red-600'">● {{ flujoUtilidad() >= 0 ? 'Utilidad' : 'Brecha / déficit' }}</span>
+                <b [ngClass]="flujoUtilidad() >= 0 ? 'text-emerald-700' : 'text-red-600'">{{ pesosCortos(flujoUtilidad()) }}</b>
+              </div>
+              <p class="text-[10px] mt-1" [ngClass]="flujoUtilidad() >= 0 ? 'text-emerald-700/80' : 'text-red-600/80'">
+                Facturado menos gasto y costo de OTs{{ flujoUtilidad() < 0 ? ': los costos aún no se compensan con lo facturado.' : '.' }}
+              </p>
+            </div>
+            @if (sinFecha().facturado || sinFecha().gasto) {
+              <p class="text-[10px] text-slate-500 leading-snug">
+                La curva usa los movimientos con fecha (cortes de facturación y compras de requisiciones).
+                @if (sinFecha().facturado) { {{ pesosCortos(sinFecha().facturado) }} de facturado }
+                @if (sinFecha().facturado && sinFecha().gasto) { y }
+                @if (sinFecha().gasto) { {{ pesosCortos(sinFecha().gasto) }} de gasto }
+                están registrados en los proyectos sin fecha y no aparecen en ella.
+              </p>
+            }
+          </div>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] text-slate-400">Clientes activos:</span>
-        <span class="font-bold text-[#1e3a8a] text-sm">{{ cantidadClientes() }}</span>
-      </div>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-left whitespace-nowrap">
-        <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100">
-          <tr>
-            <th class="px-4 py-3">Código y/o Proyecto</th>
-            <th class="px-4 py-3">Actividad</th>
-            <th class="px-4 py-3">División</th>
-            <th class="px-4 py-3">Cliente</th>
-            <th class="px-4 py-3 text-center">Estado</th>
-            <th class="px-4 py-3">No. PO</th>
-            <th class="px-4 py-3 text-right">Valor PO</th>
-            <th class="px-4 py-3 text-right">Facturado</th>
-            <th class="px-4 py-3 text-right">Gasto</th>
-            <th class="px-4 py-3 text-right">Margen</th>
-            <th class="px-4 py-3">Responsable</th>
-            <th class="px-4 py-3 text-center">Fecha de Asignación</th>
-          </tr>
-        </thead>
-        <tbody class="text-sm text-slate-700 divide-y divide-slate-50">
-          @for (p of tablaProyectos(); track p.id) {
-            <tr class="hover:bg-blue-50/30 transition-colors">
-              <td class="px-4 py-3 font-bold text-[#1e3a8a] text-xs">{{ p.codigo }}</td>
-              <td class="px-4 py-3 font-semibold text-slate-900 max-w-[200px] truncate">{{ p.nombre }}</td>
-              <td class="px-4 py-3 text-xs text-slate-500">{{ divisionLabel(p.lineaNegocio) }}</td>
-              <td class="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">{{ p.cliente?.razonSocial || '—' }}</td>
-              <td class="px-4 py-3 text-center">
-                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide"
-                      [ngClass]="estadoClass(p.estado)">
+    }
+  </div>
+
+  <!-- Desglose de proyectos: oculto por defecto -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <button type="button" (click)="tablaVisible.set(!tablaVisible())"
+            class="w-full p-4 flex flex-wrap gap-2 justify-between items-center text-left hover:bg-slate-50 transition-colors"
+            [attr.aria-expanded]="tablaVisible()" aria-controls="desglose-proyectos">
+      <span class="flex items-center gap-3">
+        <span class="w-8 h-8 rounded-lg bg-blue-50 text-[#1e3a8a] flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 transition-transform" [class.rotate-90]="tablaVisible()" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </span>
+        <span>
+          <span class="block text-sm font-bold text-slate-800">Desglose de proyectos</span>
+          <span class="block text-[10px] text-slate-400 mt-0.5">
+            {{ tablaVisible() ? tablaProyectos().length + ' de ' + proyectosFiltrados().length + ' proyectos' : 'Toca para ver la tabla de ' + proyectosFiltrados().length + ' proyectos' }}
+          </span>
+        </span>
+      </span>
+      <span class="flex items-center gap-2 text-[10px] text-slate-400">
+        Clientes activos: <span class="font-bold text-[#1e3a8a] text-sm">{{ cantidadClientes() }}</span>
+      </span>
+    </button>
+
+    @if (tablaVisible()) {
+      <div id="desglose-proyectos" class="border-t border-slate-100 animate-fade-in">
+
+        <!-- Filtros de la tabla -->
+        <div class="flex flex-wrap items-center gap-2 px-4 py-3 bg-slate-50/60 border-b border-slate-100">
+          <div class="relative w-full sm:w-80">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+            <input type="search" [value]="busqueda()" (input)="busqueda.set($any($event.target).value)"
+                   placeholder="Buscar código, nombre, cliente o PO…" aria-label="Buscar en la tabla"
+                   class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-xs outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+          </div>
+          <select [value]="filtroCliente()" (change)="filtroCliente.set($any($event.target).value)" aria-label="Filtrar por cliente"
+                  class="w-full sm:w-auto border border-slate-200 bg-white text-slate-700 py-2 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+            <option value="todos">Todos los clientes</option>
+            @for (c of clientesTabla(); track c) { <option [value]="c">{{ c }}</option> }
+          </select>
+          @if (esGerente) {
+            <select [value]="filtroResponsable()" (change)="filtroResponsable.set($any($event.target).value)" aria-label="Filtrar por responsable"
+                    class="w-full sm:w-auto border border-slate-200 bg-white text-slate-700 py-2 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+              <option value="todos">Todos los responsables</option>
+              @for (r of responsablesTabla(); track r.id) { <option [value]="r.id">{{ r.nombre }}</option> }
+            </select>
+          }
+          <select (change)="ordenarDesdeLista($any($event.target).value)" aria-label="Ordenar por"
+                  class="md:hidden w-full border border-slate-200 bg-white text-slate-700 py-2 px-3 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-[#1e3a8a]/20">
+            @for (o of opcionesOrden; track o.valor) {
+              <option [value]="o.valor" [selected]="valorOrdenActual() === o.valor">{{ o.etiqueta }}</option>
+            }
+          </select>
+          @if (hayFiltrosTabla()) {
+            <button type="button" (click)="limpiarFiltrosTabla()" class="text-[11px] font-bold text-slate-400 hover:text-red-500 px-2 py-1.5">Limpiar filtros</button>
+          }
+        </div>
+
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-widest border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-3" [attr.aria-sort]="ariaOrden('codigo')">
+                  <button type="button" (click)="ordenarPor('codigo')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Código y/o proyecto <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'codigo' }"></ng-container></button>
+                </th>
+                <th class="px-4 py-3">Actividad</th>
+                <th class="px-4 py-3">División</th>
+                <th class="px-4 py-3" [attr.aria-sort]="ariaOrden('cliente')">
+                  <button type="button" (click)="ordenarPor('cliente')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Cliente <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'cliente' }"></ng-container></button>
+                </th>
+                <th class="px-4 py-3 text-center">Estado</th>
+                <th class="px-4 py-3">No. PO</th>
+                <th class="px-4 py-3 text-right" [attr.aria-sort]="ariaOrden('valorOC')">
+                  <button type="button" (click)="ordenarPor('valorOC')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Valor PO <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'valorOC' }"></ng-container></button>
+                </th>
+                <th class="px-4 py-3 text-right" [attr.aria-sort]="ariaOrden('valorFacturado')">
+                  <button type="button" (click)="ordenarPor('valorFacturado')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Facturado <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'valorFacturado' }"></ng-container></button>
+                </th>
+                <th class="px-4 py-3 text-right" [attr.aria-sort]="ariaOrden('valorGasto')">
+                  <button type="button" (click)="ordenarPor('valorGasto')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Gasto <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'valorGasto' }"></ng-container></button>
+                </th>
+                <th class="px-4 py-3 text-right" [attr.aria-sort]="ariaOrden('margen')">
+                  <button type="button" (click)="ordenarPor('margen')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Margen <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'margen' }"></ng-container></button>
+                </th>
+                <th class="px-4 py-3">Responsable</th>
+                <th class="px-4 py-3 text-center" [attr.aria-sort]="ariaOrden('fechaAsignacion')">
+                  <button type="button" (click)="ordenarPor('fechaAsignacion')" class="uppercase tracking-widest inline-flex items-center gap-1 hover:text-[#1e3a8a]">Fecha de asignación <ng-container *ngTemplateOutlet="flecha; context: { $implicit: 'fechaAsignacion' }"></ng-container></button>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="text-sm text-slate-700 divide-y divide-slate-50">
+              @for (p of filasPagina(); track p.id) {
+                <tr class="hover:bg-blue-50/30 transition-colors">
+                  <td class="px-4 py-3 font-bold text-[#1e3a8a] text-xs">{{ p.codigo }}</td>
+                  <td class="px-4 py-3 font-semibold text-slate-900 max-w-[200px] truncate" [title]="p.nombre">{{ p.nombre }}</td>
+                  <td class="px-4 py-3 text-xs text-slate-500">{{ divisionLabel(p.lineaNegocio) }}</td>
+                  <td class="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate" [title]="p.cliente?.razonSocial || ''">{{ p.cliente?.razonSocial || '—' }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide" [ngClass]="estadoClass(p.estado)">
+                      {{ p.estado.replace('_', ' ') }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-xs text-slate-500 font-mono">{{ p.numeroOC || '—' }}</td>
+                  <td class="px-4 py-3 text-right text-xs font-bold text-slate-700">{{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                  <td class="px-4 py-3 text-right text-xs font-bold text-emerald-600">{{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                  <td class="px-4 py-3 text-right text-xs font-bold text-amber-600">{{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                  @let m = margen(p);
+                  <td class="px-4 py-3 text-right text-xs font-bold" [ngClass]="m === null ? 'text-slate-400' : (m >= 0 ? 'text-emerald-600' : 'text-red-500')">
+                    {{ m === null ? '—' : (m | number:'1.0-0') + '%' }}
+                  </td>
+                  <td class="px-4 py-3 text-xs text-slate-500">{{ p.responsable?.nombre || '—' }}</td>
+                  <td class="px-4 py-3 text-center text-xs text-slate-500">{{ p.fechaAsignacion ? (p.fechaAsignacion | date:'dd/MM/yyyy') : '—' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="12" class="px-5 py-10 text-center text-slate-400 text-xs">
+                    No hay proyectos que coincidan con los filtros.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Celular: tarjetas en lugar de la tabla -->
+        <div class="md:hidden p-3 space-y-2">
+          @for (p of filasPagina(); track p.id) {
+            @let mc = margen(p);
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-[#1e3a8a] break-words">{{ p.codigo }}</p>
+                  <p class="text-sm font-semibold text-slate-900 break-words">{{ p.nombre }}</p>
+                </div>
+                <span class="shrink-0 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide" [ngClass]="estadoClass(p.estado)">
                   {{ p.estado.replace('_', ' ') }}
                 </span>
-              </td>
-              <td class="px-4 py-3 text-xs text-slate-500 font-mono">{{ p.numeroOC || '—' }}</td>
-              <td class="px-4 py-3 text-right text-xs font-bold text-slate-700">
-                {{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </td>
-              <td class="px-4 py-3 text-right text-xs font-bold text-emerald-600">
-                {{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </td>
-              <td class="px-4 py-3 text-right text-xs font-bold text-amber-600">
-                {{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </td>
-              <td class="px-4 py-3 text-right text-xs font-bold"
-                  [ngClass]="(p.utilidad ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'">
-                {{ p.valorFacturado > 0 ? (((p.utilidad ?? 0) / p.valorFacturado) * 100).toFixed(0) + '%' : '—' }}
-              </td>
-              <td class="px-4 py-3 text-xs text-slate-500">{{ p.responsable?.nombre || '—' }}</td>
-              <td class="px-4 py-3 text-center text-xs text-slate-500">{{ p.fechaAsignacion ? (p.fechaAsignacion | date:'dd/MM/yyyy') : '—' }}</td>
-            </tr>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">
+                {{ divisionLabel(p.lineaNegocio) }} · {{ p.cliente?.razonSocial || 'Sin cliente' }}
+                @if (p.numeroOC) { · PO <span class="font-mono">{{ p.numeroOC }}</span> }
+              </p>
+              <div class="grid grid-cols-2 gap-x-3 gap-y-2 mt-3 pt-3 border-t border-slate-100">
+                <div><p class="text-[10px] text-slate-400">Valor PO</p><p class="text-xs font-bold text-slate-700">{{ p.valorOC | currency:'COP':'symbol-narrow':'1.0-0' }}</p></div>
+                <div><p class="text-[10px] text-slate-400">Facturado</p><p class="text-xs font-bold text-emerald-600">{{ p.valorFacturado | currency:'COP':'symbol-narrow':'1.0-0' }}</p></div>
+                <div><p class="text-[10px] text-slate-400">Gasto</p><p class="text-xs font-bold text-amber-600">{{ p.valorGasto | currency:'COP':'symbol-narrow':'1.0-0' }}</p></div>
+                <div><p class="text-[10px] text-slate-400">Margen</p>
+                  <p class="text-xs font-bold" [ngClass]="mc === null ? 'text-slate-400' : (mc >= 0 ? 'text-emerald-600' : 'text-red-500')">{{ mc === null ? '—' : (mc | number:'1.0-0') + '%' }}</p></div>
+              </div>
+              <p class="flex justify-between text-[11px] text-slate-500 mt-3">
+                <span class="truncate">{{ p.responsable?.nombre || 'Sin responsable' }}</span>
+                <span class="shrink-0">{{ p.fechaAsignacion ? (p.fechaAsignacion | date:'dd/MM/yyyy') : '—' }}</span>
+              </p>
+            </div>
           } @empty {
-            <tr>
-              <td colspan="12" class="px-5 py-10 text-center text-slate-400 text-xs">
-                No hay proyectos para mostrar con los filtros actuales.
-              </td>
-            </tr>
+            <p class="py-10 text-center text-slate-400 text-xs">No hay proyectos que coincidan con los filtros.</p>
           }
-        </tbody>
-      </table>
-    </div>
+        </div>
+
+        <!-- Paginación -->
+        @if (tablaProyectos().length > porPagina) {
+          <nav class="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-500" aria-label="Páginas de la tabla">
+            <span>{{ rangoPagina() }}</span>
+            <div class="flex items-center gap-1">
+              <button type="button" (click)="irAPagina(paginaActual() - 1)" [disabled]="paginaActual() === 1"
+                      class="px-3 py-1.5 rounded-lg border border-slate-200 font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                Anterior
+              </button>
+              <span class="px-2 sm:px-3 font-semibold text-slate-700" aria-live="polite"><span class="hidden sm:inline">Página </span>{{ paginaActual() }} / {{ totalPaginas() }}</span>
+              <button type="button" (click)="irAPagina(paginaActual() + 1)" [disabled]="paginaActual() === totalPaginas()"
+                      class="px-3 py-1.5 rounded-lg border border-slate-200 font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                Siguiente
+              </button>
+            </div>
+          </nav>
+        }
+      </div>
+    }
   </div>
+
+  <ng-template #flecha let-campo>
+    <span class="text-[9px] w-2" aria-hidden="true">{{ orden().campo === campo ? (orden().asc ? '▲' : '▼') : '' }}</span>
+  </ng-template>
 
   } <!-- end @if cargando -->
 

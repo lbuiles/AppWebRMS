@@ -14,6 +14,16 @@ export interface EstadoTarea {
   esEstadoInicial: boolean;
   esEstadoFinal: boolean;
   activo: boolean;
+  limiteWip?: number | null;
+}
+
+export type PrioridadTarea = 'Critica' | 'Alta' | 'Media' | 'Baja';
+
+export interface TareaPaso {
+  id: number;
+  texto: string;
+  completado: boolean;
+  orden: number;
 }
 
 export interface TareaAsignado {
@@ -57,6 +67,10 @@ export interface TareaHistorialEstado {
 
 export interface Tarea {
   id: string;
+  consecutivo: number;
+  prioridad: PrioridadTarea;
+  etiquetas?: string | null;   // separadas por coma
+  pasos: TareaPaso[];
   titulo: string;
   descripcion?: string;
   estadoId: number;
@@ -191,16 +205,19 @@ export interface ReporteSemanalDto {
 // ============================================================
 
 const TAREA_CARD_FIELDS = `
-  id titulo descripcion estadoId vecesMovida
+  id consecutivo prioridad etiquetas titulo descripcion estadoId vecesMovida
+  pasos { id texto completado orden }
   semanaProgramada fechaPresupuestoInicio fechaPresupuestoFin fechaRealFinalizacion
   fechaCreacion fechaActualizacion
   estado { id nombre color orden esEstadoFinal }
   creadoPor { id nombre avatarUrl }
   asignados { tareaId usuarioId usuario { id nombre avatarUrl } }
+  comentarios { id }
 `;
 
 const TAREA_FULL_FIELDS = `
-  id titulo descripcion estadoId vecesMovida
+  id consecutivo prioridad etiquetas titulo descripcion estadoId vecesMovida
+  pasos { id texto completado orden }
   semanaProgramada fechaPresupuestoInicio fechaPresupuestoFin fechaRealFinalizacion
   fechaCreacion fechaActualizacion creadoPorId
   estado { id nombre color orden esEstadoInicial esEstadoFinal }
@@ -237,13 +254,13 @@ const GET_TAREA = gql`
 
 const GET_ESTADOS_TAREA = gql`
   query GetEstadosTarea {
-    estadosTarea { id nombre color orden esEstadoInicial esEstadoFinal activo }
+    estadosTarea { id nombre color orden esEstadoInicial esEstadoFinal activo limiteWip }
   }
 `;
 
 const GET_TODOS_ESTADOS_TAREA = gql`
   query GetTodosEstadosTarea {
-    todosEstadosTarea { id nombre color orden esEstadoInicial esEstadoFinal activo }
+    todosEstadosTarea { id nombre color orden esEstadoInicial esEstadoFinal activo limiteWip }
   }
 `;
 
@@ -363,13 +380,13 @@ const DELETE_TAREA = gql`
 
 const ADD_ESTADO_TAREA = gql`
   mutation AddEstadoTarea($input: EstadoTareaInput!) {
-    addEstadoTarea(input: $input) { id nombre color orden esEstadoInicial esEstadoFinal activo }
+    addEstadoTarea(input: $input) { id nombre color orden esEstadoInicial esEstadoFinal activo limiteWip }
   }
 `;
 
 const UPDATE_ESTADO_TAREA = gql`
   mutation UpdateEstadoTarea($id: Int!, $input: EstadoTareaInput!) {
-    updateEstadoTarea(id: $id, input: $input) { id nombre color orden esEstadoInicial esEstadoFinal activo }
+    updateEstadoTarea(id: $id, input: $input) { id nombre color orden esEstadoInicial esEstadoFinal activo limiteWip }
   }
 `;
 
@@ -476,6 +493,9 @@ export class TareaService {
     fechaPresupuestoFin?: string;
     creadoPorId: string;
     usuariosAsignados?: string[];
+    prioridad?: PrioridadTarea;
+    etiquetas?: string[];
+    pasos?: string[];
   }): Observable<Tarea> {
     return this.apollo.mutate<any>({
       mutation: ADD_TAREA,
@@ -489,6 +509,8 @@ export class TareaService {
     fechaPresupuestoInicio?: string;
     fechaPresupuestoFin?: string;
     fechaRealFinalizacion?: string;
+    prioridad?: PrioridadTarea;
+    etiquetas?: string[];
   }): Observable<Tarea> {
     return this.apollo.mutate<any>({
       mutation: UPDATE_TAREA,
@@ -542,7 +564,7 @@ export class TareaService {
 
   addEstado(input: {
     nombre: string; color: string; orden: number;
-    esEstadoInicial: boolean; esEstadoFinal: boolean;
+    esEstadoInicial: boolean; esEstadoFinal: boolean; limiteWip?: number | null;
   }): Observable<EstadoTarea> {
     return this.apollo.mutate<any>({
       mutation: ADD_ESTADO_TAREA,
@@ -552,12 +574,34 @@ export class TareaService {
 
   updateEstado(id: number, input: {
     nombre: string; color: string; orden: number;
-    esEstadoInicial: boolean; esEstadoFinal: boolean;
+    esEstadoInicial: boolean; esEstadoFinal: boolean; limiteWip?: number | null;
   }): Observable<EstadoTarea> {
     return this.apollo.mutate<any>({
       mutation: UPDATE_ESTADO_TAREA,
       variables: { id, input }
     }).pipe(map(r => r.data?.updateEstadoTarea));
+  }
+
+  // ── Lista de chequeo ─────────────────────────────────────
+  addPaso(tareaId: string, texto: string): Observable<TareaPaso> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation AddPasoTarea($tareaId: UUID!, $texto: String!) { addPasoTarea(tareaId: $tareaId, texto: $texto) { id texto completado orden } }`,
+      variables: { tareaId, texto }
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.addPasoTarea));
+  }
+
+  togglePaso(id: number): Observable<TareaPaso> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation TogglePasoTarea($id: Int!) { togglePasoTarea(id: $id) { id texto completado orden } }`,
+      variables: { id }
+    }).pipe(tap(() => this.notificarCambio()), map(r => r.data?.togglePasoTarea));
+  }
+
+  deletePaso(id: number): Observable<boolean> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation DeletePasoTarea($id: Int!) { deletePasoTarea(id: $id) }`,
+      variables: { id }
+    }).pipe(tap(() => this.notificarCambio()), map(r => !!r.data?.deletePasoTarea));
   }
 
   toggleEstado(id: number): Observable<boolean> {
