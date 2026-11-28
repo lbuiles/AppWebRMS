@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { prepararSesion } from './simulador';
+import { prepararSesion, PROYECTO } from './simulador';
 
 /**
  * Pruebas de humo: se corren contra la compilación de producción (dist) antes de publicar.
@@ -172,6 +172,113 @@ test('al tocar un aviso push (/panel?notificacion=<id>) se abre lo que correspon
   await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue('Subestación de prueba');
 });
 
+test('el desglose del dashboard está oculto y se abre con sus filtros', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/panel');
+  const boton = page.getByRole('button', { name: /Desglose de proyectos/ });
+  await expect(boton).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('table')).toHaveCount(0);
+  await boton.click();
+  await expect(page.getByRole('table')).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Buscar en la tabla' })).toBeVisible();
+});
+
+test('el desglose del dashboard muestra 10 proyectos por página', async ({ page }) => {
+  await prepararSesion(page);
+  const muchos = Array.from({ length: 23 }, (_, i) => ({ ...PROYECTO, id: `p${i}`, codigo: `E-${String(i + 1).padStart(3, '0')}`,
+    nombre: i === 22 ? 'Proyecto especial' : `Proyecto ${i + 1}`, fechaAsignacion: `2026-10-${String((i % 28) + 1).padStart(2, '0')}T00:00:00Z` }));
+  await page.route('**/api/graphql', route => route.request().postDataJSON()?.operationName === 'GetTodosLosProyectos'
+    ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: { proyectos: muchos } }) })
+    : route.fallback());
+  await page.goto('/panel');
+  await page.getByRole('button', { name: /Desglose de proyectos/ }).click();
+  await expect(page.locator('tbody tr')).toHaveCount(10);
+  await expect(page.getByText('1–10 de 23')).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByText('21–23 de 23')).toBeVisible();
+  await expect(page.locator('tbody tr')).toHaveCount(3);
+  // Al filtrar vuelve a la primera página
+  await page.getByRole('searchbox', { name: 'Buscar en la tabla' }).fill('especial');
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Siguiente' })).toHaveCount(0);
+});
+
+test('el menú lateral muestra Cuadrillas solo al abrir Proyectos (o al estar en Cuadrillas)', async ({ page }) => {
+  await prepararSesion(page);
+  await page.goto('/panel');
+  const cuadrillas = page.getByRole('link', { name: 'Cuadrillas' });
+  await expect(cuadrillas).toHaveCount(0);
+  await page.getByRole('button', { name: 'Mostrar opciones de Proyectos' }).click();
+  await expect(cuadrillas).toBeVisible();
+  await page.getByRole('button', { name: 'Ocultar opciones de Proyectos' }).click();
+  await expect(cuadrillas).toHaveCount(0);
+  await page.goto('/proyectos/cuadrillas');
+  await expect(page.getByRole('link', { name: 'Cuadrillas' })).toBeVisible();
+});
+
+test('el flujo financiero del dashboard está oculto y se consulta al abrirlo', async ({ page }) => {
+  const operaciones = await prepararSesion(page);
+  await page.goto('/panel');
+  const boton = page.getByRole('button', { name: /Flujo de caja mes a mes/ });
+  await expect(boton).toHaveAttribute('aria-expanded', 'false');
+  expect(operaciones).not.toContain('FlujoMensual');
+  await boton.click();
+  await expect.poll(() => operaciones.includes('FlujoMensual')).toBe(true);
+  await expect(page.getByText('Diagnóstico de tesorería')).toBeVisible();
+  // Filtro de división dentro de la sección: vuelve a consultar con esa división
+  const peticion = page.waitForRequest(r => r.url().includes('/api/graphql') && r.postDataJSON()?.operationName === 'FlujoMensual');
+  await page.getByRole('group', { name: 'División del flujo' }).getByRole('button', { name: 'Energía' }).click();
+  expect((await peticion).postDataJSON().variables.linea).toBe('energia');
+});
+
+test('el tablero de Tareas muestra código, etiquetas, avance y límite WIP', async ({ page }) => {
+  await prepararSesion(page);
+  const estado = { id: 1, nombre: 'En curso', color: '#2563eb', orden: 1, esEstadoInicial: true, esEstadoFinal: false, activo: true, limiteWip: 1 };
+  const tarea = (n: number) => ({ id: `t${n}`, consecutivo: 1020 + n, prioridad: n === 1 ? 'Critica' : 'Media', etiquetas: 'Finanzas,O&M',
+    pasos: [{ id: n * 10, texto: 'a', completado: true, orden: 0 }, { id: n * 10 + 1, texto: 'b', completado: false, orden: 1 }],
+    titulo: `Tarea ${n}`, descripcion: null, estadoId: 1, estado, vecesMovida: 0, semanaProgramada: new Date().toISOString(),
+    fechaPresupuestoInicio: null, fechaPresupuestoFin: null, fechaRealFinalizacion: null, fechaCreacion: new Date().toISOString(),
+    fechaActualizacion: null, creadoPor: { id: 'u', nombre: 'X', avatarUrl: null }, asignados: [], comentarios: [] });
+  await page.route('**/api/graphql', route => {
+    const op = route.request().postDataJSON()?.operationName;
+    const r: any = { GetTareasSemana: { tareasSemana: [tarea(1), tarea(2)] }, GetEstadosTarea: { estadosTarea: [estado] } };
+    return r[op] ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: r[op] }) }) : route.fallback();
+  });
+  await page.goto('/tareas');
+  await expect(page.getByText('#RMS-1021')).toBeVisible();
+  await expect(page.getByText('Crítica')).toBeVisible();
+  await expect(page.getByText('#Finanzas').first()).toBeVisible();
+  await expect(page.getByText('1/2').first()).toBeVisible();
+  await expect(page.getByText('/ WIP 1')).toHaveClass(/text-red-600/);   // 2 tareas con límite 1
+});
+
+test('al completar una tarea con pasos pendientes advierte y deja decidir', async ({ page }) => {
+  await prepararSesion(page);
+  const inicial = { id: 1, nombre: 'En curso', color: '#2563eb', orden: 1, esEstadoInicial: true, esEstadoFinal: false, activo: true, limiteWip: null };
+  const final = { id: 2, nombre: 'Completada', color: '#10b981', orden: 2, esEstadoInicial: false, esEstadoFinal: true, activo: true, limiteWip: null };
+  const tarea = { id: 't1', consecutivo: 1050, prioridad: 'Media', etiquetas: null,
+    pasos: [{ id: 1, texto: 'Uno', completado: true, orden: 0 }, { id: 2, texto: 'Dos', completado: false, orden: 1 }],
+    titulo: 'Tarea con pasos', descripcion: null, estadoId: 1, estado: inicial, vecesMovida: 0, semanaProgramada: new Date().toISOString(),
+    fechaPresupuestoInicio: null, fechaPresupuestoFin: null, fechaRealFinalizacion: null, fechaCreacion: new Date().toISOString(),
+    fechaActualizacion: null, creadoPor: { id: 'u', nombre: 'X', avatarUrl: null }, asignados: [], comentarios: [],
+    movimientos: [], historialEstados: [], creadoPorId: 'u' };
+  const ops: string[] = [];
+  await page.route('**/api/graphql', route => {
+    const op = route.request().postDataJSON()?.operationName; ops.push(op);
+    const r: any = { GetTareasSemana: { tareasSemana: [tarea] }, GetEstadosTarea: { estadosTarea: [inicial, final] }, GetTarea: { tarea } };
+    return r[op] ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: r[op] }) }) : route.fallback();
+  });
+  await page.goto('/tareas');
+  await page.getByText('Tarea con pasos').click();
+  await page.getByRole('button', { name: 'Completada' }).last().click();
+  await expect(page.getByText('Hay pasos sin completar')).toBeVisible();
+  await expect(page.getByText('1 de 2')).toBeVisible();
+  await page.getByRole('button', { name: 'Revisar pasos' }).click();
+  await expect(page.getByText('¿Cuándo se completó esta tarea?')).toHaveCount(0);
+  expect(ops).not.toContain('CambiarEstadoTarea');
+});
+
 test.describe('en celular', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
@@ -183,6 +290,15 @@ test.describe('en celular', () => {
     await expect(page.locator('table:visible')).toHaveCount(0);
     await tarjeta.click();
     await expect(page.locator('[formcontrolname="nombre"]').first()).toHaveValue(/Subestación de prueba/);
+  });
+
+  test('el desglose del dashboard se ve como tarjetas', async ({ page }) => {
+    await prepararSesion(page);
+    await page.goto('/panel');
+    await page.getByRole('button', { name: /Desglose de proyectos/ }).click();
+    await expect(page.locator('table:visible')).toHaveCount(0);
+    await expect(page.locator('p', { hasText: 'Subestación de prueba' })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Ordenar por' })).toBeVisible();
   });
 
   test('los filtros se recogen en el botón Filtros', async ({ page }) => {

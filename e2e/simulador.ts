@@ -15,7 +15,7 @@ const USUARIO = {
   permisos: [
     'admin', 'proyectos.leer', 'admin.usuarios.leer', 'admin.clientes.leer', 'admin.contratistas.leer',
     'proyectos.gerente', 'proyectos.editar', 'proyectos.energia', 'proyectos.civiles', 'proyectos.telecom',
-    'proyectos.cuadrillas.ver', 'proyectos.cuadrillas.programar', 'proyectos.cuadrillas.kpi', 'tareas.ver'
+    'proyectos.cuadrillas.ver', 'proyectos.cuadrillas.programar', 'proyectos.cuadrillas.kpi', 'tareas.ver', 'tareas.finalizar'
   ]
 };
 
@@ -60,6 +60,7 @@ const RESPUESTAS: Record<string, unknown> = {
   ] },
   MarcarNotificacionLeida: { marcarNotificacionLeida: { id: 2, leida: true } },
   LineaDeProyecto: { proyectos: [{ id: PROYECTO.id, lineaNegocio: 'energia', archivado: false }] },
+  GetTodosLosProyectos: { proyectos: [PROYECTO] },
   AddCorteFacturacion: { addCorteFacturacion: { id: '30000000-0000-0000-0000-000000000001', proyectoId: PROYECTO.id, valorCorte: 150000,
     numeroFactura: 'FV-PRUEBA-1', observaciones: null, estado: 'REGISTRADO', fechaCorte: '2026-11-27T00:00:00.000Z',
     registradoPor: { id: USUARIO.id, nombre: USUARIO.nombre } } },
