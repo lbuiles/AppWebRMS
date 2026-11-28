@@ -756,8 +756,15 @@ export class TrackerService {
     }).pipe(map((r: any) => r.data?.rechazarAnticipoDirecto));
   }
 
-  notificarAlertaGerencia(proyectoId: string, codigo: string, nombre: string): Observable<any> {
-    return this.http.post('/api/n8n/alerta-gerencia', { proyectoId, codigo, nombre, evento: 'ALERTA_MANUAL_GERENCIA' });
+  /** Alerta manual a gerencia (Panel de Alertas): campana + push y correo vía n8n si está activo. */
+  notificarAlertaGerencia(proyectoId: string, alertas: string[]): Observable<{ notificados: number; correoEnviado: boolean }> {
+    return this.apollo.mutate({
+      mutation: gql`
+        mutation NotificarGerencia($proyectoId: UUID!, $alertas: [String!]) {
+          notificarGerencia(proyectoId: $proyectoId, alertas: $alertas) { notificados correoEnviado }
+        }`,
+      variables: { proyectoId, alertas }
+    }).pipe(map((r: any) => r.data?.notificarGerencia));
   }
 
   // --- Exportación a Excel (respaldo operativo) ---
