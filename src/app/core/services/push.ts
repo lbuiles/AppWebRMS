@@ -91,8 +91,9 @@ export class PushService {
   }
 
   /**
-   * Al cerrar sesión: este navegador deja de recibir avisos de este usuario
-   * (si no, el siguiente que entre en el mismo equipo vería los del anterior).
+   * Al cerrar sesión se quita la suscripción en el servidor: mientras nadie haya iniciado sesión,
+   * este navegador no recibe avisos. La suscripción del navegador se conserva, así que al volver
+   * a entrar (cualquier usuario) iniciar() la registra de nuevo sin tener que activarla otra vez.
    */
   async alCerrarSesion() {
     if (!this.swPush.isEnabled) return;
@@ -100,7 +101,6 @@ export class PushService {
       const sub = await firstValueFrom(this.swPush.subscription.pipe(timeout(1500)));
       if (!sub) return;
       await firstValueFrom(this.apollo.mutate({ mutation: DESUSCRIBIR, variables: { endpoint: sub.endpoint } }).pipe(timeout(3000))).catch(() => {});
-      await this.swPush.unsubscribe().catch(() => {});
     } catch { /* sin conexión o sin suscripción: se ignora */ }
     this.iniciado = false;
     this.estado.set('cargando');
