@@ -21,7 +21,10 @@
 
     <div class="h-8 w-px bg-gray-200 hidden sm:block"></div>
 
-    <div class="flex items-center gap-3 cursor-pointer group">
+    <div class="flex items-center gap-3 cursor-pointer group" (click)="traerFoto()"
+         [attr.title]="authService.tieneFotoReal() ? null : 'Toca para traer tu foto de Google'"
+         [attr.role]="authService.tieneFotoReal() ? null : 'button'"
+         [attr.aria-label]="authService.tieneFotoReal() ? null : 'Traer mi foto de Google'">
       <div class="text-right hidden sm:block">
         <p class="text-sm font-bold text-[#1e3a8a] leading-tight group-hover:text-[#ffb31c] transition-colors">
           {{ authService.usuarioActual()?.nombre || 'Cargando...' }}

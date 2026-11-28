@@ -1,7 +1,8 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
+import Swal from 'sweetalert2';
 import { MenuService } from '../../services/menu';
-import { SocialAuthService } from '@abacritt/angularx-social-login';
+import { SocialAuthService, GoogleLoginProvider } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service'; // Tu servicio
 import { BusquedaGlobalComponent } from '../busqueda-global/busqueda-global';
 import { CampanaNotificacionesComponent } from '../campana-notificaciones/campana-notificaciones';
@@ -22,6 +23,17 @@ export class HeaderComponent {
   private push = inject(PushService);
 
   constructor(public menuService: MenuService) {}
+
+  /** Si no hay foto real, al tocar el avatar se trae de Google (una sola vez; queda guardada en el servidor). */
+  async traerFoto() {
+    if (this.authService.tieneFotoReal()) return;
+    const ok = await this.authService.traerFotoDeGoogle(
+      () => this.socialAuth.getAccessToken(GoogleLoginProvider.PROVIDER_ID));
+    if (!ok) {
+      Swal.fire({ toast: true, position: 'top-end', icon: 'info', timer: 4000, showConfirmButton: false,
+        title: 'No se pudo traer la foto', text: 'Vuelve a intentarlo tocando tu avatar.' });
+    }
+  }
 
   irAHome() {
     this.router.navigate(['/panel']);

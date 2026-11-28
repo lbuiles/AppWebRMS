@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, NgZone, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -22,6 +22,7 @@ export interface UsuarioRMS {
 })
 export class AuthService {
   private http = inject(HttpClient);
+  private zone = inject(NgZone);
   private readonly API_URL = environment.apiUrl;
 
   // Signal para que toda la app reaccione a cambios del usuario
@@ -127,7 +128,13 @@ export class AuthService {
       // Extraer foto del ID token (claim "picture") — más fiable que user.photoUrl
       // que la librería no siempre llena en cuentas de Google Workspace
       const jwtPayload  = this.decodeJwtPayload(googleToken);
-      const fotoGoogle  = googleFotoUrl || jwtPayload['picture'] || null;
+      // Foto: la del token de Google si viene; si no, la guardada en el servidor (Usuario.AvatarUrl)
+      const fotoToken: string | null = googleFotoUrl || jwtPayload['picture'] || null;
+      const fotoGoogle: string | null = fotoToken || perfil.avatarUrl || null;
+      if (fotoToken && fotoToken !== perfil.avatarUrl) {
+        // Se guarda en el servidor para verla en cualquier equipo (sin esperar la respuesta)
+        this.guardarFotoEnServidor(fotoToken, tokenSesion).catch(() => {});
+      }
 
       const usuarioProcesado: UsuarioRMS = {
         id: perfil.id,
@@ -238,6 +245,55 @@ export class AuthService {
   /**
    * Cierra la sesión y limpia el almacenamiento
    */
+  /** ¿El usuario tiene foto real de Google (no el avatar de iniciales)? */
+  public tieneFotoReal(): boolean {
+    const f = this.usuarioActual()?.fotoUrl || '';
+    return !!f && !f.includes('ui-avatars.com');
+  }
+
+  /**
+   * Trae la foto de perfil desde Google (requiere un toque del usuario: abre la ventana de permisos
+   * una sola vez) y la guarda en el servidor para no volver a pedirla en ningún equipo.
+   */
+  public async traerFotoDeGoogle(obtenerAccessToken: () => Promise<string>): Promise<boolean> {
+    try {
+      const accessToken = await obtenerAccessToken();
+      if (!accessToken) return false;
+      const info = await (await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })).json();
+      const foto: string | undefined = info?.picture;
+      if (!foto) return false;
+
+      await this.guardarFotoEnServidor(foto, localStorage.getItem('rms_token') || '');
+      // La ventana de Google responde fuera de Angular: sin zone.run la pantalla no se refresca
+      this.zone.run(() => {
+        const u = this.usuarioActual();
+        if (u) {
+          const actualizado = { ...u, fotoUrl: foto };
+          this.usuarioActual.set(actualizado);
+          localStorage.setItem('rms_user', JSON.stringify(actualizado));
+        }
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async guardarFotoEnServidor(url: string, token: string) {
+    if (!token) return;
+    const r: any = await firstValueFrom(this.http.post(this.API_URL, {
+      query: 'mutation ActualizarMiFoto($url: String!) { actualizarMiFoto(url: $url) }',
+      variables: { url }
+    }, { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) }));
+    // GraphQL responde 200 aunque falle: hay que revisar "errors"
+    if (r?.errors?.length || r?.data?.actualizarMiFoto !== true) {
+      console.warn('No se pudo guardar la foto en el servidor:', r?.errors?.[0]?.message ?? r);
+      throw new Error(r?.errors?.[0]?.message ?? 'actualizarMiFoto falló');
+    }
+  }
+
   public cerrarSesion() {
     clearInterval(this.temporizadorRenovacion);
     this.usuarioActual.set(null);

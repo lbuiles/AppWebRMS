@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { GoogleSigninButtonModule, SocialAuthService, GoogleLoginProvider } from '@abacritt/angularx-social-login';
+import { GoogleSigninButtonModule, SocialAuthService } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service';
 import { Subscription } from 'rxjs';
 
@@ -28,24 +28,11 @@ export class LoginComponent implements OnInit, OnDestroy {
 
       this.autenticando = true;
 
-      // El JWT de Google Workspace no incluye el claim "picture".
-      // Obtenemos un access token para llamar al endpoint userinfo de Google,
-      // que sí devuelve la foto aunque el JWT no la traiga.
-      let fotoUrl: string | undefined;
-      try {
-        const accessToken = await this.googleAuth.getAccessToken(GoogleLoginProvider.PROVIDER_ID);
-        if (accessToken) {
-          const res  = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` }
-          });
-          const info = await res.json();
-          fotoUrl = info.picture ?? undefined;
-        }
-      } catch {
-        // Si falla (permisos, red, etc.) se usará el avatar de iniciales
-      }
-
-      const exito = await this.rmsAuth.autenticarConServidor(user.idToken!, fotoUrl);
+      // Antes se pedía además un access token a Google solo para traer la foto: eso abría una
+      // segunda ventana de selección de cuenta (en el PC pedía la cuenta dos veces) y en iPhone
+      // Safari la bloqueaba por no venir de un toque del usuario, dejando el inicio de sesión colgado.
+      // La foto sale ahora del ID token, del perfil en el servidor o de la última vista en este equipo.
+      const exito = await this.rmsAuth.autenticarConServidor(user.idToken!, user.photoUrl || undefined);
 
       if (exito) {
         this.router.navigate(['/panel']);
