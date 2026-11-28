@@ -108,6 +108,13 @@ const ELIMINAR_PROYECTO_DEFINITIVO = gql`
   }
 `;
 
+// Campana de notificaciones: división del proyecto para abrirlo en su Tracker
+const LINEA_DE_PROYECTO = gql`
+  query LineaDeProyecto($id: UUID!) {
+    proyectos(where: { id: { eq: $id } }) { id lineaNegocio archivado }
+  }
+`;
+
 // Búsqueda global (Ctrl+K): solo lo necesario para listar y abrir un proyecto
 const BUSCAR_PROYECTOS = gql`
   query BuscarProyectos {
@@ -492,6 +499,15 @@ export class TrackerService {
       query: GET_PROYECTOS_TODAS_LINEAS,
       fetchPolicy: 'network-only'
     }).pipe(map((r: any) => r.data?.proyectos || []));
+  }
+
+  /** División (lineaNegocio) de un proyecto visible para el usuario, o null si no lo puede ver. */
+  lineaDeProyecto(id: string): Observable<{ lineaNegocio: string; archivado: boolean } | null> {
+    return this.apollo.query({
+      query: LINEA_DE_PROYECTO,
+      variables: { id },
+      fetchPolicy: 'network-only'
+    }).pipe(map((r: any) => r.data?.proyectos?.[0] ?? null));
   }
 
   /** Lista ligera de proyectos no archivados para la búsqueda global. */

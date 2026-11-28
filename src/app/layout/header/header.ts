@@ -4,11 +4,12 @@ import { MenuService } from '../../services/menu';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
 import { AuthService } from '../../core/auth/auth.service'; // Tu servicio
 import { BusquedaGlobalComponent } from '../busqueda-global/busqueda-global';
+import { CampanaNotificacionesComponent } from '../campana-notificaciones/campana-notificaciones';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [BusquedaGlobalComponent],
+  imports: [BusquedaGlobalComponent, CampanaNotificacionesComponent],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './header.html'
 })

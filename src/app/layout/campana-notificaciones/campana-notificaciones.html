@@ -1,0 +1,63 @@
+<div class="relative">
+  <button type="button" (click)="alternar()"
+          class="relative p-2 text-gray-400 hover:text-[#1e3a8a] transition-colors rounded-full hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ffb31c]"
+          [attr.aria-label]="noLeidas() ? 'Notificaciones: ' + noLeidas() + ' sin leer' : 'Notificaciones'"
+          [attr.aria-expanded]="abierta()" aria-haspopup="true">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+    </svg>
+    @if (noLeidas() > 0) {
+      <span class="absolute min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center rounded-full ring-2 ring-white" style="top: 2px; right: 0;">
+        {{ noLeidas() > 9 ? '9+' : noLeidas() }}
+      </span>
+    }
+  </button>
+
+  @if (abierta()) {
+    <div class="fixed sm:absolute inset-x-2 sm:inset-x-auto top-16 sm:top-auto sm:right-0 sm:mt-2 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[60] overflow-hidden"
+         role="dialog" aria-label="Notificaciones">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <p class="text-sm font-bold text-slate-800">Notificaciones</p>
+        <div class="flex items-center gap-3">
+          @if (noLeidas() > 0) {
+            <button type="button" (click)="marcarTodas($event)" class="text-[11px] font-semibold text-[#1e3a8a] hover:underline">Marcar todas como leídas</button>
+          }
+          @if (hayLeidas()) {
+            <button type="button" (click)="borrarLeidas($event)" class="text-[11px] font-semibold text-slate-400 hover:text-red-500">Borrar leídas</button>
+          }
+        </div>
+      </div>
+
+      <div class="max-h-[70vh] sm:max-h-[28rem] overflow-y-auto">
+        @if (!notificaciones().length) {
+          <div class="px-4 py-10 text-center text-sm text-slate-400">
+            @if (cargando()) { Cargando… } @else { No tienes notificaciones. }
+          </div>
+        } @else {
+          <ul class="divide-y divide-slate-50">
+            @for (n of notificaciones(); track n.id) {
+              <li>
+                <button type="button" (click)="abrir(n)"
+                        class="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                        [ngClass]="n.leida ? '' : 'bg-blue-50/40'">
+                  <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" [ngClass]="estilo(n).color">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="estilo(n).icono"></path>
+                    </svg>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-xs leading-snug" [ngClass]="n.leida ? 'text-slate-500' : 'text-slate-800 font-medium'">{{ n.mensaje }}</span>
+                    <span class="block text-[10px] text-slate-400 mt-1">{{ hace(n.fechaCreacion) }}</span>
+                  </span>
+                  @if (!n.leida) {
+                    <span class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" aria-label="Sin leer"></span>
+                  }
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  }
+</div>
