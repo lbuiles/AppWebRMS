@@ -328,7 +328,7 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
   notificarGerencia(p: any) {
     Swal.fire({
       title: `Notificar Gerencia`,
-      html: `<p style="font-size:13px;color:#64748b">Se enviará una alerta vía n8n para el proyecto:<br><b style="color:#0f172a">${p.nombre}</b></p>`,
+      html: `<p style="font-size:13px;color:#64748b">Se avisará a gerencia y a los responsables de alertas de la división (campana, aviso push y correo) sobre el proyecto:<br><b style="color:#0f172a">${p.nombre}</b></p>`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Enviar alerta',
@@ -336,9 +336,13 @@ export class TrackerListComponent implements OnInit, ConCambiosPendientes {
       confirmButtonColor: '#dc2626',
     }).then(result => {
       if (result.isConfirmed) {
-        this.trackerService.notificarAlertaGerencia(p.id, p.codigo, p.nombre).subscribe({
-          next: () => Swal.fire({ icon: 'success', title: 'Alerta enviada', text: 'Gerencia fue notificada vía WhatsApp y correo.', timer: 3000 }),
-          error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo conectar con n8n. Intenta de nuevo.' })
+        const alertas = (p._alertas ?? []).map((a: any) => a?.texto).filter((t: any) => !!t);
+        this.trackerService.notificarAlertaGerencia(p.id, alertas).subscribe({
+          next: r => Swal.fire({
+            icon: 'success', title: 'Alerta enviada', timer: 4000,
+            text: `Se avisó a ${r?.notificados ?? 0} persona(s) en la campana${r?.correoEnviado ? ' y por correo' : ' (el correo vía n8n no está disponible)'}.`
+          }),
+          error: err => Swal.fire({ icon: 'error', title: 'No se pudo enviar la alerta', text: mensajeError(err, 'Intenta de nuevo.') })
         });
       }
     });
